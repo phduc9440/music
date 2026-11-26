@@ -1,0 +1,124 @@
+/* Bảng lịch sử phiên bản (tiền tố vh-). Dùng biến và nút của scores.css */
+.sc-modal.vh-modal--wide {
+  max-width: 960px;
+}
+.vh-hint {
+  margin: 0.2rem 0 0.8rem;
+  font-size: 0.82rem;
+  color: var(--sc-muted);
+}
+.vh-empty {
+  margin: 1.2rem 0;
+  text-align: center;
+  color: var(--sc-muted);
+}
+.vh-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 55vh;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.vh-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--sc-line);
+  border-radius: 12px;
+  background: var(--ui-surface);
+}
+.vh-item.is-current {
+  border-color: var(--sc-accent);
+  background: var(--ui-primary-soft);
+}
+.vh-item__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.vh-item__meta {
+  margin-top: 0.2rem;
+  font-size: 0.8rem;
+  color: var(--sc-muted);
+}
+.vh-item__actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.4rem;
+}
+.vh-badge {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--ui-surface-hover);
+  color: var(--sc-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.vh-badge--current {
+  background: var(--sc-accent);
+  color: var(--ui-on-accent);
+}
+.vh-preview {
+  max-height: 65vh;
+  overflow: auto;
+  border: 1px solid var(--sc-line);
+  border-radius: 12px;
+  background: var(--ui-surface);
+}
+
+/* So sánh hai phiên bản */
+.vh-diff__facts {
+  margin-bottom: 0.75rem;
+}
+.vh-diff__types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.75rem;
+}
+.vh-diff__strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  max-height: 45vh;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.vh-diff__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.75rem;
+}
+.vh-cell {
+  min-width: 2.2rem;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--sc-line);
+  border-radius: 6px;
+  background: var(--ui-surface-hover);
+  font-size: 0.78rem;
+  text-align: center;
+  cursor: help;
+}
+.vh-cell--edited {
+  background: var(--ui-warning-soft);
+  border-color: var(--ui-warning-strong);
+}
+.vh-cell--deleted {
+  background: var(--ui-danger-soft);
+  border-color: var(--ui-danger);
+  text-decoration: line-through;
+}
+.vh-cell--added {
+  background: var(--ui-success-soft);
+  border-color: var(--ui-success);
+}

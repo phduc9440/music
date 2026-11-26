@@ -1,0 +1,329 @@
+/* Tô nốt đang chọn / đang rê chuột trên SVG của OSMD (tiền tố ed-). */
+.ed-note--selected path,
+.ed-note--selected text {
+  fill: var(--sc-accent, var(--ui-note-selected)) !important;
+  stroke: var(--sc-accent, var(--ui-note-selected)) !important;
+}
+[data-note-id] {
+  cursor: pointer;
+}
+[data-note-id]:hover:not(.ed-note--selected) path {
+  stroke: var(--sc-accent, var(--ui-note-selected));
+  stroke-opacity: 0.45;
+}
+/* Đầu nốt trong hợp âm chọn được riêng: rê chuột vào đầu nốt nào thì đầu nốt đó sáng lên */
+[data-head-id]:hover:not(.ed-note--selected) path {
+  fill: var(--sc-accent, var(--ui-note-selected));
+  fill-opacity: 0.7;
+  stroke-opacity: 1;
+}
+[data-head-id].ed-note--selected path {
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--ui-note-selected) 60%, transparent));
+}
+
+/* Ô nhịp sai độ dài: viền đỏ vẽ quanh các nốt của ô */
+.sv-canvas__host {
+  position: relative;
+  user-select: none;
+}
+.ed-issue-box {
+  position: absolute;
+  border: 2px solid var(--ui-danger);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ui-danger) 5%, transparent);
+  pointer-events: none;
+}
+/* Góp ý gắn vào ô nhịp (mục 4.2): nền nhạt các ô có góp ý, bong bóng số lượng */
+.ed-comment-box {
+  position: absolute;
+  border-radius: 8px;
+  background: var(--ui-comment-region, color-mix(in srgb, var(--ui-warning) 20%, transparent));
+  pointer-events: none;
+}
+.ed-comment-box.is-active {
+  background: color-mix(in srgb, var(--ui-warning) 32%, transparent);
+  box-shadow: inset 0 0 0 2px var(--ui-warning);
+}
+.ed-comment-bubble {
+  position: absolute;
+  z-index: 3;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border: 2px solid var(--ui-surface);
+  border-radius: 999px;
+  background: var(--ui-warning);
+  color: var(--ui-on-accent);
+  font:
+    700 0.75rem/18px system-ui,
+    sans-serif;
+  cursor: pointer;
+  box-shadow: var(--ui-shadow-sm);
+}
+.ed-comment-bubble:hover,
+.ed-comment-bubble:focus-visible {
+  transform: scale(1.12);
+  outline: none;
+}
+/* Khung chọn vùng khi kéo chuột */
+.ed-band {
+  position: fixed;
+  z-index: 20;
+  border: 1px solid var(--sc-accent, var(--ui-note-selected));
+  background: color-mix(in srgb, var(--ui-note-selected) 12%, transparent);
+  pointer-events: none;
+}
+
+/* Nốt mờ báo trước chỗ sẽ thêm nốt (toạ độ màn hình, không bắt chuột) */
+.ed-ghost {
+  position: fixed;
+  z-index: 25;
+  pointer-events: none;
+}
+.ed-ghost__head {
+  position: absolute;
+  background: color-mix(in srgb, var(--ui-primary) 55%, transparent);
+  border: 1.5px solid var(--ui-primary-hover);
+  border-radius: 50%;
+  transform: rotate(-20deg);
+}
+.ed-ghost__ledger {
+  position: absolute;
+  height: 0;
+  border-top: 1.5px solid color-mix(in srgb, var(--ui-primary-hover) 75%, transparent);
+}
+.ed-ghost__label {
+  position: absolute;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--ui-primary-hover);
+  color: var(--ui-on-accent);
+  font:
+    600 11px/1.4 system-ui,
+    sans-serif;
+  white-space: nowrap;
+}
+/* Khung chọn nốt khi bấm vào khuông */
+.ed-pop {
+  position: fixed;
+  z-index: 40;
+  width: 264px;
+  padding: 0.65rem;
+  border: 1px solid var(--sc-line, var(--ui-border));
+  border-radius: 14px;
+  background: var(--ui-surface);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--ui-shadow-ink) 22%, transparent);
+  color: var(--sc-ink, var(--ui-text));
+  font-size: 0.85rem;
+}
+.ed-pop__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.ed-pop__latin {
+  color: var(--sc-muted, var(--ui-text-2));
+}
+.ed-pop__step {
+  display: flex;
+  gap: 0.25rem;
+}
+.ed-pop__step button,
+.ed-pop__btn {
+  min-width: 36px;
+  height: 36px;
+  border: 1px solid var(--sc-line, var(--ui-border));
+  border-radius: 10px;
+  background: var(--ui-surface-muted);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.ed-pop__row {
+  display: flex;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+}
+.ed-pop__btn {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.2rem;
+}
+.ed-pop__btn svg {
+  width: 22px;
+  height: 22px;
+}
+/* 7 trường độ + nút chấm dôi: một hàng cần ~320px nhưng khung chỉ 264px nên móc ba, móc tứ, chấm dôi tràn ra ngoài.
+   Xếp lưới 4 cột x 2 hàng, nút được co dưới 36px. */
+.ed-pop__row--durations {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.ed-pop__row--durations .ed-pop__btn {
+  min-width: 0;
+}
+.ed-pop__btn--wide {
+  font-size: 0.72rem;
+}
+.ed-pop__btn--dot {
+  font-size: 1.2rem;
+}
+.ed-pop__btn.is-active {
+  border-color: var(--sc-accent, var(--ui-note-selected));
+  background: var(--ui-warning-soft);
+  color: var(--sc-accent, var(--ui-note-selected));
+}
+.ed-pop__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+.ed-pop__cancel,
+.ed-pop__add {
+  height: 36px;
+  padding: 0 1rem;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ed-pop__cancel {
+  border: 1px solid var(--sc-line, var(--ui-border));
+  background: var(--ui-surface);
+  color: inherit;
+}
+.ed-pop__add {
+  border: 0;
+  background: var(--sc-accent, var(--ui-note-selected));
+  color: var(--ui-on-accent);
+}
+
+/* Dấu ✓ xác nhận ô nhịp đúng: chỉ hiện khi rê chuột / chạm vào mép trên viền đỏ */
+.ed-issue-hot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 26px;
+  pointer-events: auto;
+}
+.ed-issue-ok {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1.5px solid var(--ui-success);
+  border-radius: 50%;
+  background: var(--ui-surface);
+  color: var(--ui-success);
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.ed-issue-hot:hover .ed-issue-ok,
+.ed-issue-hot.is-open .ed-issue-ok,
+.ed-issue-ok:focus-visible {
+  opacity: 1;
+}
+
+/* Chữ đầu bản nhạc (tiêu đề, tác giả, tempo) bấm để sửa */
+.ed-text-hot {
+  position: absolute;
+  border-radius: 6px;
+  cursor: text;
+}
+.ed-text-hot:hover {
+  background: color-mix(in srgb, var(--ui-primary) 8%, transparent);
+  outline: 1.5px dashed color-mix(in srgb, var(--ui-primary) 60%, transparent);
+}
+.ed-pop--text {
+  width: 320px;
+}
+.ed-pop--text .ed-pop__name {
+  margin-bottom: 0.5rem;
+}
+.ed-pop__input {
+  width: 100%;
+  height: 36px;
+  padding: 0 0.6rem;
+  border: 1px solid var(--sc-line, var(--ui-border));
+  border-radius: 10px;
+  font: inherit;
+  color: inherit;
+  background: var(--ui-surface);
+  box-sizing: border-box;
+}
+.ed-pop__input--num {
+  width: 72px;
+}
+.ed-pop__row--text {
+  align-items: flex-end;
+  margin-top: 0.5rem;
+}
+.ed-pop__row--text .ed-pop__btn {
+  flex: 0 0 36px;
+}
+.ed-pop__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  color: var(--sc-muted, var(--ui-text-2));
+  font-size: 0.75rem;
+}
+.ed-pop__field--block {
+  margin-bottom: 0.5rem;
+}
+.ed-pop__field--block .ed-pop__input {
+  width: 100%;
+}
+.ed-pop__check {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 36px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.ed-pop__error {
+  margin-bottom: 0.4rem;
+  color: var(--ui-danger);
+  font-size: 0.8rem;
+}
+
+/* Hợp âm AI gợi ý đang nạp làm bản nháp: chữ hợp âm như được tô bút dạ quang, nốt mang hợp âm có quầng vàng nhạt */
+.ed-chord--ai text {
+  fill: var(--ui-highlight-ink) !important;
+  font-weight: 700;
+  stroke: var(--ui-highlight-soft);
+  stroke-width: 7px;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+}
+.ed-note--ai:not(.ed-note--selected) path {
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--ui-highlight) 75%, transparent));
+}
+/* Chọn từ bảng Hợp âm AI: nhấp sáng vài nhịp để mắt bắt được chỗ vừa cuộn tới */
+.ed-ai-flash path,
+.ed-ai-flash text {
+  animation: ed-ai-flash 0.6s ease-in-out 3;
+}
+@keyframes ed-ai-flash {
+  50% {
+    filter: drop-shadow(0 0 6px var(--ui-highlight)) drop-shadow(0 0 2px var(--ui-highlight));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ed-ai-flash path,
+  .ed-ai-flash text {
+    animation: none;
+    filter: drop-shadow(0 0 4px var(--ui-highlight));
+  }
+}

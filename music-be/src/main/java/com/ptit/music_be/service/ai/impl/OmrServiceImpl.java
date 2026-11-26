@@ -1,0 +1,877 @@
+package com.ptit.music_be.service.ai.impl;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HexFormat;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
+
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
+import com.ptit.music_be.dto.enums.ai.AiTaskType;
+import com.ptit.music_be.dto.enums.ai.OmrSourceType;
+import com.ptit.music_be.dto.enums.ai.ProcessingStatus;
+import com.ptit.music_be.dto.enums.auth.AdminPermission;
+import com.ptit.music_be.dto.enums.billing.RequestCap;
+import com.ptit.music_be.dto.enums.billing.UsageMetric;
+import com.ptit.music_be.dto.enums.score.FileType;
+import com.ptit.music_be.dto.enums.score.ScoreSource;
+import com.ptit.music_be.dto.request.ai.OmrRetryRequest;
+import com.ptit.music_be.dto.response.ai.AiTaskResponse;
+import com.ptit.music_be.dto.response.ai.OmrConfigResponse;
+import com.ptit.music_be.dto.response.ai.OmrResultResponse;
+import com.ptit.music_be.dto.response.ai.OmrRetryInfoResponse;
+import com.ptit.music_be.dto.response.ai.OmrUploadResponse;
+import com.ptit.music_be.entity.AiTask;
+import com.ptit.music_be.entity.Member;
+import com.ptit.music_be.entity.Score;
+import com.ptit.music_be.entity.ScoreFile;
+import com.ptit.music_be.event.OmrTaskCreatedEvent;
+import com.ptit.music_be.exception.AppException;
+import com.ptit.music_be.exception.code.AccountErrorCode;
+import com.ptit.music_be.exception.code.AiErrorCode;
+import com.ptit.music_be.exception.code.ScoreErrorCode;
+import com.ptit.music_be.mapper.AiTaskMapper;
+import com.ptit.music_be.mapper.ScoreFileMapper;
+import com.ptit.music_be.repository.ai.AiTaskRepository;
+import com.ptit.music_be.repository.auth.MemberRepository;
+import com.ptit.music_be.repository.score.ScoreFileRepository;
+import com.ptit.music_be.repository.score.ScoreRepository;
+import com.ptit.music_be.service.ai.OmrService;
+import com.ptit.music_be.service.billing.EntitlementService;
+import com.ptit.music_be.service.billing.PlanLimits;
+import com.ptit.music_be.service.score.ScoreFileService;
+import com.ptit.music_be.service.storage.FileStorageService;
+import com.ptit.music_be.utils.ScoreTitles;
+import com.ptit.music_be.utils.SecurityUtils;
+
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
+import lombok.extern.slf4j.Slf4j;
+
+@Service
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
+public class OmrServiceImpl implements OmrService {
+
+    static final String DEFAULT_VISIBILITY = "PRIVATE";
+    /** Tên file gốc lưu ở score_files (không phải tên bài). */
+    static final int MAX_FILE_NAME_LENGTH = 255;
+
+    static final int MAX_COMPOSER_LENGTH = 255;
+    /** Tác vụ OMR "đang chạy" = còn chờ hoặc đang xử lý; dùng để giới hạn số task mỗi người. */
+    static final List<AiTaskStatus> ACTIVE_STATUSES = List.of(AiTaskStatus.PENDING, AiTaskStatus.PROCESSING);
+    /** Gửi lại cùng file trong khoảng này khi task trước còn chạy thì coi là bấm trùng (OMR-T01). */
+    static final long DUPLICATE_WINDOW_SECONDS = 60;
+    /** Khóa trong input_data: SHA-256 của các file gốc theo thứ tự, để nhận ra lần gửi trùng. */
+    static final String SOURCE_SHA256_KEY = "sourceSha256";
+
+    MemberRepository memberRepository;
+    ScoreRepository scoreRepository;
+    ScoreFileRepository scoreFileRepository;
+    ScoreFileService scoreFileService;
+    AiTaskRepository aiTaskRepository;
+    FileStorageService fileStorageService;
+    ScoreFileMapper scoreFileMapper;
+    AiTaskMapper aiTaskMapper;
+    ObjectMapper objectMapper;
+    ApplicationEventPublisher eventPublisher;
+    EntitlementService entitlementService;
+
+    @NonFinal
+    @Value("${app.omr.max-images:20}")
+    int maxImages;
+
+    @NonFinal
+    @Value("${app.omr.max-pdf-pages:20}")
+    int maxPdfPages;
+
+    /** Cạnh ngắn tối thiểu của ảnh (px). */
+    @NonFinal
+    @Value("${app.omr.min-image-side:600}")
+    int minImageSide;
+
+    /** Số điểm ảnh tối đa của một ảnh (40 megapixel). */
+    @NonFinal
+    @Value("${app.omr.max-image-pixels:40000000}")
+    long maxImagePixels;
+
+    /**
+     * Chế độ AI xác minh ô nhịp của music-ai (biến OMR_LLM dùng chung với music-ai): khác "off" thì ảnh cắt của một số ô được
+     * gửi sang dịch vụ bên ngoài, trang tải lên phải báo cho người dùng (X-05).
+     */
+    @NonFinal
+    @Value("${app.omr.llm-mode:${OMR_LLM:off}}")
+    String llmMode;
+
+    @Override
+    @Transactional
+    public OmrUploadResponse upload(List<MultipartFile> files, String title, String composer, String sourceType) {
+        // Kiểm tra rẻ trước (tham số chữ), rồi mới đọc nội dung file
+        String cleanComposer = resolveComposer(composer);
+        // Tiêu đề người dùng nhập quá dài thì báo lỗi (giống PATCH), không âm thầm cắt
+        if (ScoreTitles.isTooLong(title)) {
+            throw new AppException(ScoreErrorCode.SCORE_TITLE_INVALID);
+        }
+        List<UploadKind> kinds = validate(files);
+        boolean isPdf = kinds.getFirst() == UploadKind.PDF;
+        OmrSourceType resolvedSourceType = resolveSourceType(sourceType, isPdf);
+        int pageCount = isPdf ? inspectPdf(files.getFirst()) : inspectImages(files);
+        String fingerprint = fingerprint(files);
+
+        Member member = memberRepository
+                .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
+
+        // Bấm gửi hai lần: dòng thành viên đã khóa nên hai request xếp hàng; request sau nhận lại task của request
+        // trước
+        OmrUploadResponse duplicate = findDuplicate(member, fingerprint);
+        if (duplicate != null) {
+            return duplicate;
+        }
+        checkConcurrentTasks(member);
+        // Một lần số hóa không được quá số trang gói cho phép (PDF dài chiếm hàng đợi rất lâu)
+        entitlementService.checkRequestCap(member.getId(), RequestCap.OMR_PAGES_PER_JOB, pageCount);
+        // Còn đủ trang OMR của tháng không (dòng thành viên đã khóa ở trên); task ghi bên dưới chính là phần đã dùng
+        entitlementService.checkAvailable(member.getId(), UsageMetric.OMR_PAGES, pageCount);
+        entitlementService.checkStorage(
+                member.getId(), files.stream().mapToLong(MultipartFile::getSize).sum());
+
+        Score score = scoreRepository.save(Score.builder()
+                .member(member)
+                .title(resolveTitle(title, files.getFirst()))
+                .composer(cleanComposer)
+                .visibility(DEFAULT_VISIBILITY)
+                .isOfficial(false)
+                .processingStatus(ProcessingStatus.PENDING.name())
+                .sourceType(ScoreSource.OMR.name())
+                .pageCount(pageCount)
+                .build());
+
+        String scoreDir = "scores/" + score.getId();
+        // If anything below fails, the DB rolls back -> also remove files already written to disk.
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status == STATUS_ROLLED_BACK) {
+                    fileStorageService.deleteDirectory(scoreDir);
+                }
+            }
+        });
+
+        List<ScoreFile> savedFiles = new ArrayList<>();
+        for (int i = 0; i < files.size(); i++) {
+            MultipartFile file = files.get(i);
+            UploadKind kind = kinds.get(i);
+            String relativePath =
+                    String.format("%s/original/%02d-%s.%s", scoreDir, i + 1, UUID.randomUUID(), kind.extension);
+
+            String storedPath;
+            try (InputStream in = file.getInputStream()) {
+                storedPath = fileStorageService.store(in, relativePath);
+            } catch (IOException e) {
+                log.error("Cannot read uploaded file {}", file.getOriginalFilename(), e);
+                throw new AppException(ScoreErrorCode.FILE_STORAGE_ERROR);
+            }
+
+            savedFiles.add(scoreFileRepository.save(ScoreFile.builder()
+                    .score(score)
+                    .fileType(isPdf ? FileType.ORIGINAL_PDF : FileType.ORIGINAL_IMAGE)
+                    .originalFileName(cleanFileName(file.getOriginalFilename()))
+                    .storagePath(storedPath)
+                    .contentType(kind.contentType)
+                    .sizeBytes(file.getSize())
+                    .pageNumber(isPdf ? null : i + 1)
+                    .build()));
+        }
+
+        AiTask task = aiTaskRepository.save(AiTask.builder()
+                .member(member)
+                .score(score)
+                .taskType(AiTaskType.OMR_CONVERSION)
+                .status(AiTaskStatus.PENDING)
+                .progress(0)
+                .inputData(buildInputData(resolvedSourceType, true, pageCount, fingerprint))
+                .build());
+
+        // Bộ điều phối (nhánh feature/omr-preprocess) chỉ gửi task sang music-ai sau khi transaction commit
+        eventPublisher.publishEvent(new OmrTaskCreatedEvent(task.getId(), score.getId()));
+
+        return OmrUploadResponse.builder()
+                .scoreId(score.getId())
+                .title(score.getTitle())
+                .processingStatus(score.getProcessingStatus())
+                .task(aiTaskMapper.toResponse(task))
+                .files(scoreFileMapper.toResponses(savedFiles))
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public AiTaskResponse retry(String scoreId, OmrRetryRequest request) {
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
+        scoreFileService.checkCanEdit(score);
+
+        if (aiTaskRepository.existsByScoreIdAndTaskTypeAndStatusIn(
+                scoreId, AiTaskType.OMR_CONVERSION, ACTIVE_STATUSES)) {
+            throw new AppException(ScoreErrorCode.SCORE_BUSY);
+        }
+        Member member = memberRepository
+                .findByEmailForUpdate(SecurityUtils.getCurrentEmail())
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
+        checkConcurrentTasks(member);
+        int pages = score.getPageCount() == null ? 0 : score.getPageCount();
+        entitlementService.checkRequestCap(member.getId(), RequestCap.OMR_PAGES_PER_JOB, pages);
+        entitlementService.checkAvailable(member.getId(), UsageMetric.OMR_PAGES, pages);
+        // Nhận diện lại sinh thêm file cho chủ bản nhạc; không cho chạy khi kho của họ đã vượt hạn mức
+        if (score.getMember() != null) {
+            entitlementService.checkStorage(score.getMember().getId(), 0);
+        }
+        return startRetry(score, member, request, pages);
+    }
+
+    @Override
+    @Transactional
+    public AiTaskResponse retryAsAdmin(String scoreId) {
+        // Kiểm duyệt: admin chạy lại cả bản của người khác (không cần quyền sửa nội dung), không tính vào giới hạn số
+        // task của chủ; task mới vẫn gán cho chủ bản nhạc để họ thấy trong lịch sử và trang tiến độ của mình
+        if (!SecurityUtils.hasPermission(AdminPermission.AI_TASKS_MANAGE)) {
+            throw new AppException(AccountErrorCode.UNAUTHORIZED);
+        }
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
+        if (aiTaskRepository.existsByScoreIdAndTaskTypeAndStatusIn(
+                scoreId, AiTaskType.OMR_CONVERSION, ACTIVE_STATUSES)) {
+            throw new AppException(ScoreErrorCode.SCORE_BUSY);
+        }
+        if (score.getMember() == null) {
+            throw new AppException(AccountErrorCode.USER_NOT_EXISTED);
+        }
+        return startRetry(score, score.getMember(), null, 0);
+    }
+
+    /** Phần chung của chạy lại OMR: kiểm tra file gốc, kế thừa tham số lần trước, tạo task mới và gửi đi. */
+    private AiTaskResponse startRetry(Score score, Member member, OmrRetryRequest request, int pagesCharged) {
+        String scoreId = score.getId();
+
+        // File gốc (1 PDF hoặc các ảnh) phải còn trên đĩa mới chạy lại được
+        List<ScoreFile> originals =
+                scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.ORIGINAL_PDF);
+        boolean isPdf = !originals.isEmpty();
+        if (!isPdf) {
+            originals =
+                    scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.ORIGINAL_IMAGE);
+        }
+        if (originals.isEmpty()) {
+            throw new AppException(ScoreErrorCode.FILE_NOT_EXISTED);
+        }
+        for (ScoreFile original : originals) {
+            if (!Files.isRegularFile(fileStorageService.resolve(original.getStoragePath()))) {
+                throw new AppException(ScoreErrorCode.FILE_NOT_EXISTED);
+            }
+        }
+
+        // Kế thừa sourceType/preprocess từ task OMR gần nhất; body có giá trị thì ưu tiên body (OMR-06)
+        JsonNode previous = latestOmrInput(scoreId);
+        OmrSourceType sourceType = isPdf ? OmrSourceType.PDF_NATIVE : OmrSourceType.PHOTO;
+        boolean preprocess = true;
+        if (previous != null) {
+            if (previous.hasNonNull("sourceType")) {
+                try {
+                    sourceType =
+                            OmrSourceType.valueOf(previous.get("sourceType").asText());
+                } catch (IllegalArgumentException ignored) {
+                    // giữ giá trị đoán theo loại file
+                }
+            }
+            preprocess = previous.path("preprocess").asBoolean(true);
+        }
+        if (request != null && request.getPreprocess() != null) {
+            preprocess = request.getPreprocess();
+        }
+        if (request != null && StringUtils.hasText(request.getSourceType())) {
+            sourceType = resolveSourceType(request.getSourceType(), isPdf);
+        }
+
+        score.setProcessingStatus(ProcessingStatus.PENDING.name());
+        scoreRepository.save(score);
+
+        AiTask task = aiTaskRepository.save(AiTask.builder()
+                .member(member)
+                .score(score)
+                .taskType(AiTaskType.OMR_CONVERSION)
+                .status(AiTaskStatus.PENDING)
+                .progress(0)
+                .inputData(buildInputData(sourceType, preprocess, pagesCharged))
+                .build());
+
+        eventPublisher.publishEvent(new OmrTaskCreatedEvent(task.getId(), score.getId()));
+        return aiTaskMapper.toResponse(task);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OmrResultResponse getResult(String scoreId) {
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
+        scoreFileService.checkCanView(score);
+
+        AiTask task = aiTaskRepository.findByScoreIdOrderByCreatedAtDesc(scoreId).stream()
+                .filter(t -> t.getTaskType() == AiTaskType.OMR_CONVERSION)
+                .findFirst()
+                .orElseThrow(() -> new AppException(AiErrorCode.AI_TASK_NOT_EXISTED));
+
+        // result_data do music-ai ghi; thiếu hoặc hỏng thì coi như rỗng (task chưa xong hoặc đã lỗi)
+        JsonNode data = parseJson(task.getResultData());
+
+        // result_data.pageMeasures = [{page, firstMeasure, lastMeasure}] do bước EXPORT ghi (đặc tả mục 2.3, ý 2)
+        Map<Integer, JsonNode> measuresByPage = new HashMap<>();
+        data.path("pageMeasures").forEach(m -> measuresByPage.put(m.path("page").asInt(), m));
+
+        List<OmrResultResponse.Page> pages =
+                scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.PNG).stream()
+                        .map(f -> {
+                            JsonNode range = f.getPageNumber() == null ? null : measuresByPage.get(f.getPageNumber());
+                            return OmrResultResponse.Page.builder()
+                                    .pageNumber(f.getPageNumber())
+                                    .imageFileId(f.getId())
+                                    .firstMeasure(
+                                            range != null && range.hasNonNull("firstMeasure")
+                                                    ? range.get("firstMeasure").asInt()
+                                                    : null)
+                                    .lastMeasure(
+                                            range != null && range.hasNonNull("lastMeasure")
+                                                    ? range.get("lastMeasure").asInt()
+                                                    : null)
+                                    .build();
+                        })
+                        .toList();
+
+        List<String> warnings = new ArrayList<>();
+        data.path("warnings").forEach(w -> warnings.add(w.asText()));
+        JsonNode warningItems = data.path("warningItems");
+        JsonNode autoFixes = data.path("autoFixes");
+        JsonNode textAbove = data.path("textAbove");
+        int pageCount = data.hasNonNull("pageCount") ? data.get("pageCount").asInt() : pages.size();
+        String stoppedAfter =
+                data.hasNonNull("stoppedAfter") ? data.get("stoppedAfter").asText() : null;
+
+        return OmrResultResponse.builder()
+                .taskId(task.getId())
+                .status(task.getStatus())
+                .pageCount(pageCount)
+                .warnings(warnings)
+                .stoppedAfter(stoppedAfter)
+                .pages(pages)
+                .measureMap(measureMap(data))
+                .measureCheck(measureCheck(data))
+                .kernFileId(currentFileId(scoreId, FileType.KERN))
+                .musicXmlFileId(currentFileId(scoreId, FileType.MUSICXML))
+                .midiFileId(currentFileId(scoreId, FileType.MIDI))
+                .musicXmlVersion(currentVersion(scoreId, FileType.MUSICXML))
+                .warningItems(warningItems.isArray() ? warningItems : null)
+                .autoFixes(autoFixes.isArray() ? autoFixes : null)
+                .textAbove(textAbove.isArray() ? textAbove : null)
+                .omrVersion(
+                        data.path("musicXmlVersion").isInt()
+                                ? data.get("musicXmlVersion").asInt()
+                                : null)
+                .tempoDefaulted(
+                        data.path("tempoDefaulted").isBoolean()
+                                ? data.get("tempoDefaulted").asBoolean()
+                                : null)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OmrRetryInfoResponse getRetryInfo(String scoreId) {
+        Score score =
+                scoreRepository.findById(scoreId).orElseThrow(() -> new AppException(ScoreErrorCode.SCORE_NOT_EXISTED));
+        scoreFileService.checkCanEdit(score);
+        Member member = memberRepository
+                .findByEmail(SecurityUtils.getCurrentEmail())
+                .orElseThrow(() -> new AppException(AccountErrorCode.USER_NOT_EXISTED));
+
+        List<AiTask> omrTasks = aiTaskRepository.findByScoreIdOrderByCreatedAtDesc(scoreId).stream()
+                .filter(t -> t.getTaskType() == AiTaskType.OMR_CONVERSION)
+                .toList();
+        AiTask latest = omrTasks.isEmpty() ? null : omrTasks.getFirst();
+        // Phiên bản do lần số hóa thành công gần nhất tạo: music-ai ghi vào result_data.musicXmlVersion
+        Integer omrVersion = omrTasks.stream()
+                .filter(t -> t.getStatus() == AiTaskStatus.COMPLETED)
+                .map(t -> parseJson(t.getResultData()).path("musicXmlVersion"))
+                .filter(JsonNode::isInt)
+                .map(JsonNode::asInt)
+                .findFirst()
+                .orElse(null);
+        int currentVersion = score.getCurrentVersion() == null ? 0 : score.getCurrentVersion();
+        boolean isPdf = !scoreFileRepository
+                .findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, FileType.ORIGINAL_PDF)
+                .isEmpty();
+        JsonNode previous = latestOmrInput(scoreId);
+        String sourceType = previous != null && previous.hasNonNull("sourceType")
+                ? previous.get("sourceType").asText()
+                : (isPdf ? OmrSourceType.PDF_NATIVE : OmrSourceType.PHOTO).name();
+        boolean preprocess = previous == null || previous.path("preprocess").asBoolean(true);
+
+        PlanLimits limits = entitlementService.limitsOf(member.getId());
+        Integer planPerJob = limits.omrMaxPagesPerJob();
+        int hardPerJob = Math.max(maxPdfPages, maxImages);
+        String lastErrorCode = null;
+        if (latest != null && StringUtils.hasText(latest.getErrorMessage())) {
+            String message = latest.getErrorMessage();
+            int colon = message.indexOf(':');
+            lastErrorCode = (colon < 0 ? message : message.substring(0, colon)).trim();
+        }
+        return OmrRetryInfoResponse.builder()
+                .pages(score.getPageCount() == null ? 0 : score.getPageCount())
+                .pdf(isPdf)
+                .sourceType(sourceType)
+                .preprocess(preprocess)
+                .omrVersion(omrVersion)
+                .currentVersion(currentVersion)
+                .editedVersions(omrVersion == null ? 0 : Math.max(0, currentVersion - omrVersion))
+                .lastStatus(latest == null ? null : latest.getStatus().name())
+                .lastErrorCode(lastErrorCode)
+                .monthlyLimit(limits.omrPagesPerMonth())
+                .monthlyUsed(entitlementService.usedThisMonth(member.getId(), UsageMetric.OMR_PAGES))
+                .perJobLimit(planPerJob == null ? hardPerJob : Math.min(planPerJob, hardPerJob))
+                .build();
+    }
+
+    @Override
+    public OmrConfigResponse getConfig() {
+        return OmrConfigResponse.builder()
+                .maxPdfPages(maxPdfPages)
+                .maxImages(maxImages)
+                .minImageSide(minImageSide)
+                .maxImagePixels(maxImagePixels)
+                .externalAiCheck(StringUtils.hasText(llmMode) && !"off".equalsIgnoreCase(llmMode.trim()))
+                .build();
+    }
+
+    /** result_data.measureMap -> danh sách ô nhịp; thiếu hoặc sai kiểu thì rỗng. */
+    private List<OmrResultResponse.MeasureEntry> measureMap(JsonNode data) {
+        List<OmrResultResponse.MeasureEntry> entries = new ArrayList<>();
+        data.path("measureMap").forEach(m -> {
+            if (!m.hasNonNull("measure") || !m.hasNonNull("page")) {
+                return;
+            }
+            List<Integer> box = null;
+            JsonNode boxNode = m.path("box");
+            if (boxNode.isArray() && boxNode.size() == 4) {
+                box = new ArrayList<>();
+                for (JsonNode v : boxNode) {
+                    box.add(v.asInt());
+                }
+            }
+            List<String> flags = new ArrayList<>();
+            m.path("flags").forEach(f -> flags.add(f.asText()));
+            List<String> reasons = new ArrayList<>();
+            m.path("reasons").forEach(r -> reasons.add(r.asText()));
+            entries.add(OmrResultResponse.MeasureEntry.builder()
+                    .measure(m.get("measure").asInt())
+                    .page(m.get("page").asInt())
+                    .system(m.hasNonNull("system") ? m.get("system").asInt() : null)
+                    .box(box)
+                    .flags(flags)
+                    .confidence(
+                            m.path("confidence").isNumber()
+                                    ? m.get("confidence").asDouble()
+                                    : null)
+                    .reasons(reasons)
+                    .build());
+        });
+        return entries;
+    }
+
+    /** result_data.measureCheck, null nếu không có. */
+    private OmrResultResponse.MeasureCheck measureCheck(JsonNode data) {
+        JsonNode check = data.path("measureCheck");
+        if (!check.isObject()) {
+            return null;
+        }
+        return OmrResultResponse.MeasureCheck.builder()
+                .imageMeasures(
+                        check.hasNonNull("imageMeasures")
+                                ? check.get("imageMeasures").asInt()
+                                : null)
+                .kernMeasures(
+                        check.hasNonNull("kernMeasures")
+                                ? check.get("kernMeasures").asInt()
+                                : null)
+                .flaggedMeasures(
+                        check.path("review").path("flagged").isNumber()
+                                ? check.get("review").get("flagged").asInt()
+                                : null)
+                .lowConfidenceMeasures(
+                        check.path("review").path("lowConfidence").isNumber()
+                                ? check.get("review").get("lowConfidence").asInt()
+                                : null)
+                .build();
+    }
+
+    /** Version của file hiện hành thuộc loại cho trước, hoặc null nếu chưa có. */
+    private Integer currentVersion(String scoreId, FileType type) {
+        return scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, type).stream()
+                .filter(f -> !Boolean.FALSE.equals(f.getIsCurrent()))
+                .map(f -> f.getVersion() == null ? 1 : f.getVersion())
+                .findFirst()
+                .orElse(null);
+    }
+
+    /** Id của file hiện hành (is_current không phải false) thuộc loại cho trước, hoặc null nếu chưa có. */
+    private String currentFileId(String scoreId, FileType type) {
+        return scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(scoreId, type).stream()
+                .filter(f -> !Boolean.FALSE.equals(f.getIsCurrent()))
+                .map(ScoreFile::getId)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private JsonNode parseJson(String json) {
+        if (json == null || json.isBlank()) {
+            return objectMapper.createObjectNode();
+        }
+        try {
+            return objectMapper.readTree(json);
+        } catch (JsonProcessingException e) {
+            return objectMapper.createObjectNode();
+        }
+    }
+
+    /** input_data của task OMR gần nhất của score, hoặc null nếu chưa có / không phải JSON. */
+    private JsonNode latestOmrInput(String scoreId) {
+        return aiTaskRepository.findByScoreIdOrderByCreatedAtDesc(scoreId).stream()
+                .filter(t -> t.getTaskType() == AiTaskType.OMR_CONVERSION && t.getInputData() != null)
+                .findFirst()
+                .map(t -> {
+                    try {
+                        return objectMapper.readTree(t.getInputData());
+                    } catch (JsonProcessingException e) {
+                        return null;
+                    }
+                })
+                .orElse(null);
+    }
+
+    // ---------------------------------------------------------------- validation
+
+    enum UploadKind {
+        PDF("pdf", "application/pdf"),
+        PNG("png", "image/png"),
+        JPEG("jpg", "image/jpeg");
+
+        final String extension;
+        final String contentType;
+
+        UploadKind(String extension, String contentType) {
+            this.extension = extension;
+            this.contentType = contentType;
+        }
+    }
+
+    private List<UploadKind> validate(List<MultipartFile> files) {
+        if (files == null || files.isEmpty()) {
+            throw new AppException(ScoreErrorCode.INVALID_UPLOAD_COMBINATION);
+        }
+
+        List<UploadKind> kinds = new ArrayList<>();
+        for (MultipartFile file : files) {
+            if (file == null || file.isEmpty()) {
+                throw new AppException(ScoreErrorCode.FILE_EMPTY);
+            }
+            UploadKind byExtension = kindFromExtension(file.getOriginalFilename());
+            UploadKind byContent = kindFromMagicBytes(file);
+            // Both the extension and the real file content must agree on an allowed type
+            if (byExtension == null || byContent == null || byExtension != byContent) {
+                throw new AppException(ScoreErrorCode.FILE_TYPE_NOT_SUPPORTED);
+            }
+            kinds.add(byContent);
+        }
+
+        long pdfCount = kinds.stream().filter(k -> k == UploadKind.PDF).count();
+        if (pdfCount > 0 && files.size() != 1) {
+            throw new AppException(ScoreErrorCode.INVALID_UPLOAD_COMBINATION);
+        }
+        if (pdfCount == 0 && files.size() > maxImages) {
+            throw new AppException(ScoreErrorCode.INVALID_UPLOAD_COMBINATION);
+        }
+        return kinds;
+    }
+
+    private UploadKind kindFromExtension(String fileName) {
+        String ext = StringUtils.getFilenameExtension(fileName);
+        if (ext == null) {
+            return null;
+        }
+        return switch (ext.toLowerCase(Locale.ROOT)) {
+            case "pdf" -> UploadKind.PDF;
+            case "png" -> UploadKind.PNG;
+            case "jpg", "jpeg" -> UploadKind.JPEG;
+            default -> null;
+        };
+    }
+
+    private UploadKind kindFromMagicBytes(MultipartFile file) {
+        byte[] head = new byte[8];
+        int read;
+        try (InputStream in = file.getInputStream()) {
+            read = in.readNBytes(head, 0, head.length);
+        } catch (IOException e) {
+            return null;
+        }
+        if (read >= 4 && head[0] == '%' && head[1] == 'P' && head[2] == 'D' && head[3] == 'F') {
+            return UploadKind.PDF;
+        }
+        if (read >= 8
+                && (head[0] & 0xFF) == 0x89
+                && head[1] == 'P'
+                && head[2] == 'N'
+                && head[3] == 'G'
+                && head[4] == 0x0D
+                && head[5] == 0x0A
+                && head[6] == 0x1A
+                && head[7] == 0x0A) {
+            return UploadKind.PNG;
+        }
+        if (read >= 3 && (head[0] & 0xFF) == 0xFF && (head[1] & 0xFF) == 0xD8 && (head[2] & 0xFF) == 0xFF) {
+            return UploadKind.JPEG;
+        }
+        return null;
+    }
+
+    /** Mở PDF bằng PDFBox: mở được không cần mật khẩu (cho phép PDF chỉ khóa quyền), 1..maxPdfPages trang. Trả về số trang. */
+    private int inspectPdf(MultipartFile file) {
+        int pages;
+        try (InputStream in = file.getInputStream();
+                PDDocument document = Loader.loadPDF(new RandomAccessReadBuffer(in))) {
+            // PDF chỉ khóa quyền (owner password) vẫn được PDFBox mở bằng mật khẩu rỗng và isEncrypted() = true,
+            // nhưng đọc/vẽ trang bình thường nên cho qua. PDF cần mật khẩu để mở sẽ ném InvalidPasswordException.
+            pages = document.getNumberOfPages();
+        } catch (InvalidPasswordException e) {
+            throw new AppException(ScoreErrorCode.PDF_ENCRYPTED);
+        } catch (IOException e) {
+            // PDF hỏng (không phải đặt mật khẩu): báo đúng là "không đọc được", không nói "đã mã hóa" (OMR-09)
+            log.warn("Cannot open uploaded PDF {}: {}", file.getOriginalFilename(), e.getMessage());
+            throw new AppException(ScoreErrorCode.PDF_UNREADABLE);
+        }
+        if (pages < 1 || pages > maxPdfPages) {
+            throw new AppException(ScoreErrorCode.PDF_TOO_MANY_PAGES);
+        }
+        return pages;
+    }
+
+    /**
+     * Đọc kích thước từng ảnh (chỉ đọc header, không giải mã cả ảnh): cạnh ngắn >= minImageSide và tổng điểm ảnh <=
+     * maxImagePixels. Trả về số trang (= số ảnh).
+     */
+    private int inspectImages(List<MultipartFile> files) {
+        for (MultipartFile file : files) {
+            long[] size = readImageSize(file);
+            if (size == null) {
+                throw new AppException(ScoreErrorCode.IMAGE_RESOLUTION_INVALID); // không đọc được ảnh
+            }
+            long width = size[0];
+            long height = size[1];
+            // Ba trường hợp ba mã riêng để người dùng biết phải sửa gì (OMR-09)
+            if (Math.min(width, height) < minImageSide) {
+                throw new AppException(ScoreErrorCode.IMAGE_TOO_SMALL);
+            }
+            if (width * height > maxImagePixels) {
+                throw new AppException(ScoreErrorCode.IMAGE_TOO_LARGE);
+            }
+        }
+        return files.size();
+    }
+
+    /** {width, height} hoặc null nếu không đọc được. */
+    private long[] readImageSize(MultipartFile file) {
+        try (InputStream in = file.getInputStream();
+                ImageInputStream iis = ImageIO.createImageInputStream(in)) {
+            if (iis == null) {
+                return null;
+            }
+            Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);
+            if (!readers.hasNext()) {
+                return null;
+            }
+            ImageReader reader = readers.next();
+            try {
+                reader.setInput(iis, true, true);
+                return new long[] {reader.getWidth(0), reader.getHeight(0)};
+            } finally {
+                reader.dispose();
+            }
+        } catch (IOException | RuntimeException e) {
+            log.warn("Cannot read uploaded image {}: {}", file.getOriginalFilename(), e.getMessage());
+            return null;
+        }
+    }
+
+    private OmrSourceType resolveSourceType(String sourceType, boolean isPdf) {
+        if (!StringUtils.hasText(sourceType)) {
+            return isPdf ? OmrSourceType.PDF_NATIVE : OmrSourceType.PHOTO;
+        }
+        try {
+            return OmrSourceType.valueOf(sourceType.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new AppException(ScoreErrorCode.INVALID_SOURCE_TYPE);
+        }
+    }
+
+    private String resolveComposer(String composer) {
+        if (!StringUtils.hasText(composer)) {
+            return null;
+        }
+        String trimmed = composer.trim();
+        if (trimmed.length() > MAX_COMPOSER_LENGTH) {
+            throw new AppException(ScoreErrorCode.SCORE_COMPOSER_INVALID);
+        }
+        return trimmed;
+    }
+
+    /** input_data của task OMR, ví dụ {"sourceType":"PHOTO","preprocess":true}. */
+    /**
+     * {@code pagesCharged}: số trang task này tính vào hạn mức tháng (0 nếu không tính, ví dụ admin chạy lại). Số đã dùng
+     * được tính lại từ các task này; task lỗi/hủy tự không được tính.
+     */
+    private String buildInputData(OmrSourceType sourceType, boolean preprocess, int pagesCharged) {
+        return buildInputData(sourceType, preprocess, pagesCharged, null);
+    }
+
+    private String buildInputData(OmrSourceType sourceType, boolean preprocess, int pagesCharged, String fingerprint) {
+        Map<String, Object> input = new LinkedHashMap<>();
+        input.put("sourceType", sourceType.name());
+        input.put("preprocess", preprocess);
+        if (pagesCharged > 0) {
+            input.put(EntitlementService.OMR_PAGES_CHARGED_KEY, pagesCharged);
+        }
+        if (fingerprint != null) {
+            input.put(SOURCE_SHA256_KEY, fingerprint);
+        }
+        try {
+            return objectMapper.writeValueAsString(input);
+        } catch (JsonProcessingException e) {
+            throw new AppException(AccountErrorCode.UNCATEGORIZED_EXCEPTION);
+        }
+    }
+
+    // ---------------------------------------------------------------- helpers
+
+    /** SHA-256 của nội dung các file theo thứ tự gửi (mỗi file kết thúc bằng một byte 0 để phân ranh). */
+    static String fingerprint(List<MultipartFile> files) {
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("JVM thiếu SHA-256", e);
+        }
+        byte[] buffer = new byte[64 * 1024];
+        for (MultipartFile file : files) {
+            try (InputStream in = file.getInputStream()) {
+                int read;
+                while ((read = in.read(buffer)) != -1) {
+                    digest.update(buffer, 0, read);
+                }
+            } catch (IOException e) {
+                throw new AppException(ScoreErrorCode.FILE_STORAGE_ERROR);
+            }
+            digest.update((byte) 0);
+        }
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
+    /**
+     * Task OMR còn đang chờ/chạy của chính người này, tạo trong {@link #DUPLICATE_WINDOW_SECONDS} giây qua từ đúng các
+     * file này; null nếu không có. Trả nguyên bản nhạc và task cũ, không tạo mới và không trừ thêm hạn mức.
+     */
+    private OmrUploadResponse findDuplicate(Member member, String fingerprint) {
+        LocalDateTime since = LocalDateTime.now().minusSeconds(DUPLICATE_WINDOW_SECONDS);
+        List<AiTask> recent = aiTaskRepository.findByMemberIdAndTaskTypeAndStatusInAndCreatedAtAfter(
+                member.getId(), AiTaskType.OMR_CONVERSION, ACTIVE_STATUSES, since);
+        for (AiTask task : recent) {
+            Score score = task.getScore();
+            String previous =
+                    parseJson(task.getInputData()).path(SOURCE_SHA256_KEY).asText();
+            if (score == null || !fingerprint.equals(previous)) {
+                continue;
+            }
+            List<ScoreFile> originals = new ArrayList<>();
+            for (FileType type : List.of(FileType.ORIGINAL_PDF, FileType.ORIGINAL_IMAGE)) {
+                originals.addAll(scoreFileRepository.findByScoreIdAndFileTypeOrderByPageNumberAsc(score.getId(), type));
+            }
+            log.info("Upload OMR trùng của {}: trả lại task {}", member.getId(), task.getId());
+            return OmrUploadResponse.builder()
+                    .scoreId(score.getId())
+                    .title(score.getTitle())
+                    .processingStatus(score.getProcessingStatus())
+                    .task(aiTaskMapper.toResponse(task))
+                    .files(scoreFileMapper.toResponses(originals))
+                    .build();
+        }
+        return null;
+    }
+
+    /** Số task OMR chạy cùng lúc tối đa theo gói của người dùng (null = không giới hạn). */
+    private void checkConcurrentTasks(Member member) {
+        Integer limit = entitlementService.limitsOf(member.getId()).omrConcurrent();
+        if (limit == null) {
+            return;
+        }
+        long activeTasks = aiTaskRepository.countByMemberIdAndTaskTypeAndStatusIn(
+                member.getId(), AiTaskType.OMR_CONVERSION, ACTIVE_STATUSES);
+        if (activeTasks >= limit) {
+            throw new AppException(ScoreErrorCode.TASK_LIMIT_EXCEEDED);
+        }
+    }
+
+    /** Tên bài (T37): tên người dùng gõ (đã kiểm ≤ 80 ký tự), không có thì lấy tên file; tên file > 80 ký tự → "Untitled". */
+    private String resolveTitle(String title, MultipartFile firstFile) {
+        return StringUtils.hasText(title) ? title.trim() : ScoreTitles.fromFileName(firstFile.getOriginalFilename());
+    }
+
+    private String cleanFileName(String originalFileName) {
+        if (originalFileName == null) {
+            return "";
+        }
+        String name = StringUtils.getFilename(StringUtils.cleanPath(originalFileName));
+        if (name == null) {
+            return "";
+        }
+        return name.length() > MAX_FILE_NAME_LENGTH ? name.substring(name.length() - MAX_FILE_NAME_LENGTH) : name;
+    }
+}

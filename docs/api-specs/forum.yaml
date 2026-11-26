@@ -1,0 +1,885 @@
+# ============================================================
+# Forum — OpenAPI 3.0 Specification
+# ============================================================
+openapi: 3.0.3
+info:
+  title: Forum API
+  description: |
+    Diễn đàn: chuyên mục, chủ đề, trả lời, bình chọn, câu trả lời hay nhất, theo dõi; bản đọc cho khách.
+
+    Mọi phản hồi JSON bọc trong ApiResponse {code, message, result}; code = 200 khi thành công,
+    lỗi trả mã nghiệp vụ (ví dụ 1001 chưa đăng nhập, 1002 không có quyền) kèm HTTP status tương ứng.
+    Sinh từ controller của music-be (springdoc /v3/api-docs) rồi chia theo nhóm chức năng.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: music-be (Spring Boot) khi chạy local
+tags:
+  - name: Forum
+    description: "Diễn đàn: chuyên mục, chủ đề, trả lời, bình chọn (mục 5.5)"
+  - name: Public forum
+    description: Đọc diễn đàn không cần đăng nhập
+
+paths:
+  # ─── Forum ───────────────────────────────────
+  /api/forum/categories:
+    get:
+      tags: [Forum]
+      summary: Chuyên mục diễn đàn kèm số chủ đề
+      operationId: categoriesForum
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListForumCategoryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/forum/posts/{postId}:
+    put:
+      tags: [Forum]
+      summary: Sửa trả lời của mình
+      operationId: updatePost
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForumPostRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseForumPostResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Forum]
+      summary: Xóa trả lời của mình
+      operationId: deletePost
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/forum/posts/{postId}/accept:
+    post:
+      tags: [Forum]
+      summary: "Tác giả chủ đề đánh dấu (hoặc bỏ đánh dấu) một trả lời là hay nhất; tác giả trả lời nhận điểm FORUM_ANSWER_ACCEPTED. Lỗi: 4106 không phải tác giả chủ đề, 4109 trả lời của chính mình"
+      operationId: acceptForumPosts
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseForumThreadResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/forum/posts/{postId}/vote:
+    post:
+      tags: [Forum]
+      summary: Bật / tắt bình chọn cho một trả lời (4110 nếu là trả lời của chính mình)
+      operationId: votePost
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseForumVoteResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/forum/threads:
+    get:
+      tags: [Forum]
+      summary: Danh sách chủ đề (lọc categoryId, keyword trong tiêu đề, unanswered, mine; sắp xếp LATEST theo hoạt động gần nhất hoặc TOP theo lượt bình chọn)
+      operationId: threads
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: categoryId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            default: LATEST
+            enum:
+              - LATEST
+              - TOP
+        - name: unanswered
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: mine
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseForumThreadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Forum]
+      summary: "Tạo chủ đề (tiêu đề 3-150 ký tự, nội dung Markdown 1-10000 ký tự, scoreId công khai tùy chọn). Lỗi: 4104 nội dung không hợp lệ, 4105 bản nhạc không công khai, 4107 giới hạn tài khoản mới"
+      operationId: createThread
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForumThreadRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseForumThreadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/forum/threads/{threadId}:
+    get:
+      tags: [Forum]
+      summary: Chủ đề kèm các trả lời; câu trả lời được chấp nhận đứng đầu
+      operationId: thread
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+        - name: focusPostId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseForumThreadDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Forum]
+      summary: Sửa chủ đề của mình
+      operationId: updateThread
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForumThreadRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseForumThreadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Forum]
+      summary: Xóa chủ đề của mình khi chưa có người khác trả lời (4108)
+      operationId: deleteThread
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/forum/threads/{threadId}/posts:
+    post:
+      tags: [Forum]
+      summary: Trả lời chủ đề; tác giả chủ đề và người theo dõi được thông báo
+      operationId: reply
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForumPostRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseForumPostResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/forum/threads/{threadId}/subscription:
+    put:
+      tags: [Forum]
+      summary: Theo dõi hoặc bỏ theo dõi chủ đề để nhận thông báo trả lời
+      operationId: subscribe
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForumSubscriptionRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/forum/threads/{threadId}/vote:
+    post:
+      tags: [Forum]
+      summary: Bật / tắt bình chọn cho chủ đề (4110 nếu là chủ đề của chính mình)
+      operationId: voteThread
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseForumVoteResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Public forum ────────────────────────────
+  /api/public/forum/categories:
+    get:
+      tags: [Public forum]
+      summary: Chuyên mục diễn đàn kèm số chủ đề
+      operationId: categoriesPublicForum
+      security: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListForumCategoryResponse'
+  /api/public/forum/threads:
+    get:
+      tags: [Public forum]
+      summary: Danh sách chủ đề cho khách (lọc categoryId, keyword, unanswered; sắp xếp LATEST hoặc TOP)
+      operationId: threadsPublicForum
+      security: []
+      parameters:
+        - name: categoryId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            default: LATEST
+            enum:
+              - LATEST
+              - TOP
+        - name: unanswered
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseForumThreadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/public/forum/threads/{threadId}:
+    get:
+      tags: [Public forum]
+      summary: Chủ đề kèm trả lời cho khách; câu trả lời được chấp nhận đứng đầu
+      operationId: threadPublicForum
+      security: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+        - name: focusPostId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseForumThreadDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Access token trả về khi đăng nhập (header Authorization: Bearer ...)"
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+      description: Web app gửi access token qua cookie HttpOnly access_token
+    internalKey:
+      type: apiKey
+      in: header
+      name: X-Internal-Key
+      description: Khóa bí mật dùng chung với music-ai (biến môi trường AI_INTERNAL_KEY); chỉ nhận từ mạng nội bộ
+
+  responses:
+    BadRequest:
+      description: Dữ liệu không hợp lệ (code nghiệp vụ trong body, ví dụ 1009)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Unauthorized:
+      description: Chưa đăng nhập, token hết hạn (1001) hoặc sai X-Internal-Key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Forbidden:
+      description: Không có quyền thực hiện (1002)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    NotFound:
+      description: Không tìm thấy tài nguyên
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+
+  schemas:
+    ForumAuthorResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        fullName:
+          type: string
+        avatarUrl:
+          type: string
+    ForumCategoryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        threadCount:
+          type: integer
+          format: int64
+    ForumPostRequest:
+      type: object
+      properties:
+        body:
+          type: string
+        replyToPostId:
+          type: string
+    ForumPostResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        threadId:
+          type: string
+        body:
+          type: string
+        author:
+          $ref: '#/components/schemas/ForumAuthorResponse'
+        voteCount:
+          type: integer
+          format: int64
+        votedByMe:
+          type: boolean
+        mine:
+          type: boolean
+        accepted:
+          type: boolean
+        replyTo:
+          $ref: '#/components/schemas/ReplyRef'
+        createdAt:
+          type: string
+          format: date-time
+        editedAt:
+          type: string
+          format: date-time
+    ForumSubscriptionRequest:
+      type: object
+      properties:
+        subscribed:
+          type: boolean
+    ForumThreadDetailResponse:
+      type: object
+      properties:
+        thread:
+          $ref: '#/components/schemas/ForumThreadResponse'
+        posts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ForumPostResponse'
+        postPage:
+          type: integer
+          format: int32
+        postSize:
+          type: integer
+          format: int32
+        totalPosts:
+          type: integer
+          format: int64
+        totalPostPages:
+          type: integer
+          format: int32
+    ForumThreadRequest:
+      type: object
+      properties:
+        categoryId:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+        scoreId:
+          type: string
+    ForumThreadResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        categoryId:
+          type: string
+        categoryName:
+          type: string
+        categorySlug:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+        excerpt:
+          type: string
+        author:
+          $ref: '#/components/schemas/ForumAuthorResponse'
+        score:
+          $ref: '#/components/schemas/ScoreRef'
+        replyCount:
+          type: integer
+          format: int64
+        voteCount:
+          type: integer
+          format: int64
+        votedByMe:
+          type: boolean
+        mine:
+          type: boolean
+        answered:
+          type: boolean
+        pinned:
+          type: boolean
+        locked:
+          type: boolean
+        subscribed:
+          type: boolean
+        acceptedPostId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        editedAt:
+          type: string
+          format: date-time
+        lastActivityAt:
+          type: string
+          format: date-time
+    ForumVoteResponse:
+      type: object
+      properties:
+        voted:
+          type: boolean
+        voteCount:
+          type: integer
+          format: int64
+    PageResponseForumThreadResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ForumThreadResponse'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    ReplyRef:
+      type: object
+      properties:
+        postId:
+          type: string
+        authorName:
+          type: string
+        excerpt:
+          type: string
+    ScoreRef:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+
+    # ── Wrapped Responses ──
+    ApiResponseForumPostResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ForumPostResponse'
+    ApiResponseForumThreadDetailResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ForumThreadDetailResponse'
+    ApiResponseForumThreadResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ForumThreadResponse'
+    ApiResponseForumVoteResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ForumVoteResponse'
+    ApiResponseListForumCategoryResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/ForumCategoryResponse'
+    ApiResponsePageResponseForumThreadResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PageResponseForumThreadResponse'
+    ApiResponseVoid:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result: {}
+    ApiResponseError:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 1002
+        message:
+          type: string
+          example: You do not have permission

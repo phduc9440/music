@@ -1,0 +1,55 @@
+{
+  "updated": "Profile updated",
+  "updateFailed": "Couldn't update your profile",
+  "avatarUpdated": "Avatar updated",
+  "avatarFailed": "Couldn't upload the image",
+  "avatarRemoved": "Avatar removed",
+  "avatarRemoveFailed": "Couldn't remove the image",
+  "loadFailed": "Couldn't load your profile",
+  "subtitle": "Personal details shown to the people you share scores with.",
+  "changeAvatar": "Change photo",
+  "removeAvatar": "Remove photo",
+  "avatarHint": "JPG or PNG, up to 2MB",
+  "personal": "Personal details",
+  "phone": "Phone number",
+  "address": "Address",
+  "signInWith": "Signed in with",
+  "emailPassword": "Email / password",
+  "role": "Role",
+  "password": {
+    "mismatch": "The new passwords don't match",
+    "changed": "Password changed. Your other devices have been signed out.",
+    "failed": "Couldn't change the password",
+    "current": "Current password",
+    "new": "New password (at least 8 characters)",
+    "confirm": "Repeat the new password"
+  },
+  "referral": {
+    "title": "Invite friends",
+    "intro": "Share your code or link. When a friend signs up with it and digitizes their first score, you both get 50 XP and 50 Notes (up to 10 friends a month).",
+    "code": "Your code",
+    "invited": "Signed up with your code",
+    "rewarded": "Digitized a first score (rewarded)",
+    "copyCode": "Copy code",
+    "copyLink": "Copy invite link",
+    "copied": "Copied",
+    "copyFailed": "Could not copy, please select and copy it manually",
+    "loadFailed": "Could not load your referral code"
+  },
+  "points": {
+    "title": "Rewards",
+    "xp": "XP",
+    "notes": "Notes",
+    "empty": "No points yet. Publish a score, get a suggestion accepted, answer on the forum or invite friends to earn points.",
+    "loadFailed": "Could not load your rewards",
+    "reasons": {
+      "SCORE_PUBLISHED": "Score published",
+      "SCORE_OFFICIAL": "Score added to the official library",
+      "REFERRAL_DIGITIZED": "A friend you invited digitized their first score",
+      "REFERRAL_WELCOME": "Welcome bonus for joining with an invite code",
+      "FORUM_ANSWER_ACCEPTED": "Answer accepted",
+      "SUGGESTION_ACCEPTED": "Suggestion accepted",
+      "FIRST_DIGITIZED": "First score digitized"
+    }
+  }
+}

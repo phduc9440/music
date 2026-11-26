@@ -4,11 +4,12 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
 
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import com.ptit.music_be.dto.enums.FileType;
+import com.ptit.music_be.dto.enums.score.FileType;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -54,6 +55,26 @@ public class ScoreFile {
     /** Page order for multi-image uploads (1-based), null when not applicable. */
     @Column(name = "page_number")
     Integer pageNumber;
+
+    /** Phiên bản của file. MUSICXML tăng mỗi lần lưu; file sinh ra (MIDI, MP3...) ghi version MusicXML nguồn. */
+    @Column(name = "version")
+    @ColumnDefault("1")
+    @Builder.Default
+    Integer version = 1;
+
+    /** Chỉ một bản "hiện hành" cho mỗi (score, file_type); các bản cũ là false. */
+    @Column(name = "is_current")
+    @ColumnDefault("true")
+    @Builder.Default
+    Boolean isCurrent = true;
+
+    /** Id của ai_task đã sinh ra file này (không đặt FK để xóa task không ảnh hưởng file). */
+    @Column(name = "source_task_id", length = 36)
+    String sourceTaskId;
+
+    /** Thông tin thêm dạng JSON, ví dụ {"transpose":2,"tempoPercent":100}. */
+    @Column(name = "meta", columnDefinition = "JSON")
+    String meta;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

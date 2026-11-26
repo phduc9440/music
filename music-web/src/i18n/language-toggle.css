@@ -1,0 +1,10 @@
+/* Nút đổi ngôn ngữ dùng chung kiểu với nút đổi giao diện (theme-toggle.css), chỉ rộng hơn để có mã VI / EN. */
+.language-toggle__trigger {
+  width: auto;
+  gap: 0.3rem;
+  padding: 0 0.6rem;
+  font: inherit;
+  font-size: var(--ui-text-sm);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}

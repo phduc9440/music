@@ -1,0 +1,537 @@
+{
+  "steps": {
+    "later": "Coming in a later version",
+    "skipped": "Not needed for images",
+    "SPLIT_PDF": "Split PDF pages",
+    "PREPROCESS": "Image preprocessing",
+    "INFERENCE": "Symbol recognition",
+    "MERGE": "Merge pages",
+    "EXPORT": "Export MusicXML and MIDI",
+    "QUEUED": "Queued",
+    "BUSY": "Waiting for the service"
+  },
+  "errors": {
+    "PAGE_UNREADABLE": {
+      "title": "Couldn't read the sheet",
+      "hint": "The image or PDF is damaged, too blurry or can't be opened. Take or scan it again more clearly and upload it."
+    },
+    "NO_STAFF_DETECTED": {
+      "title": "No staff lines found",
+      "hint": "The system didn't see any staff lines. Photograph the page up close, well lit and straight, then upload it again."
+    },
+    "TASK_TIMEOUT": {
+      "title": "Processing timed out",
+      "hint": "The system got no response within the allowed time. You can try again."
+    },
+    "AI_SERVICE_UNAVAILABLE": {
+      "title": "Digitizing service unavailable",
+      "hint": "Couldn't reach the image-processing service. Please try again in a few minutes."
+    },
+    "CANCELLED_BY_USER": {
+      "title": "You cancelled the task",
+      "hint": "You can run it again on the uploaded files or upload other files."
+    },
+    "JOB_REJECTED": {
+      "title": "Request rejected",
+      "hint": "The processing service doesn't accept this data. Try uploading a different file."
+    },
+    "ORIGINAL_FILE_MISSING": {
+      "title": "Original file is gone",
+      "hint": "The original file is no longer on the system, so it can't be run again. Please upload the file again."
+    },
+    "RECOGNITION_EMPTY": {
+      "title": "No notes were recognized",
+      "hint": "The system couldn't read any notes from the pages. Use a clear, straight, well-lit image or a higher-quality PDF."
+    },
+    "MERGE_SPINE_MISMATCH": {
+      "title": "The pages don't match",
+      "hint": "The pages have different numbers of staves, so they can't be merged into one score. Check the order and content of the pages."
+    },
+    "KERN_PARSE_ERROR": {
+      "title": "The recognition result has a syntax error",
+      "hint": "The merged kern text can't be read. You can look at the kern text to debug it, or try again."
+    },
+    "EXPORT_ERROR": {
+      "title": "Couldn't export MusicXML",
+      "hint": "Recognition finished but couldn't be converted to MusicXML or MIDI. You can run recognition again or use a clearer image."
+    },
+    "MODEL_NOT_LOADED": {
+      "title": "The recognition model isn't ready",
+      "hint": "The service hasn't finished loading the Transcoda model. Wait a few minutes and try again."
+    },
+    "INTERNAL_ERROR": {
+      "title": "Something went wrong while processing",
+      "hint": "An unexpected error occurred. You can try again."
+    },
+    "GENERIC": {
+      "title": "Digitizing failed",
+      "hint": "An error occurred while processing. You can try again or upload another file."
+    },
+    "PDF_UNREADABLE": {
+      "title": "Couldn't read the PDF",
+      "hint": "The PDF file may be damaged. Export it again or photograph each page and upload the images."
+    }
+  },
+  "measureFlags": {
+    "DURATION": "Total duration doesn't match the time signature",
+    "COUNT_MISMATCH": "This system has a different number of measures than the image; measures may be missing or extra",
+    "RANGE": "A vocal note is outside the usual range; it may be an octave off",
+    "LEAP": "Unusual melodic leap; a note may be an octave or a line off",
+    "ACCIDENTAL": "Unusual accidental that appears only once; it may be a smudge or text",
+    "UNSTABLE": "Reading this measure again gave different results",
+    "AI_DOUBT": "The AI check thinks this measure was read incorrectly",
+    "AUTO_FIXED": "This measure was corrected automatically, compare it with the original"
+  },
+  "dropzone": {
+    "title": "Drop your score here",
+    "hint": "One PDF (up to {max} pages) or 1–{max} PNG/JPG images in page order, up to 50MB each"
+  },
+  "chooseFile": "Choose file",
+  "pageStrip": {
+    "compare": "View and compare page {page}",
+    "alt": "Page {page} after processing"
+  },
+  "file": {
+    "reading": "Reading...",
+    "image": "Image",
+    "moveUp": "Move to the previous page",
+    "moveDown": "Move to the next page",
+    "rotate": "Rotate 90 degrees",
+    "remove": "Remove file"
+  },
+  "inspect": {
+    "pdfPassword": "The PDF is password-protected",
+    "pdfUnreadable": "Couldn't open the PDF (damaged file?)",
+    "pdfEncrypted": "The PDF is encrypted, remove the encryption and upload it again",
+    "pdfPages": "The PDF has {pages} pages, the limit is {max}",
+    "imageUnreadable": "Couldn't read the image (damaged file?)",
+    "imageSmall": "Image too small: the short side is {side}px, it needs to be ≥ {min}px",
+    "imageLarge": "Image too large: {mp} megapixels, the limit is {max} megapixels",
+    "fileUnreadable": "Couldn't read the file"
+  },
+  "rotateFailed": "Couldn't rotate the image, remove the rotation and try again",
+  "uploaded": "Uploaded, the score is waiting to be digitized",
+  "title": "Upload a score",
+  "subtitle": "The system will digitize the score into MusicXML and MIDI",
+  "alt": {
+    "heading": "Or create a score another way",
+    "importTitle": "Import a MusicXML / MIDI file",
+    "blankTitle": "Start from a blank score",
+    "omrTitle": "Digitize from a PDF / image"
+  },
+  "startBlank": "Start from a blank score",
+  "images_one": "{count} image",
+  "images_other": "{count} images",
+  "onePdf": "1 PDF file",
+  "pages_one": "{count} page",
+  "pages_other": "{count} pages",
+  "reorderHint": "Drag the images to change the page order",
+  "fieldTitle": "Title",
+  "titlePlaceholder": "Defaults to the file name",
+  "fieldComposer": "Composer",
+  "composerPlaceholder": "For example: Johann Sebastian Bach",
+  "sourceType": "Source type",
+  "progressLabel": "Upload progress",
+  "uploading": "Uploading... {progress}%",
+  "preparing": "Preparing images...",
+  "inspecting": "Checking the files...",
+  "uploadingShort": "Uploading...",
+  "start": "Start digitizing",
+  "import": {
+    "unsupported": "Only .musicxml, .xml, .mxl, .mid and .midi are supported",
+    "empty": "The file is empty (0 bytes)",
+    "tooLarge": "The file is too large (up to {max}MB)",
+    "done": "Score imported",
+    "title": "Import a MusicXML / MIDI file",
+    "subtitle": "Use this when you already have a digital file and don't need to digitize a photo or PDF",
+    "dropTitle": "Drop your file here",
+    "dropHint": "Up to {max} .musicxml, .xml, .mxl or .mid, .midi files (each ≤ 50MB)",
+    "removeFile": "Remove file",
+    "titlePlaceholder": "Defaults to the file's title",
+    "composerPlaceholder": "Defaults to the MusicXML file's composer",
+    "importing": "Importing...",
+    "start": "Import score",
+    "filesCount": "{count}/{max} files selected",
+    "tooMany": "You can import at most {max} files at once; the extra files were dropped",
+    "batchTitleHint": "Several files: each score takes its title from its own file",
+    "playlist": "Add to playlist",
+    "playlistNone": "Don't add",
+    "team": "Add to team and show",
+    "teamNone": "Don't add",
+    "show": "Show",
+    "showNone": "Add to the team only, not to a show",
+    "showHint": "Scores are added to the team first, then become items of the show.",
+    "showAdded": "Added {count} scores to the show “{name}”",
+    "showAddFailed": "Could not add {count} scores to the show",
+    "toShow": "Open show",
+    "inShow": "In the show",
+    "statusWaiting": "Waiting",
+    "statusUploading": "Importing {progress}%",
+    "statusDone": "Imported",
+    "statusFailed": "Failed",
+    "inPlaylist": "In playlist",
+    "startMany": "Import {count} files",
+    "retryFailed": "Retry {count} failed files",
+    "batchDone": "Imported {done}/{total} files",
+    "batchFailed": "{failed} files failed; the rest were imported",
+    "playlistAdded": "Added {count} scores to playlist \"{name}\"",
+    "playlistAddFailed": "Could not add {count} scores to the playlist",
+    "toLibrary": "View library",
+    "toPlaylist": "Open playlist",
+    "openScore": "Open score",
+    "removeAll": "Remove all"
+  },
+  "processing": {
+    "cancelled": "Task cancelled",
+    "cantCancel": "The task has already finished, so it can't be cancelled",
+    "cancelFailed": "Couldn't cancel the task",
+    "resent": "Sent again for digitizing",
+    "backToLibrary": "Library",
+    "loadFailed": "Couldn't load the progress",
+    "toLibrary": "Back to library",
+    "noTask": "This score has no digitizing task",
+    "noTaskHint": "You can view the score details or upload a new file.",
+    "sourcePdf": "PDF file",
+    "sourceImage": "Photo or scan",
+    "headline": {
+      "default": "Processing the image...",
+      "completed": "Digitizing finished",
+      "cancelled": "Cancelled",
+      "failed": "Digitizing failed",
+      "queued": "Waiting in the queue...",
+      "SPLIT_PDF": "Splitting the PDF pages...",
+      "PREPROCESS": "Cleaning up and straightening the images...",
+      "INFERENCE": "Recognizing the music symbols...",
+      "MERGE": "Merging the pages...",
+      "EXPORT": "Exporting MusicXML and MIDI..."
+    },
+    "pagesDone": "Processed {done}/{total} pages",
+    "progress": "Digitizing progress",
+    "stoppedEarly": "The process stopped early as configured. Press \"View result\" to see what is available.",
+    "finished": "Recognized and exported MusicXML and MIDI. Press \"View result\" to see the score.",
+    "moreWarnings_one": "And {count} more warning, see the full list on the result page.",
+    "moreWarnings_other": "And {count} more warnings, see the full list on the result page.",
+    "detail": "Details: {detail}",
+    "uploadOther": "Upload another file",
+    "viewResult": "View result",
+    "pages": "Pages",
+    "pagesHint": "Click a page to compare it with the original image.",
+    "cancelTitle": "Cancel digitizing?",
+    "cancelText": "The running task will stop. You can press \"Try again\" afterwards.",
+    "keepGoing": "Keep processing",
+    "cancelling": "Cancelling...",
+    "cancelTask": "Cancel task",
+    "queue": {
+      "position": "Position {position} in the queue · wait {wait}",
+      "busy": "The system is busy; your score will be sent again automatically when there's room.",
+      "underMinute": "under a minute",
+      "minutes": "about {count} min"
+    },
+    "leaveHint": "You can leave this page: when digitizing finishes or fails, the notification bell will tell you and link to the result.",
+    "forbidden": "You can't view this progress",
+    "forbiddenHint": "Only people who can edit the score can see its digitizing progress. Ask the owner for access.",
+    "cancelForbidden": "Only the person who started it or the score owner can cancel this task"
+  },
+  "compare": {
+    "title": "Compare page {page}",
+    "loadFailed": "Couldn't load this page image",
+    "loading": "Loading the image...",
+    "original": "Original",
+    "processed": "After processing",
+    "originalAlt": "Page {page} original image",
+    "drag": "Drag to compare the original and the processed image",
+    "noOriginal": "The original image is no longer available, showing the processed one."
+  },
+  "review": {
+    "midiFailed": "Couldn't create or download the MIDI file",
+    "xmlFailed": "Couldn't download the MusicXML file",
+    "kernCopied": "Kern text copied",
+    "kernCopyFailed": "Couldn't copy, select the text and copy it manually",
+    "redoSent": "Recognition requested again",
+    "noResult": "No digitizing result yet",
+    "loadFailed": "Couldn't load the result",
+    "noResultHint": "The score doesn't exist, you don't have permission to view it, or it hasn't been digitized.",
+    "tabs": {
+      "score": "Score",
+      "check": "Measures to check",
+      "warnings": "Warnings",
+      "fixes": "Auto-fixed"
+    },
+    "summary": {
+      "pages": "Pages",
+      "measures": "Measures",
+      "imageMeasures": "Measures counted on the image",
+      "tempo": "Tempo"
+    },
+    "subtitle": "Digitizing result · check it before editing",
+    "details": "Score details",
+    "pageImages": "Page images",
+    "legend": "Legend for the boxes on the image",
+    "legendFlag": "Suspicious measure",
+    "legendActive": "Selected measure",
+    "noPages": "No page images yet.",
+    "page": "Page {page}",
+    "flaggedCount_one": "{count} measure to check",
+    "flaggedCount_other": "{count} measures to check",
+    "resultLabel": "Digitizing result",
+    "selected": "Measure {measure} · Page {page}",
+    "system": "system {system}",
+    "deselect": "Deselect",
+    "noXml": "This score has no MusicXML yet, run recognition again.",
+    "xmlLoadFailed": "Couldn't load the MusicXML",
+    "noFlags": "No suspicious measures.",
+    "noMap": "This result has no measure map yet, run recognition again to use this feature.",
+    "noWarnings": "No warnings. All measures match the time signature.",
+    "noKern": "This score has no kern file yet.",
+    "kernLoadFailed": "Couldn't load the kern text",
+    "copy": "Copy",
+    "downloadKrn": "Download .krn",
+    "actions": "Actions for the result",
+    "accept": "Accept and edit",
+    "listen": "Listen",
+    "downloadXml": "Download MusicXML",
+    "creatingMidi": "Creating MIDI...",
+    "downloadMidi": "Download MIDI",
+    "redo": "Recognize again",
+    "hint": "Click \"Accept and edit\" to open the editor with the To check panel and the original image of each measure.",
+    "redoPreprocess": "Clean up and straighten the image before recognizing",
+    "later": "Not now",
+    "measure": "Measure {measure}",
+    "confidence": "Confidence {value}%",
+    "fixesIntro": "Places the digitizer corrected automatically. These measures are also in Measures to check.",
+    "advanced": "Advanced: **kern text (for debugging)",
+    "moreActions": "More actions",
+    "source": {
+      "label": "Content of the original not recognized",
+      "textAboveTitle": "The original has text or chords above the staff that weren't recognized.",
+      "textAbove": "Found on page {pages}. Printed chord names are not in the digital score: add them in the editor or use Suggest chords.",
+      "tempoTitle": "Tempo not read.",
+      "tempo": "The score uses the default tempo; enter the tempo printed on the original."
+    },
+    "tempo": {
+      "label": "Tempo (♩ =)",
+      "save": "Save tempo",
+      "saving": "Saving...",
+      "saved": "Tempo set to {bpm} BPM",
+      "invalid": "Tempo must be between {min} and {max}"
+    },
+    "autoFixedNote": "Fixed automatically"
+  },
+  "failed": "Upload failed, please try again",
+  "saveFailed": "Couldn't save, please try again",
+  "validate": {
+    "unsupported": "Only PDF, PNG, JPG and JPEG are supported",
+    "pdfAlone": "A PDF has to be uploaded on its own, not mixed with other files",
+    "maxImages": "Up to {max} images at a time",
+    "totalSize": "The total size exceeds 200MB"
+  },
+  "errorByCode": {
+    "2003": "One of the files is empty (0 bytes)",
+    "2004": "Invalid file format: only PDF, PNG, JPG and JPEG are accepted and the content must match the format",
+    "2005": "File too large: up to 50MB per file and 200MB per upload",
+    "2006": "Upload one PDF, or 1–20 images (don't mix PDFs with images)",
+    "2008": "The PDF is password-protected and can't be opened; remove the password and upload again",
+    "2009": "The PDF must have between 1 and {pages} pages",
+    "2010": "The image can't be read; the file may be damaged",
+    "2011": "Invalid source type",
+    "2018": "The composer name can be up to 255 characters",
+    "2202": "You already have 3 scores waiting to be digitized, wait for one to finish before uploading more",
+    "2031": "The PDF can't be read; the file may be damaged",
+    "2032": "Image too small: the short side must be at least {side}px; take the photo closer or use the original",
+    "2033": "Image too large: at most 40 megapixels; resize it and upload again"
+  },
+  "saveByCode": {
+    "1002": "You don't have permission to edit this score",
+    "2001": "This score no longer exists",
+    "2005": "The score is too large to save (5MB max), split it up or remove some parts",
+    "2013": "The score content is invalid. Reload the page; your draft is kept",
+    "2201": "This score is being recognized again, wait for it to finish and then save"
+  },
+  "create": {
+    "notes": {
+      "C": "C",
+      "D": "D",
+      "E": "E",
+      "F": "F",
+      "G": "G",
+      "A": "A",
+      "B": "B"
+    },
+    "sharp": "sharp",
+    "flat": "flat",
+    "major": "major",
+    "minor": "minor",
+    "noAccidentals": "no accidentals",
+    "preset": {
+      "PIANO": {
+        "name": "Piano",
+        "hint": "2 staves, treble and bass clefs"
+      },
+      "VOICE_PIANO": {
+        "name": "Voice + Piano",
+        "hint": "A vocal staff plus a two-staff piano"
+      },
+      "GUITAR": {
+        "name": "Guitar",
+        "hint": "1 staff, treble clef"
+      },
+      "SATB": {
+        "name": "SATB choir",
+        "hint": "Soprano, Alto, Tenor, Bass"
+      }
+    },
+    "blank": {
+      "title": "Blank score",
+      "subtitle": "Pick the instruments, key, time and number of measures, then write music right in the editor.",
+      "preset": "Instrument template",
+      "titlePlaceholder": "e.g. Draft no. 1",
+      "key": "Key",
+      "mode": "Mode",
+      "time": "Time signature",
+      "beats": "Beats per measure",
+      "beatType": "Note value of one beat",
+      "tempo": "Tempo (BPM)",
+      "measures": "Number of measures",
+      "range": "Enter a whole number from {min} to {max}",
+      "back": "Back",
+      "submit": "Create score",
+      "creating": "Creating...",
+      "failed": "Couldn't create the score"
+    }
+  },
+  "guide": {
+    "formats": "Supported formats",
+    "scan": {
+      "howLead": "Three steps from paper sheet to practice session.",
+      "tipsTitle": "Tips for more accurate digitizing",
+      "tipsLead": "The clearer the photo, the less you have to fix.",
+      "tips": {
+        "light": {
+          "title": "Even light, no shadows",
+          "text": "Shoot where light is even, and keep hand or phone shadows off the staves."
+        },
+        "flat": {
+          "title": "Flat and straight",
+          "text": "Keep the sheet flat and the camera parallel to the paper so staff lines don't curve."
+        },
+        "sharp": {
+          "title": "Sharp and large enough",
+          "text": "Get close enough to read small notes and accidentals; for scanned PDFs use a high resolution."
+        },
+        "single": {
+          "title": "One piece at a time",
+          "text": "Drop pages of the same piece only; photos and MusicXML/MIDI files can't be mixed in one go."
+        }
+      }
+    },
+    "import": {
+      "howTitle": "How importing works",
+      "tipsTitle": "Tips for importing",
+      "tipsLead": "Pick the right file type to keep the most information.",
+      "steps": {
+        "export": {
+          "title": "Export",
+          "text": "From your notation software, export the score as MusicXML (.musicxml, .mxl) or MIDI."
+        },
+        "import": {
+          "title": "Import",
+          "text": "Drop the file in the box above, name it and import; no recognition from photos needed."
+        },
+        "edit": {
+          "title": "Edit and practice",
+          "text": "Open it in the editor to fix, listen back and practice right away."
+        }
+      },
+      "tips": {
+        "prefer": {
+          "title": "Prefer MusicXML",
+          "text": "MusicXML keeps accidentals, lyrics and layout; MIDI mostly has just notes and timing."
+        },
+        "export": {
+          "title": "Export from notation software",
+          "text": "Common notation programs offer MusicXML in their save or export menu."
+        },
+        "batch": {
+          "title": "Import many at once",
+          "text": "Pick up to {count} files per round; any that fail are reported individually to retry."
+        },
+        "scan": {
+          "title": "Only have paper?",
+          "text": "Use the digitize button at the top to photograph or upload a PDF instead."
+        }
+      }
+    }
+  },
+  "sourceHint": "Photos, scans and native PDFs are cleaned up differently; choosing the right type improves recognition.",
+  "externalAiNote": "Note: AI verification is on. Cropped images of some doubtful measures (up to 10 per score) are sent to an external AI service for checking.",
+  "quota": {
+    "summary": "{remaining}/{limit} pages left this month · up to {max} pages/upload",
+    "unlimitedMonth": "Up to {max} pages/upload",
+    "perJobExceeded": "This file has {pages} pages; your plan allows up to {max} pages per upload. Split the file or upgrade your plan.",
+    "monthExceeded": "This file has {pages} pages but you only have {remaining} pages left this month.",
+    "seePlans": "See plans"
+  },
+  "warningCodes": {
+    "PAGE_LANDSCAPE": "Landscape page, scaled down to fit portrait",
+    "PAGE_BORDER_CROPPED": "Cropped a solid border at the image edge (usually a status bar)",
+    "PAGE_SKEW_TOO_LARGE": "The image is tilted about {angle}°, more than {max}°, so it wasn't straightened; take a straighter photo",
+    "PAGE_NO_STAFF": "No staff found, this page was skipped",
+    "PAGE_NO_NOTES": "No notes recognized, this page was skipped",
+    "PAGE_ONLY_RESTS": "Only rests were read, this page was skipped",
+    "PAGE_TRUNCATED": "The result hit the length limit, the end of the page may be missing",
+    "PAGE_LOOP_TRIMMED": "The model repeated itself, {count} repeated lines were removed",
+    "PAGE_MEASURE_MISMATCH": "Read {found} measures but the image has {expected}, check this page",
+    "PAGE_STAFF_MISMATCH": "Read {found} staves but the image has {expected} staves per system",
+    "SYSTEM_MEASURE_MISMATCH": "This system read {found} measures but the image has {expected}",
+    "BARLINES_INSERTED": "Missing barlines: inserted {count} by duration (compare with the image)",
+    "TEXT_ABOVE_STAFF": "There is text above the staff (usually chord names or tempo) that wasn't recognized; printed chords are not in the digital score",
+    "TEMPO_DEFAULT": "The tempo couldn't be read, using {bpm} BPM; please correct it"
+  },
+  "fixCodes": {
+    "RHYTHM_FIXED": "Durations fixed: {parts}",
+    "RHYTHM_PARTS": {
+      "triplets": "{count} misread triplets",
+      "dropped": "removed {count} extra chord notes",
+      "dots": "added {count} dots"
+    },
+    "OCTAVE_FIXED": "Fixed the octave of {count} notes from the notehead positions",
+    "OTTAVA_FIXED": "Removed an 8va the model added, moved {count} notes back to the printed octave",
+    "REREAD_REPLACED": "Replaced this measure with the reading that repeated re-reads agreed on",
+    "AI_REPLACED": "AI compared the image and chose a different reading for this measure"
+  },
+  "check": {
+    "title": "To check",
+    "close": "Close the To check panel",
+    "toggleHint": "Measures the digitizer wasn't sure about, with the original image",
+    "intro": "Measures the recognizer wasn't sure about. Click one to jump to it and see it cropped from the original page.",
+    "edited": "The score was saved after digitizing. If you added or removed measures, the numbers here may be off.",
+    "progress": "Checked {done}/{total} measures",
+    "hideChecked": "Hide checked",
+    "allDone": "Nothing left to check.",
+    "jump": "Go to measure",
+    "markChecked": "Checked",
+    "uncheck": "Unmark",
+    "noCrop": "No original image for this measure.",
+    "cropAlt": "Measure {measure} on the original page {page}"
+  },
+  "redo": {
+    "title": "Recognize again?",
+    "text": "The system will run again from the original files with the options below.",
+    "loadFailed": "Couldn't load the details; you can still send it with the previous options.",
+    "edited": "You saved {count} version(s) after the last digitizing. The new result becomes version v{next} and opens in the editor; your edited versions stay in Version history.",
+    "pages": "This uses {count} pages of your monthly quota (used {used}/{limit}).",
+    "pagesUnlimited": "This counts {count} pages (your plan has unlimited pages per month).",
+    "notEnough": "You only have {remaining} pages left this month.",
+    "imageErrorHint": "Last time the image couldn't be read. Try another source type (e.g. Photo) and turn on clean-up and straightening."
+  },
+  "titleFromPage": {
+    "label": "Name the score from the original page",
+    "cropAlt": "Top of page 1 of the original",
+    "caption": "Top of page 1 of the original: the title and composer are usually printed here.",
+    "placeholder": "Type the title as printed on the original",
+    "save": "Save title",
+    "saving": "Saving…",
+    "saved": "Title saved",
+    "failed": "Could not save the title"
+  }
+}

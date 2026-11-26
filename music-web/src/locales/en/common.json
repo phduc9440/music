@@ -1,0 +1,145 @@
+{
+  "loading": "Loading…",
+  "search": "Search",
+  "noData": "No data",
+  "close": "Close",
+  "nav": {
+    "groups": {
+      "explore": "Explore",
+      "learn": "Learn",
+      "mine": "My space"
+    },
+    "items": {
+      "publicScores": "Public scores",
+      "officialLibrary": "Curated library",
+      "composers": "Composers",
+      "practice": "Practice",
+      "stats": "Statistics",
+      "library": "Library",
+      "shared": "Shared with me",
+      "playlists": "Playlists",
+      "trash": "Trash",
+      "myPlan": "My plan",
+      "pricing": "Pricing",
+      "teams": "Teams & Shows",
+      "forum": "Forum"
+    },
+    "back": "Back"
+  },
+  "tabbar": {
+    "label": "Quick navigation",
+    "explore": "Explore",
+    "library": "Library",
+    "create": "Create",
+    "practice": "Practice",
+    "me": "Me"
+  },
+  "header": {
+    "account": "Account",
+    "accountOf": "Account: {name}",
+    "openMenu": "Open navigation menu",
+    "search": "Search scores…",
+    "searchHint": "Search (Ctrl+K)",
+    "mainNav": "Main navigation",
+    "create": "Create score",
+    "profile": "My profile",
+    "myPlan": "My plan",
+    "settings": "Settings",
+    "admin": "Admin area",
+    "changePassword": "Change password",
+    "logout": "Sign out",
+    "upgrade": "Upgrade",
+    "planTitle": "{plan} plan: see limits and renew",
+    "clickSound": "Click sounds",
+    "soundStateOn": "On",
+    "soundStateOff": "Off"
+  },
+  "theme": {
+    "label": "Theme: {name}",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "language": {
+    "label": "Language: {name}"
+  },
+  "cmdk": {
+    "groups": {
+      "commands": "Quick commands",
+      "mine": "My scores",
+      "public": "Public scores"
+    },
+    "createHint": "Upload a photo, PDF, MusicXML or MIDI",
+    "theme": "Switch theme: {name}",
+    "label": "Search and quick commands",
+    "placeholder": "Search scores or type a command…",
+    "noResults": "No results for “{query}”",
+    "noResultsHint": "Try another title or composer, or type fewer letters.",
+    "searching": "Searching…",
+    "keys": {
+      "move": "move",
+      "open": "open",
+      "close": "close"
+    }
+  },
+  "pagination": {
+    "label": "Pagination",
+    "prev": "‹ Previous",
+    "next": "Next ›",
+    "page": "Page",
+    "scores_one": "{count} score",
+    "scores_other": "{count} scores",
+    "pageOf": "page {page} of {total}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "pageSize": "Rows per page"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "labelUnread": "Notifications, {count} unread",
+    "markAllRead": "Mark all as read",
+    "settings": "Settings",
+    "empty": "No notifications yet.",
+    "adminTag": "Admin",
+    "fromAdmin": "Message from the administrators"
+  },
+  "footer": {
+    "tools": "Tools",
+    "digitize": "Digitize from photo / PDF",
+    "import": "Import MusicXML / MIDI",
+    "practiceStats": "Practice statistics",
+    "support": "Support",
+    "faq": "Frequently asked questions",
+    "signIn": "Sign in / Sign up",
+    "account": "Account",
+    "home": "Home",
+    "tipSite": "Photograph sheet music, edit, listen and practice, together with your team, in your own language.",
+    "copyright": "© {year} Scorewise · PTIT graduation project",
+    "privacy": "Your scores are private by default.",
+    "quickLinks": "Quick links"
+  },
+  "time": {
+    "justNow": "just now",
+    "minutesAgo_one": "{count} minute ago",
+    "minutesAgo_other": "{count} minutes ago",
+    "hoursAgo_one": "{count} hour ago",
+    "hoursAgo_other": "{count} hours ago",
+    "daysAgo_one": "{count} day ago",
+    "daysAgo_other": "{count} days ago"
+  },
+  "cancel": "Cancel",
+  "save": "Save",
+  "delete": "Delete",
+  "confirm": "Confirm",
+  "retry": "Try again",
+  "back": "Back",
+  "yes": "Yes",
+  "no": "No",
+  "notFound": {
+    "title": "Page not found",
+    "description": "This address doesn't exist or has moved. Check the URL, or head back home.",
+    "home": "Back to home",
+    "adminHome": "Back to dashboard"
+  },
+  "edit": "Edit"
+}

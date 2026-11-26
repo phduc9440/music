@@ -1,0 +1,248 @@
+{
+  "guest": {
+    "openScore": "Open score {title}",
+    "open": "Open score",
+    "prev": "Previous scores",
+    "next": "Next scores",
+    "composerLabel_one": "{name}: {count} public score",
+    "composerLabel_other": "{name}: {count} public scores",
+    "composerOnSystem_one": "{count} score on the platform",
+    "composerOnSystem_other": "{count} scores on the platform",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "heroTitle": "One piece a day, one step forward with each.",
+    "heroLead": "Snap a paper score and we rebuild it as a digital score you can edit, play back and practice.",
+    "ctaDigitize": "Digitize your first score",
+    "ctaExplore": "Explore the library",
+    "dropNow": "Drop the file to get started",
+    "dropHint": "Or drop images, PDF, MusicXML or MIDI here",
+    "loadFailed": "Couldn't load the home page data. You can still sign in to get started.",
+    "featuredTitle": "Featured scores",
+    "featuredLead": "Most viewed lately. Sign in to listen and practice.",
+    "featuredEmpty": "No public scores yet. Be the first to share one!",
+    "composersTitle": "Favorite composers",
+    "composersLead": "Composers with the most public scores.",
+    "howTitle": "How it works",
+    "howLead": "Three steps from paper score to practice.",
+    "step": "Step {n}",
+    "steps": {
+      "capture": {
+        "title": "Capture",
+        "text": "Take a photo or upload a PDF of your paper score. The system recognizes the notes and turns them into a digital score."
+      },
+      "edit": {
+        "title": "Edit",
+        "text": "Fix each note in the editor, listen back right away and save multiple versions."
+      },
+      "practice": {
+        "title": "Practice",
+        "text": "Practice slowly, loop the hard parts and track your streak and practice time."
+      }
+    },
+    "statsTitle": "Our community so far",
+    "statsLead": "Figures refresh every 5 minutes.",
+    "statScores": "Scores",
+    "statPages": "Pages digitized",
+    "statHours": "Practice hours",
+    "statMembers": "Members",
+    "faqTitle": "Frequently asked questions",
+    "faq": {
+      "prepare": {
+        "q": "What do I need to digitize a score?",
+        "a": "A clear photo or a PDF file. You can also import an existing MusicXML or MIDI file directly."
+      },
+      "privacy": {
+        "q": "Can other people see my scores?",
+        "a": "No. Scores are private by default. You choose to share them with a link, invite people by email, or request publishing for an administrator to approve."
+      },
+      "price": {
+        "q": "Does it cost anything?",
+        "a": "The app is in a trial period and free to use. Paid plans will be announced later."
+      },
+      "mobile": {
+        "q": "Can I use it on my phone?",
+        "a": "Yes. The interface adapts to your screen, and the bottom tab bar opens Explore, Library and Practice quickly."
+      }
+    },
+    "finalTitle": "Ready to digitize your first score?",
+    "finalCta": "Get started for free",
+    "screensNav": "Page sections",
+    "screenTop": "Top",
+    "screenStart": "Get started",
+    "featuresTitle": "Everything for your practice",
+    "featuresLead": "From a paper score to the day you take the stage.",
+    "features": {
+      "ocr": {
+        "title": "Digitize from photos and PDFs",
+        "text": "Snap a page of music; the system recognizes the notes and builds an editable digital score."
+      },
+      "editor": {
+        "title": "Score editor",
+        "text": "Edit notes, staves and lyrics; keep multiple versions and compare them."
+      },
+      "player": {
+        "title": "Instant playback",
+        "text": "Play with many instruments, change tempo, loop the hard parts."
+      },
+      "practice": {
+        "title": "Scored practice",
+        "text": "Play along, get accuracy and timing scores, review your history and practice streak."
+      },
+      "teams": {
+        "title": "Teams and shows",
+        "text": "Assign roles and parts, and follow the whole group on one score."
+      },
+      "export": {
+        "title": "Export anywhere",
+        "text": "PDF, MIDI, audio, SVG, MusicXML in a few clicks."
+      }
+    },
+    "demoPlay": "Play",
+    "demoPause": "Pause",
+    "demoCaption": "Illustration: a playhead sweeps across the staff and notes light up one by one as they play.",
+    "melody": {
+      "hint": "Click anywhere to play on",
+      "progress": "Note {n}/{total}",
+      "play": "Play the next note of {song} ({n}/{total})",
+      "auto": "Autoplay",
+      "stop": "Stop",
+      "playing": "Autoplaying on loop",
+      "choose": "Choose a piece",
+      "count": "{count} pieces",
+      "groups": {
+        "classical": "Classical",
+        "folk": "Folk & children",
+        "festive": "Celebrations"
+      },
+      "songs": {
+        "furElise": {
+          "title": "Für Elise",
+          "by": "Beethoven"
+        },
+        "odeToJoy": {
+          "title": "Ode to Joy",
+          "by": "Beethoven"
+        },
+        "twinkle": {
+          "title": "Twinkle Twinkle Little Star",
+          "by": "French folk tune"
+        },
+        "jingleBells": {
+          "title": "Jingle Bells",
+          "by": "J. L. Pierpont"
+        },
+        "happyBirthday": {
+          "title": "Happy Birthday",
+          "by": "Mildred & Patty Hill"
+        },
+        "canonInD": {
+          "title": "Canon in D",
+          "by": "Pachelbel"
+        },
+        "nachtmusik": {
+          "title": "Eine kleine Nachtmusik",
+          "by": "Mozart"
+        },
+        "lullaby": {
+          "title": "Lullaby",
+          "by": "Brahms"
+        },
+        "greensleeves": {
+          "title": "Greensleeves",
+          "by": "English folk song"
+        },
+        "minuetInG": {
+          "title": "Minuet in G",
+          "by": "Petzold"
+        },
+        "amazingGrace": {
+          "title": "Amazing Grace",
+          "by": "American hymn"
+        },
+        "silentNight": {
+          "title": "Silent Night",
+          "by": "Gruber"
+        },
+        "auldLangSyne": {
+          "title": "Auld Lang Syne",
+          "by": "Scottish folk song"
+        },
+        "rowYourBoat": {
+          "title": "Row, Row, Row Your Boat",
+          "by": "Nursery rhyme"
+        },
+        "londonBridge": {
+          "title": "London Bridge",
+          "by": "Nursery rhyme"
+        },
+        "maryLamb": {
+          "title": "Mary Had a Little Lamb",
+          "by": "Nursery rhyme"
+        },
+        "frereJacques": {
+          "title": "Frère Jacques",
+          "by": "French nursery rhyme"
+        }
+      }
+    }
+  },
+  "workspace": {
+    "greeting": {
+      "morning": "Good morning",
+      "noon": "Good afternoon",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "pendingAccess": "{name} is requesting {level} access",
+    "someone": "Someone",
+    "accessGeneric": "access",
+    "pendingOfficial": "{name} wants to add it to the curated library",
+    "adminName": "An administrator",
+    "updated": "updated {when}",
+    "loadFailedTitle": "Couldn't load the home page",
+    "loadFailedText": "Try reloading the page, or open the Library from the menu.",
+    "practicedToday_one": "You practiced {count} minute today. Keep it going!",
+    "practicedToday_other": "You practiced {count} minutes today. Keep it going!",
+    "keepStreak": "No practice yet today. A few minutes keeps your streak alive.",
+    "startStreak": "Start a short practice session today to begin your first streak.",
+    "streakLabel_one": "day in a row",
+    "streakLabel_other": "days in a row",
+    "longest_one": "Longest: {count} day",
+    "longest_other": "Longest: {count} days",
+    "continue": "Continue",
+    "noScores": "You don't have any scores yet. Digitize your first one in the panel below.",
+    "digitize": "Digitize a score",
+    "fromImage": "From a photo or PDF",
+    "fromImageHint": "Automatic note recognition",
+    "fromFile": "From MusicXML / MIDI",
+    "fromFileHint": "Import an existing file",
+    "pending": "Waiting for you",
+    "noPending": "No pending requests.",
+    "accessRequests_one": "{count} access request",
+    "accessRequests_other": "{count} access requests",
+    "officialRequests_one": "{count} curated-library request",
+    "officialRequests_other": "{count} curated-library requests",
+    "awaitingReview_one": "{count} score awaiting review",
+    "awaitingReview_other": "{count} scores awaiting review",
+    "suggestion": "Today's practice suggestion",
+    "suggestContinue": "Continue your latest piece",
+    "suggestOfficial": "An easy piece from the curated library",
+    "practiceNow": "Practice now",
+    "suggestEmpty": "No suggestion yet. Open the {link} to pick your first piece.",
+    "quickLinks": "Shortcuts",
+    "ctaTitle": "A new piece on your stand?",
+    "ctaText": "Snap a page or upload a PDF; minutes later you have a digital score to edit and practice.",
+    "ctaButton": "Digitize now",
+    "screenDesk": "Your desk",
+    "screenNew": "New score",
+    "screenTodo": "To do",
+    "screenTodoLead": "What is waiting for you, plus handy shortcuts.",
+    "tasks": "My tasks",
+    "tasksAll": "View all ({count})"
+  },
+  "forum": {
+    "viewAll": "Open the forum",
+    "title": "Ask the community",
+    "lead": "Latest threads from fellow musicians"
+  }
+}

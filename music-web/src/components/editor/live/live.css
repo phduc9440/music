@@ -1,0 +1,243 @@
+/* Đồng chỉnh sửa thời gian thực: viền ô người khác đang ở, cờ tên, hàng ảnh đại diện, trạng thái đồng bộ */
+
+/* Màu của từng người (0..7), dùng chung cho viền ô, cờ tên và ảnh đại diện */
+.ed-lock-box[data-color='0'],
+.live-avatar[data-color='0'] {
+  --live-color: var(--ui-live-0);
+}
+.ed-lock-box[data-color='1'],
+.live-avatar[data-color='1'] {
+  --live-color: var(--ui-live-1);
+}
+.ed-lock-box[data-color='2'],
+.live-avatar[data-color='2'] {
+  --live-color: var(--ui-live-2);
+}
+.ed-lock-box[data-color='3'],
+.live-avatar[data-color='3'] {
+  --live-color: var(--ui-live-3);
+}
+.ed-lock-box[data-color='4'],
+.live-avatar[data-color='4'] {
+  --live-color: var(--ui-live-4);
+}
+.ed-lock-box[data-color='5'],
+.live-avatar[data-color='5'] {
+  --live-color: var(--ui-live-5);
+}
+.ed-lock-box[data-color='6'],
+.live-avatar[data-color='6'] {
+  --live-color: var(--ui-live-6);
+}
+.ed-lock-box[data-color='7'],
+.live-avatar[data-color='7'] {
+  --live-color: var(--ui-live-7);
+}
+
+/* Ô người khác đang chọn: viền đứt; đang sửa (giữ khóa): viền liền, nền nhạt, nhấp nháy nhẹ */
+.ed-lock-box {
+  --live-color: var(--ui-measure-locked);
+  position: absolute;
+  z-index: 2;
+  border: 2px dashed color-mix(in srgb, var(--live-color) 70%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--live-color) 4%, transparent);
+  pointer-events: none;
+  transition:
+    left 0.18s ease,
+    top 0.18s ease,
+    width 0.18s ease,
+    height 0.18s ease;
+}
+.ed-lock-box.is-editing {
+  border-style: solid;
+  background: color-mix(in srgb, var(--live-color) 9%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--live-color) 14%, transparent);
+  animation: live-breathe 2.4s ease-in-out infinite;
+}
+@keyframes live-breathe {
+  50% {
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--live-color) 6%, transparent);
+  }
+}
+
+/* Cờ tên ở góc trên ô đầu tiên của vùng một người (giống con trỏ có tên trong Google Docs) */
+.ed-presence-flag {
+  position: absolute;
+  left: -2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 220px;
+  height: 22px;
+  padding: 0 8px 0 2px;
+  border-radius: 11px 11px 11px 3px;
+  background: var(--live-color);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--ui-shadow-ink) 25%, transparent);
+  color: var(--ui-on-accent);
+  font:
+    600 11px/1 var(--ui-font),
+    system-ui,
+    sans-serif;
+  white-space: nowrap;
+  animation: live-flag-in 0.2s ease-out;
+}
+@keyframes live-flag-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+.ed-presence-flag__avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ui-on-accent) 26%, transparent);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.ed-presence-flag__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ed-presence-flag__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ed-presence-flag__state {
+  padding-left: 5px;
+  border-left: 1px solid color-mix(in srgb, var(--ui-on-accent) 40%, transparent);
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+/* Hàng ảnh đại diện trên thanh công cụ */
+.live-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 10px 3px 4px;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-surface);
+}
+.live-avatars {
+  display: inline-flex;
+  align-items: center;
+  padding-left: 6px;
+}
+.live-avatar {
+  --live-color: var(--ui-live-0);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-left: -6px;
+  padding: 0;
+  overflow: visible;
+  border: 2px solid var(--ui-surface);
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--live-color),
+    color-mix(in srgb, var(--live-color) 65%, var(--ui-shadow-ink))
+  );
+  color: var(--ui-on-accent);
+  font:
+    700 11px/1 var(--ui-font),
+    system-ui,
+    sans-serif;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    z-index 0s;
+}
+.live-avatar img,
+.live-avatar > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.live-avatar:hover:not(:disabled),
+.live-avatar:focus-visible {
+  z-index: 2;
+  transform: translateY(-2px) scale(1.08);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--live-color);
+}
+.live-avatar:disabled {
+  cursor: default;
+}
+.live-avatar.is-self {
+  box-shadow: 0 0 0 1px var(--ui-border-strong);
+}
+/* Chấm xanh: người đó đang sửa (đang giữ khóa ô) */
+.live-avatar.is-editing::after {
+  content: '';
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--ui-surface);
+  border-radius: 50%;
+  background: var(--ui-success);
+}
+.live-avatar--more {
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-2);
+  cursor: default;
+}
+.live-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ui-text-2);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.live-status__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ui-success);
+}
+.live-status.is-syncing .live-status__dot,
+.live-status.is-connecting .live-status__dot {
+  background: var(--ui-warning-strong);
+  animation: live-blink 1s ease-in-out infinite;
+}
+.live-status.is-offline {
+  color: var(--ui-danger);
+}
+.live-status.is-offline .live-status__dot {
+  background: var(--ui-danger);
+}
+@keyframes live-blink {
+  50% {
+    opacity: 0.3;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ed-lock-box,
+  .ed-lock-box.is-editing,
+  .ed-presence-flag,
+  .live-status__dot {
+    animation: none;
+    transition: none;
+  }
+}

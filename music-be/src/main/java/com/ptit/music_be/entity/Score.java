@@ -1,17 +1,31 @@
 package com.ptit.music_be.entity;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.persistence.*;
 
-import com.ptit.music_be.dto.enums.DifficultyLevel;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
+import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import com.ptit.music_be.dto.enums.score.DifficultyLevel;
+import com.ptit.music_be.dto.enums.score.ScoreLicense;
+import com.ptit.music_be.service.composer.ScoreComposerListener;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 @Entity
 @Table(name = "scores")
+// Bản nhạc trong thùng rác (deleted_at khác null) tự biến mất khỏi mọi truy vấn JPA; xem ScoreTrashRepository
+@SQLRestriction("deleted_at IS NULL")
+// Tự gắn composer_id theo chữ tác giả mỗi lần lưu (mục 5.4)
+@EntityListeners(ScoreComposerListener.class)
 @Getter
 @Setter
 @Builder
@@ -31,8 +45,25 @@ public class Score {
     @Column(nullable = false)
     String title;
 
+    /**
+     * Tên tác giả gõ tay, <b>chỉ</b> khi không khớp nhạc sĩ nào trong danh mục. Khớp thì cột này để trống và tên lấy từ
+     * {@code composers.name} (3NF: không chép tên nhạc sĩ vào bản nhạc). Đọc tên hiển thị bằng {@link #getComposer()},
+     * đọc chữ gõ tay bằng {@link #getComposerText()}.
+     */
     @Column(name = "composer")
     String composer;
+
+    /** Nhạc sĩ trong bảng composers ứng với chữ tác giả (null nếu không khớp ai). Do ScoreComposerListener gắn. */
+    @Column(name = "composer_id", length = 36)
+    String composerId;
+
+    /** Nhạc sĩ đã gắn, chỉ để đọc tên (ghi bằng {@link #composerId}). Bảng composers nhỏ nên nạp luôn. */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "composer_id", insertable = false, updatable = false)
+    @NotFound(action = NotFoundAction.IGNORE)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    Composer linkedComposer;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "difficulty")
@@ -44,11 +75,20 @@ public class Score {
     @Column(name = "processing_status")
     String processingStatus;
 
+    /** PRIVATE / PENDING (chủ xin công khai, chờ ADMIN duyệt) / PUBLIC (xem Visibility). */
     @Column(name = "visibility")
     String visibility;
 
     @Column(name = "is_official")
     Boolean isOfficial;
+
+    /** Với bản trong kho mẫu: id bản gốc của người dùng mà nó được sao chép từ. */
+    @Column(name = "original_score_id", length = 36)
+    String originalScoreId;
+
+    /** Với bản trong kho mẫu: tên người phối (chủ bản gốc), để ghi nhận tác giả bản phối. */
+    @Column(name = "arranger_name")
+    String arrangerName;
 
     @Column(name = "reject_reason")
     String rejectReason;
@@ -59,9 +99,88 @@ public class Score {
     @Column(name = "measure_count")
     Integer measureCount;
 
+    /** Khóa nhạc, ví dụ "G", "Bb", "F#m" (lấy từ MusicXML sau khi OMR xong). */
+    @Column(name = "key_signature", length = 16)
+    String keySignature;
+
+    /** Số chỉ nhịp, ví dụ "3/4". */
+    @Column(name = "time_signature", length = 8)
+    String timeSignature;
+
+    /** Số khuông nhạc (staff). Bằng 2 thì Player mới bật được Mute/Solo từng tay. */
+    @Column(name = "staff_count")
+    @ColumnDefault("2")
+    @Builder.Default
+    Integer staffCount = 2;
+
+    /** Số trang của bản gốc (PDF/ảnh). */
+    @Column(name = "page_count")
+    Integer pageCount;
+
+    /** Nguồn tạo bản nhạc: OMR / IMPORT / MANUAL (xem ScoreSource). */
+    @Column(name = "source_type", length = 16)
+    String sourceType;
+
+    /** Phiên bản MusicXML hiện hành. Tăng mỗi lần Editor lưu (chống ghi đè nhau). 0 = chưa có MusicXML. */
+    @Column(name = "current_version")
+    @ColumnDefault("0")
+    @Builder.Default
+    Integer currentVersion = 0;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    LocalDateTime updatedAt;
+
     @Column(name = "view_count")
     @Builder.Default
     Long viewCount = 0L;
+
+    /** Người xem có được tải MusicXML, MIDI, âm thanh, PDF, SVG không (chủ sở hữu và người sửa luôn được). */
+    @Column(name = "allow_download", nullable = false)
+    @Builder.Default
+    boolean allowDownload = false;
+
+    /** Giấy phép do chủ chọn (mục R4); null = bảo lưu mọi quyền. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "license", length = 24)
+    ScoreLicense license;
+
+    /** Chủ cho phép người khác tạo bản phối từ bản công khai này (cần giấy phép khác bảo lưu mọi quyền). */
+    @Column(name = "allow_arrange", nullable = false)
+    @Builder.Default
+    boolean allowArrange = false;
+
+    /**
+     * Bản nhạc gốc mà bản này là bản phối của (mục R4). Bản gốc bị xóa hẳn thì về null; bản gốc ở thùng rác cũng coi như
+     * không còn (@SQLRestriction), nên chỉ hiện ghi công khi bản gốc còn công khai.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "forked_from_score_id")
+    @NotFound(action = NotFoundAction.IGNORE)
+    Score forkedFrom;
+
+    /** Thời điểm chuyển vào thùng rác; null là bản nhạc bình thường. */
+    @Column(name = "deleted_at")
+    LocalDateTime deletedAt;
+
+    /** Id người đã xóa (chủ sở hữu hoặc ADMIN kiểm duyệt). */
+    @Column(name = "deleted_by", length = 36)
+    String deletedBy;
+
+    @Column(name = "delete_reason", length = 500)
+    String deleteReason;
+
+    /** Ảnh bìa người dùng tải lên (Cloudinary); null thì giao diện dùng ảnh trang 1 làm bìa. */
+    @Column(name = "cover_url", length = 512)
+    String coverUrl;
+
+    /** Team chứa bản nhạc (mục 4.1); null là bản cá nhân. Quyền qua team tính ở TeamAccessResolverImpl. */
+    @Column(name = "team_id", length = 36)
+    String teamId;
 
     @OneToMany(mappedBy = "score", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -78,4 +197,31 @@ public class Score {
     @OneToMany(mappedBy = "score", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     List<PracticeSession> practiceSessions = new ArrayList<>();
+
+    /** Tên tác giả để hiển thị: tên nhạc sĩ đã gắn, không gắn thì chữ gõ tay (có thể null). */
+    public String getComposer() {
+        if (composerId != null && linkedComposer != null && composerId.equals(linkedComposer.getId())) {
+            return linkedComposer.getName();
+        }
+        return composer;
+    }
+
+    /** Chữ tác giả gõ tay đang lưu (null khi đã gắn nhạc sĩ). */
+    public String getComposerText() {
+        return composer;
+    }
+
+    /** Đổi tác giả bằng chữ gõ tay; khi lưu, ScoreComposerListener gắn lại nhạc sĩ nếu khớp. */
+    public void setComposer(String composerText) {
+        this.composer = composerText;
+        this.composerId = null;
+        this.linkedComposer = null;
+    }
+
+    /** Gắn nhạc sĩ trong danh mục: bỏ chữ gõ tay vì tên đã nằm ở composers.name. */
+    public void linkComposer(Composer composer) {
+        this.composerId = composer.getId();
+        this.linkedComposer = composer;
+        this.composer = null;
+    }
 }

@@ -1,0 +1,22 @@
+{
+  "title": "Notification settings",
+  "subtitle": "Choose which groups show in the bell and which send a summary email every morning.",
+  "loadFailed": "Could not load notification settings",
+  "saveFailed": "Could not save notification settings",
+  "channel": {
+    "inApp": "In the app",
+    "email": "Email digest"
+  },
+  "category": {
+    "SCORES": {
+      "name": "Scores",
+      "desc": "Access requests, sharing, public approval, reviews, curated library, digitizing finished or failed"
+    },
+    "COMMENTS": { "name": "Comments and suggestions", "desc": "Mentions, replies to your comments, suggested edits" },
+    "TEAMS": { "name": "Teams and shows", "desc": "Invitations, role changes, assignments, due reminders" },
+    "FORUM": { "name": "Forum", "desc": "Replies in your threads or threads you follow, best answers" },
+    "BILLING": { "name": "Plan", "desc": "Activation, expiry, revocation" }
+  },
+  "offHint": "Fully off: you won't get any notification from this group.",
+  "systemNote": "Announcements from administrators always show in the app. The digest email is only sent when you have unread notifications from the last 24 hours."
+}

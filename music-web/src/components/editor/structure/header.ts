@@ -1,0 +1,281 @@
+/**
+ * Các chữ đầu bản nhạc: tiêu đề, tác giả. Nội dung nằm ở <movement-title> / <work-title> / <creator type="composer">
+ * (và <credit> nếu có). Kiểu chữ (cỡ, đậm, nghiêng) là cài đặt riêng của ứng dụng, lưu trong
+ * <identification><miscellaneous> nên vẫn là MusicXML hợp lệ.
+ */
+import { childOf, textOf } from '../core/commands';
+import type { EditResult } from '../core/commands';
+import type { ScoreDocument } from '../core/ScoreDocument';
+import { t } from '../../../i18n/core';
+
+export type HeaderField = 'title' | 'composer';
+
+export interface TextStyle {
+  /** Cỡ chữ (px ở mức zoom 100%); null = mặc định. */
+  size: number | null;
+  bold: boolean;
+  italic: boolean;
+}
+
+export interface HeaderState {
+  title: string;
+  composer: string;
+  styles: Record<HeaderField, TextStyle>;
+}
+
+/** Cỡ chữ mặc định của OSMD (px ở zoom 100%). */
+export const DEFAULT_SIZE: Record<HeaderField, number> = { title: 40, composer: 20 };
+export const SIZE_MIN = 8;
+export const SIZE_MAX = 96;
+
+const NO_STYLE: TextStyle = { size: null, bold: false, italic: false };
+
+const encodeStyle = (s: TextStyle): string =>
+  [s.size ? `size=${s.size}` : '', s.bold ? 'bold' : '', s.italic ? 'italic' : ''].filter(Boolean).join(';');
+
+const decodeStyle = (raw: string): TextStyle => {
+  const parts = raw.split(';').map((p) => p.trim());
+  const size = Number(parts.find((p) => p.startsWith('size='))?.slice(5));
+  return {
+    size: Number.isFinite(size) && size >= SIZE_MIN && size <= SIZE_MAX ? size : null,
+    bold: parts.includes('bold'),
+    italic: parts.includes('italic'),
+  };
+};
+
+const miscField = (root: Element, name: string): Element | undefined => {
+  const identification = childOf(root, 'identification');
+  const misc = identification && childOf(identification, 'miscellaneous');
+  return misc ? childOf(misc, 'miscellaneous-field', (f) => f.getAttribute('name') === name) : undefined;
+};
+
+/** Đọc tiêu đề, tác giả và kiểu chữ hiện có. */
+/**
+ * Chữ music21 tự ghi khi bản nhạc chưa có tiêu đề / tác giả (file số hóa cũ còn giữ): không vẽ lên bản nhạc và coi như
+ * chưa có, để khỏi hiện "Music21" như tên tác giả.
+ */
+const MUSIC21_PLACEHOLDERS = new Set(['music21', 'music21 fragment']);
+export const isPlaceholderText = (text: string | null | undefined): boolean =>
+  MUSIC21_PLACEHOLDERS.has((text ?? '').trim().toLowerCase());
+
+const realText = (text: string): string => (isPlaceholderText(text) ? '' : text);
+
+export function readHeader(doc: ScoreDocument): HeaderState {
+  const root = doc.root;
+  const work = childOf(root, 'work');
+  const identification = childOf(root, 'identification');
+  const creator = identification && childOf(identification, 'creator', (c) => c.getAttribute('type') === 'composer');
+  const style = (field: HeaderField) => {
+    const raw = textOf(miscField(root, `style-${field}`));
+    return raw ? decodeStyle(raw) : { ...NO_STYLE };
+  };
+  return {
+    title: realText(textOf(childOf(root, 'movement-title')) || textOf(work && childOf(work, 'work-title'))),
+    composer: realText(textOf(creator)),
+    styles: { title: style('title'), composer: style('composer') },
+  };
+}
+
+/** Chèn `el` vào phần đầu file trước phần tử đầu tiên có tên trong `before` (cuối cùng: trước <part-list>). */
+const insertHead = (root: Element, el: Element, before: string[]): void => {
+  const anchor =
+    Array.from(root.children).find((c) => before.includes(c.tagName)) ??
+    Array.from(root.children).find((c) => c.tagName === 'part-list');
+  root.insertBefore(el, anchor ?? null);
+};
+
+const setCreditWords = (root: Element, type: string, text: string): void => {
+  for (const credit of Array.from(root.children).filter((c) => c.tagName === 'credit')) {
+    if (childOf(credit, 'credit-type', (t) => textOf(t) === type)) {
+      const words = childOf(credit, 'credit-words');
+      if (words) words.textContent = text;
+    }
+  }
+};
+
+const writeTitle = (root: Element, text: string): void => {
+  const owner = root.ownerDocument;
+  let movement = childOf(root, 'movement-title');
+  if (!movement) {
+    movement = owner.createElement('movement-title');
+    insertHead(root, movement, ['identification', 'defaults', 'credit']);
+  }
+  movement.textContent = text;
+  const work = childOf(root, 'work');
+  const workTitle = work && childOf(work, 'work-title');
+  if (workTitle) workTitle.textContent = text;
+  setCreditWords(root, 'title', text);
+};
+
+const writeComposer = (root: Element, text: string): void => {
+  const owner = root.ownerDocument;
+  let identification = childOf(root, 'identification');
+  if (!identification) {
+    identification = owner.createElement('identification');
+    insertHead(root, identification, ['defaults', 'credit']);
+  }
+  let creator = childOf(identification, 'creator', (c) => c.getAttribute('type') === 'composer');
+  if (!creator) {
+    creator = owner.createElement('creator');
+    creator.setAttribute('type', 'composer');
+    identification.prepend(creator);
+  }
+  creator.textContent = text;
+  setCreditWords(root, 'composer', text);
+};
+
+/** Đặt (hoặc xóa khi value = null) một trường <miscellaneous-field> của ứng dụng. */
+const writeMisc = (root: Element, name: string, value: string | null): void => {
+  const owner = root.ownerDocument;
+  let identification = childOf(root, 'identification');
+  let misc = identification && childOf(identification, 'miscellaneous');
+  const field = miscField(root, name);
+  if (value === null) {
+    field?.remove();
+    if (misc && misc.children.length === 0) misc.remove();
+    return;
+  }
+  if (!identification) {
+    identification = owner.createElement('identification');
+    insertHead(root, identification, ['defaults', 'credit']);
+  }
+  if (!misc) {
+    misc = owner.createElement('miscellaneous');
+    identification.appendChild(misc);
+  }
+  const target = field ?? owner.createElement('miscellaneous-field');
+  target.setAttribute('name', name);
+  target.textContent = value;
+  if (!field) misc.appendChild(target);
+};
+
+/**
+ * Cho tiêu đề (và tác giả nếu bản nhạc có) trên bản nhạc theo tên bài hát trong ứng dụng: scores.title là nguồn tên duy
+ * nhất (OMR-12). Đổi tên bản nhạc ở thư viện thì lần mở sau đầu trang nhạc đổi theo; sửa tiêu đề trong trình sửa thì lúc
+ * lưu Editor cập nhật lại tên bản nhạc (useSaveFlow). Không ghi lịch sử (là bước chuẩn bị khi mở bản nhạc).
+ * @returns true nếu đã đổi nội dung
+ */
+export function syncTitle(doc: ScoreDocument, name: string, composer?: string | null): boolean {
+  let changed = false;
+  const wanted = name.trim();
+  const current = readHeader(doc);
+  if (wanted && current.title !== wanted) {
+    writeTitle(doc.root, wanted);
+    changed = true;
+  }
+  const author = composer?.trim() ?? '';
+  if (author && current.composer !== author) {
+    writeComposer(doc.root, author);
+    changed = true;
+  }
+  return changed;
+}
+
+const sameStyle = (a: TextStyle, b: TextStyle): boolean =>
+  a.size === b.size && a.bold === b.bold && a.italic === b.italic;
+
+/** Sửa nội dung và kiểu chữ của tiêu đề hoặc tác giả (một bước hoàn tác được). */
+export function setHeaderText(doc: ScoreDocument, field: HeaderField, text: string, style: TextStyle): EditResult {
+  const clean = text.trim();
+  if (style.size !== null && (!Number.isFinite(style.size) || style.size < SIZE_MIN || style.size > SIZE_MAX)) {
+    return { ok: false, reason: 'badValue' };
+  }
+  const current = readHeader(doc);
+  const normalized: TextStyle = { size: style.size, bold: style.bold, italic: style.italic };
+  if (current[field] === clean && sameStyle(current.styles[field], normalized))
+    return { ok: false, reason: 'unchanged' };
+
+  const before = doc.headSnapshot();
+  if (field === 'title') {
+    writeTitle(doc.root, clean);
+    writeMisc(doc.root, 'title-custom', '1');
+  } else {
+    writeComposer(doc.root, clean);
+  }
+  const encoded = encodeStyle(normalized);
+  writeMisc(doc.root, `style-${field}`, encoded || null);
+  return {
+    ok: true,
+    command: {
+      label: t(field === 'title' ? 'editor.cmd.header.title' : 'editor.cmd.header.composer'),
+      snapshots: [],
+      changedIds: [],
+      head: { before, after: doc.headSnapshot() },
+    },
+  };
+}
+
+interface OsmdLike {
+  EngravingRules: unknown;
+  Sheet?: {
+    Title?: { fontStyle?: number };
+    Composer?: { fontStyle?: number };
+    /** Setter của OSMD tạo nhãn mới, nên dùng được cả khi file chưa có tiêu đề / tác giả. */
+    TitleString?: string;
+    ComposerString?: string;
+    /** OSMD lấy <movement-title> làm phụ đề khi file có cả <work-title>: cùng chữ thì tên bài hiện hai lần. */
+    Subtitle?: unknown;
+    SubtitleString?: string;
+  };
+}
+
+/**
+ * Chữ hiện trên bản nhạc ở chỗ tiêu đề / tác giả còn trống (trong Editor), để thấy chỗ trống và bấm vào sửa được. Theo
+ * ngôn ngữ đang dùng (OMR-12), không vẽ chữ "Blank" tiếng Anh.
+ */
+export const blankHeaderText = (field: HeaderField): string => t(`editor.header.blank.${field}`);
+
+/** Tiêu đề và tác giả thực sự vẽ lên bản nhạc. */
+export interface ShownHeader {
+  title: string;
+  composer: string;
+}
+
+/**
+ * Tiêu đề / tác giả cần vẽ: lấy trong file trước, file trống thì lấy tên bài / tác giả của bản nhạc (`fallback`, ví dụ
+ * tên file tải lên), vẫn trống thì hiện {@link blankHeaderText}.
+ */
+export function shownHeader(
+  header: HeaderState,
+  fallback: { title?: string | null; composer?: string | null },
+): ShownHeader {
+  return {
+    title: header.title || realText(fallback.title?.trim() ?? '') || blankHeaderText('title'),
+    composer: header.composer || realText(fallback.composer?.trim() ?? '') || blankHeaderText('composer'),
+  };
+}
+
+/** OSMD FontStyles: 0 thường, 1 đậm, 2 nghiêng, 3 đậm nghiêng. */
+const fontOf = (s: TextStyle): number => (s.bold ? 1 : 0) + (s.italic ? 2 : 0);
+
+/**
+ * Áp chữ, cỡ chữ và kiểu chữ của tiêu đề / tác giả lên OSMD (gọi sau mỗi lần nạp, trước khi vẽ). Có `shown` thì vẽ đúng
+ * chữ đó (Editor: điền tên bản nhạc hoặc "Blank" vào chỗ trống); không có thì chỉ bỏ chữ giả "Music21" của file.
+ */
+/** Số ký tự tiêu đề cỡ mặc định vừa một dòng khổ A4; dài hơn thì thu nhỏ theo tỉ lệ. */
+const TITLE_FIT_CHARS = 55;
+
+export function applyHeaderStyle(osmd: unknown, header: HeaderState, shown?: ShownHeader): void {
+  const target = osmd as OsmdLike;
+  const sheet = target.Sheet;
+  if (sheet && shown) {
+    sheet.TitleString = shown.title;
+    sheet.ComposerString = shown.composer;
+  } else if (sheet) {
+    if (isPlaceholderText(sheet.TitleString)) sheet.TitleString = '';
+    if (isPlaceholderText(sheet.ComposerString)) sheet.ComposerString = '';
+  }
+  // File có cả <work-title> và <movement-title> cùng chữ (bản số hóa, Editor ghi cả hai): bỏ phụ đề trùng tên bài
+  const subtitle = sheet?.SubtitleString?.trim();
+  if (sheet && subtitle && (subtitle === sheet.TitleString?.trim() || subtitle === header.title.trim())) {
+    sheet.Subtitle = undefined;
+  }
+  const rules = target.EngravingRules as Record<string, number>;
+  // Tên dài (tối đa 80 ký tự) không xuống dòng trong OSMD: thu nhỏ chữ để vừa khổ trang thay vì tràn hai bên (T38)
+  const titleText = sheet?.TitleString ?? header.title;
+  const fit = titleText.length > TITLE_FIT_CHARS ? Math.max(0.45, TITLE_FIT_CHARS / titleText.length) : 1;
+  rules.SheetTitleHeight = ((header.styles.title.size ?? DEFAULT_SIZE.title) / 10) * fit;
+  rules.SheetComposerHeight = (header.styles.composer.size ?? DEFAULT_SIZE.composer) / 10;
+  if (target.Sheet?.Title) target.Sheet.Title.fontStyle = fontOf(header.styles.title);
+  if (target.Sheet?.Composer) target.Sheet.Composer.fontStyle = fontOf(header.styles.composer);
+}

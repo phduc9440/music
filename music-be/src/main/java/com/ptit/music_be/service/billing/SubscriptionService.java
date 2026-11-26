@@ -1,0 +1,110 @@
+package com.ptit.music_be.service.billing;
+
+import java.time.Period;
+import java.util.List;
+
+import com.ptit.music_be.dto.enums.billing.SubscriptionSource;
+import com.ptit.music_be.dto.response.billing.MySubscriptionResponse;
+import com.ptit.music_be.dto.response.billing.PlanResponse;
+import com.ptit.music_be.entity.Member;
+import com.ptit.music_be.entity.Plan;
+
+public interface SubscriptionService {
+
+    List<PlanResponse> listPlans();
+
+    /** Gói và số đã dùng của người đang đăng nhập. */
+    MySubscriptionResponse mine();
+
+    /**
+     * Gói đang dùng của nhiều thành viên một lần (cùng quy tắc với {@link #currentPlan}: SUPER_ADMIN không giới hạn, ADMIN
+     * tối thiểu Pro). {@code rolesByMember}: id thành viên -> tên vai trò. Trả map id -> tóm tắt gói.
+     */
+    java.util.Map<String, com.ptit.music_be.dto.response.billing.MemberPlanSummary> plansOf(
+            java.util.Map<String, java.util.Set<String>> rolesByMember);
+
+    /**
+     * SUPER_ADMIN thu hồi gói đang dùng (mua hoặc được cấp) của từng người do vi phạm: gói bị hủy ngay, muốn dùng lại phải
+     * mua lại. Người không có gói để thu hồi hoặc là SUPER_ADMIN được bỏ qua. Kết quả từng người (REVOKED/SKIPPED/FAILED).
+     */
+    java.util.List<com.ptit.music_be.dto.response.billing.BulkGrantResult> revokePlans(
+            java.util.List<String> memberIds, String reason);
+
+    /**
+     * SUPER_ADMIN cấm dùng một gói trong {@code months} tháng (1..120): không dùng, mua hay được cấp lại gói đó; vẫn dùng Free
+     * hoặc mua gói khác (ADMIN bị cấm Pro thì mất Pro theo vai trò). Chỉ cấm gói người đó đã đăng ký: {@code planCode} null =
+     * gói đang dùng của từng người (người đang ở Free được bỏ qua); có giá trị = gói đó, chỉ áp cho người đang có gói này
+     * (ví dụ người có cả Pro theo vai trò lẫn Premium đã mua), người không có thì bỏ qua.
+     * Cấm lại cùng gói thì thay lệnh cũ. SUPER_ADMIN được bỏ qua.
+     */
+    java.util.List<com.ptit.music_be.dto.response.billing.BulkGrantResult> banPlans(
+            java.util.List<String> memberIds, int months, String reason, String planCode);
+
+    /** SUPER_ADMIN gỡ cấm sớm cho từng người. */
+    java.util.List<com.ptit.music_be.dto.response.billing.BulkGrantResult> liftBans(java.util.List<String> memberIds);
+
+    /** Người này đang bị cấm dùng gói {@code planCode} đến lúc nào; null nếu không bị cấm gói đó. */
+    java.time.LocalDateTime planBannedUntil(String memberId, String planCode);
+
+    /** Gói hiện tại của một thành viên bất kỳ (trang chi tiết thành viên ở khu quản trị). */
+    MySubscriptionResponse ofMember(String memberId);
+
+    /**
+     * Gói chính của thành viên: gói cao nhất đang dùng (một người có thể có cùng lúc một gói cá nhân và một gói team);
+     * không có thì gói FREE. SUPER_ADMIN nhận gói ảo UNLIMITED (mọi hạn mức không giới hạn); ADMIN tối thiểu là gói PRO
+     * không thời hạn (gói cá nhân đã mua cao hơn thì dùng gói đó). Hạn mức thực tế lấy ở {@link #effectiveLimits}.
+     */
+    Plan currentPlan(String memberId);
+
+    /**
+     * Hạn mức đang áp dụng: gộp gói Free, gói cá nhân, gói team và Pro theo vai trò (gói bị cấm không tính), mỗi chỉ số lấy
+     * mức cao hơn. SUPER_ADMIN không giới hạn.
+     */
+    PlanLimits effectiveLimits(String memberId);
+
+    /** Thành viên đang có gói này (mua/được cấp, còn hạn); dùng để ghi đơn là gia hạn hay mua mới. */
+    boolean holdsPlan(String memberId, String planId);
+
+    /**
+     * Bật hoặc gia hạn gói. Mỗi người giữ tối đa một gói cá nhân và một gói team cùng lúc. Cùng gói đang hiệu lực thì cộng
+     * thêm thời gian vào ngày hết hạn; khác gói cùng nhóm thì gói cũ của nhóm đó bị hủy ngay và gói mới tính từ bây giờ;
+     * gói của nhóm kia giữ nguyên.
+     */
+    void activate(Member member, Plan plan, Period duration, SubscriptionSource source);
+
+    /** Trừ bớt thời gian (hoàn tiền một đơn): hết hạn sau khi trừ thì hủy gói. Gói khác với {@code plan} thì bỏ qua. */
+    void revoke(String memberId, Plan plan, Period duration);
+
+    /**
+     * SUPER_ADMIN cấp gói cá nhân hoặc gói team thủ công (nguồn ADMIN_GRANT). {@code months} tháng tính theo lịch: cùng gói
+     * đang dùng thì cộng nối tiếp từ ngày hết hạn hiện tại (gia hạn), gói khác thì bắt đầu từ hôm nay và chỉ thay gói cùng
+     * nhóm. Cấp Free = bỏ gói cá nhân (gói team giữ nguyên).
+     */
+    MySubscriptionResponse grant(String memberId, String planCode, int months);
+
+    /**
+     * Cấp một gói cá nhân cho nhiều người (cùng quy tắc với {@link #grant}). Người đang dùng đúng gói thì gia hạn nối tiếp;
+     * SUPER_ADMIN và ADMIN đang có Pro theo vai trò (khi cấp Pro) được bỏ qua. Trả kết quả từng người theo thứ tự gửi lên.
+     */
+    java.util.List<com.ptit.music_be.dto.response.billing.BulkGrantResult> grantMany(
+            java.util.List<String> memberIds, String planCode, int months);
+
+    /** Lịch sử được cấp gói thủ công của người đang đăng nhập, mới nhất trước. */
+    java.util.List<com.ptit.music_be.dto.response.billing.PlanGrantResponse> myGrants();
+
+    /** Lịch sử cấp gói thủ công ở khu quản trị (của một thành viên nếu có {@code memberId}, không thì của mọi người). */
+    com.ptit.music_be.dto.response.common.PageResponse<com.ptit.music_be.dto.response.billing.PlanGrantResponse>
+            grantHistory(String memberId, int page, int size);
+
+    /** SUPER_ADMIN hủy gói hiện tại của thành viên (về Free ngay). */
+    void cancel(String memberId);
+
+    /**
+     * Nhắc gói sắp hết hạn: gửi thông báo cho gói còn 7 ngày và còn 1 ngày. Chạy mỗi ngày một lần nên mỗi gói rơi vào
+     * mỗi khung đúng một lần; trả số thông báo đã gửi.
+     */
+    int remindExpiring();
+
+    /** Chuyển các gói đã quá hạn sang EXPIRED; trả số gói đã chuyển. */
+    int expireDue();
+}

@@ -1,0 +1,348 @@
+/* Trang tải bản nhạc lên (/scores/upload) */
+.sc-upload {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1.5rem;
+  align-items: start;
+}
+.sc-upload__side {
+  position: sticky;
+  top: 1rem;
+  padding: 1.25rem;
+  background: var(--sc-card);
+  border: 1px solid var(--sc-line);
+  border-radius: var(--sc-radius);
+  box-shadow: var(--sc-shadow);
+}
+.sc-upload__submit {
+  width: 100%;
+  justify-content: center;
+  margin-top: 1.25rem;
+  padding: 0.75rem 1rem;
+}
+.sc-upload__progress {
+  margin-top: 1.25rem;
+  font-size: 0.85rem;
+  color: var(--sc-muted);
+}
+.sc-progress--wide {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.4rem;
+}
+
+.sc-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+  color: var(--sc-accent);
+  background: var(--sc-card);
+  border: 2px dashed var(--ui-primary-border);
+  border-radius: 20px;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.sc-dropzone h3 {
+  color: var(--sc-ink);
+}
+.sc-dropzone p {
+  max-width: 420px;
+  margin-bottom: 0.5rem;
+  font-size: 0.88rem;
+  color: var(--sc-muted);
+}
+.sc-dropzone.is-dragging {
+  background: var(--sc-accent-soft);
+  border-color: var(--sc-accent);
+}
+.sc-dropzone.is-disabled {
+  opacity: 0.6;
+}
+
+.sc-upfiles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  list-style: none;
+}
+.sc-upfile {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--sc-card);
+  border: 1px solid var(--sc-line);
+  border-radius: 14px;
+  box-shadow: var(--sc-shadow);
+}
+.sc-upfile.has-error {
+  background: var(--ui-danger-soft);
+  border-color: var(--ui-danger-border);
+}
+.sc-upfile__order {
+  position: absolute;
+  top: 0.35rem;
+  left: 0.35rem;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--sc-accent);
+  color: var(--ui-on-accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--ui-shadow-ink) 25%, transparent);
+}
+.sc-upfile__thumb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 56px;
+  height: 72px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--ui-surface-hover);
+  border: 1px solid var(--sc-line);
+}
+.sc-upfile__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 0.2s;
+}
+.sc-upfile__placeholder {
+  padding: 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--sc-muted);
+  text-align: center;
+}
+
+/* PDF: một thẻ lớn có ảnh trang 1 */
+.sc-upfile--pdf .sc-upfile__thumb {
+  width: 96px;
+  height: 128px;
+}
+
+/* Ảnh: lưới thumbnail đánh số trang, kéo-thả để đổi thứ tự */
+.sc-upfiles--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+.sc-upfiles--grid .sc-upfile {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+.sc-upfiles--grid .sc-upfile[draggable='true'] {
+  cursor: grab;
+}
+.sc-upfiles--grid .sc-upfile__thumb {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 4;
+}
+.sc-upfiles--grid .sc-upfile__actions {
+  justify-content: center;
+}
+.sc-upfile.is-over {
+  border-color: var(--sc-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-primary) 25%, transparent);
+}
+.sc-upfile__info {
+  flex: 1;
+  min-width: 0;
+}
+.sc-upfile__name {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sc-upfile__meta {
+  font-size: 0.8rem;
+  color: var(--sc-muted);
+}
+.sc-upfile__error {
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ui-danger-hover);
+}
+.sc-upfile__actions {
+  display: flex;
+  flex-shrink: 0;
+}
+.sc-upload__summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: var(--sc-muted);
+}
+.sc-upload__summary + .sc-upfiles {
+  margin-top: 0.5rem;
+}
+
+/* Form bên phải */
+.sc-upload__field {
+  margin-top: 1rem;
+}
+.sc-upload__optional {
+  font-weight: 400;
+}
+.sc-upload__hint {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--sc-muted);
+}
+.sc-segment {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--ui-surface-hover);
+  border: 1px solid var(--sc-line);
+  border-radius: 10px;
+}
+.sc-segment__opt {
+  padding: 0.45rem 0.25rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--sc-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sc-segment__opt.is-active {
+  background: var(--ui-surface);
+  color: var(--sc-accent);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--ui-shadow-ink) 12%, transparent);
+}
+.sc-segment__opt:disabled {
+  cursor: not-allowed;
+}
+
+.sc-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+@media (max-width: 860px) {
+  .sc-upload {
+    grid-template-columns: 1fr;
+  }
+  .sc-upload__side {
+    position: static;
+  }
+}
+
+/* Các cách tạo bản nhạc khác (nhập file, bản trống, OMR) dưới vùng kéo-thả: đường chia "hoặc" + hai thẻ bấm được */
+.sc-create-alt {
+  margin-top: 1.5rem;
+}
+.sc-create-alt__divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--sc-muted);
+}
+.sc-create-alt__divider::before,
+.sc-create-alt__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--sc-line);
+}
+.sc-create-alt__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+.sc-create-alt__card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  padding: 0.9rem 1rem;
+  text-align: left;
+  font: inherit;
+  color: var(--sc-ink);
+  background: var(--sc-card);
+  border: 1px solid var(--sc-line);
+  border-radius: 16px;
+  box-shadow: var(--sc-shadow);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+.sc-create-alt__card:hover:not(:disabled) {
+  border-color: var(--sc-accent);
+  box-shadow: var(--sc-shadow-hover);
+  transform: translateY(-1px);
+}
+.sc-create-alt__card:focus-visible {
+  outline: 2px solid var(--sc-accent);
+  outline-offset: 2px;
+}
+.sc-create-alt__card:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.sc-create-alt__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  color: var(--sc-accent);
+  background: var(--sc-accent-soft);
+}
+.sc-create-alt__text {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.sc-create-alt__arrow {
+  flex: none;
+  color: var(--sc-muted);
+  transition:
+    transform 0.15s,
+    color 0.15s;
+}
+.sc-create-alt__card:hover:not(:disabled) .sc-create-alt__arrow {
+  color: var(--sc-accent);
+  transform: translateX(2px);
+}
+
+/* Hạn mức trang OMR của gói hiện ngay ở trang tải lên (OMR-04) */
+.sc-upload__quota {
+  margin-top: 0.75rem;
+}
+.sc-upload__quota-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}

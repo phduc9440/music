@@ -1,0 +1,1670 @@
+# ============================================================
+# Score Collaboration — OpenAPI 3.0 Specification
+# ============================================================
+openapi: 3.0.3
+info:
+  title: Score Collaboration API
+  description: |
+    Cộng tác trên bản nhạc: chia sẻ và xin quyền (xem / góp ý / sửa), góp ý gắn ô nhịp, đánh giá sao,
+    đề xuất sửa (nhận từng ô nhịp), báo cáo vi phạm.
+
+    Mọi phản hồi JSON bọc trong ApiResponse {code, message, result}; code = 200 khi thành công,
+    lỗi trả mã nghiệp vụ (ví dụ 1001 chưa đăng nhập, 1002 không có quyền) kèm HTTP status tương ứng.
+    Sinh từ controller của music-be (springdoc /v3/api-docs) rồi chia theo nhóm chức năng.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: music-be (Spring Boot) khi chạy local
+tags:
+  - name: Score sharing
+    description: Quản lý người được chia sẻ và yêu cầu xin quyền (1 xem, 2 góp ý, 3 chỉnh sửa)
+  - name: Score comments
+    description: "Góp ý gắn vào ô nhịp (mục 4.2): góp ý, trả lời, @nhắc tên, đã xử lý"
+  - name: Score reviews
+    description: "Nhận xét bản nhạc: chấm sao 1-5 và bình luận"
+  - name: Score suggestions
+    description: "Đề xuất sửa bản nhạc (mục 4.3): gửi, xem, nhận từng ô, từ chối, rút lại"
+  - name: Reports
+    description: Báo cáo vi phạm bản nhạc, góp ý (R5)
+
+paths:
+  # ─── Score sharing ───────────────────────────
+  /api/scores/{scoreId}/access-requests:
+    get:
+      tags: [Score sharing]
+      summary: Yêu cầu truy cập đang chờ (chỉ chủ hoặc SUPER_ADMIN)
+      operationId: getAccessRequests
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListAccessRequestResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Score sharing]
+      summary: Xin chủ bản quyền xem (1), góp ý (2) hoặc sửa (3)
+      description: "Lưu trong bản ghi member_scores của người gửi tới khi chủ duyệt hoặc từ chối. Lỗi: 2404 đã có quyền đó hoặc cao hơn (kể cả bản PUBLIC, ai cũng xem và góp ý được)"
+      operationId: requestAccess
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessRequestRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMyAccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/access-requests/me:
+    get:
+      tags: [Score sharing]
+      summary: Quyền hiện tại của tôi và yêu cầu đang chờ với một bản nhạc
+      operationId: getMyAccess
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMyAccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/access-requests/{memberId}/approve:
+    post:
+      tags: [Score sharing]
+      summary: Duyệt yêu cầu; body {permission} tùy chọn để cấp mức quyền khác với mức được xin
+      description: "Lỗi: 2402 không có yêu cầu đang chờ"
+      operationId: approveRequest
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScoreLinkRequest'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreSharingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/access-requests/{memberId}/reject:
+    post:
+      tags: [Score sharing]
+      summary: Từ chối yêu cầu
+      operationId: rejectRequest
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreSharingResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/sharing:
+    get:
+      tags: [Score sharing]
+      summary: Trạng thái chia sẻ của bản nhạc (chỉ chủ hoặc SUPER_ADMIN)
+      operationId: getSharing
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreSharingResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/sharing/members:
+    post:
+      tags: [Score sharing]
+      summary: Mời thành viên qua email với một mức quyền (đổi mức quyền nếu đã chia sẻ trước đó)
+      operationId: addMember
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareMemberRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreSharingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/sharing/members/{memberId}:
+    put:
+      tags: [Score sharing]
+      summary: Đổi mức quyền của thành viên
+      operationId: updateMember
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SharePermissionRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreSharingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Score sharing]
+      summary: Thu hồi quyền truy cập của một thành viên
+      operationId: removeMember
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreSharingResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Score comments ──────────────────────────
+  /api/comments/{commentId}:
+    patch:
+      tags: [Score comments]
+      summary: Sửa nội dung / người được nhắc (tác giả) hoặc đánh dấu đã giải quyết / mở lại (tác giả, chủ, quyền EDIT); trả về cả luồng
+      description: "Lỗi: 3901 không tìm thấy, 3905 không được phép"
+      operationId: updateComments
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScoreCommentUpdateRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreCommentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Score comments]
+      summary: Xóa bình luận (tác giả hoặc chủ bản nhạc); xóa bình luận gốc sẽ xóa luôn các trả lời
+      operationId: deleteComments
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/comments/{commentId}/replies:
+    post:
+      tags: [Score comments]
+      summary: Trả lời bình luận (cần quyền góp ý - COMMENT); trả về cả luồng
+      description: Trả lời một trả lời sẽ gắn vào bình luận gốc. Tác giả bình luận gốc và những người đã trả lời trước nhận thông báo COMMENT_REPLY
+      operationId: replyCommentsReplies
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScoreCommentReplyRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreCommentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/comments:
+    get:
+      tags: [Score comments]
+      summary: Bình luận của bản nhạc kèm trả lời và số lượng theo bộ lọc (cần quyền VIEW)
+      description: "status: OPEN / RESOLVED (bỏ trống để lấy tất cả); mentioned=true: chỉ luồng có nhắc tên tôi"
+      operationId: listScoresComments
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - OPEN
+              - RESOLVED
+        - name: mentioned
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreCommentsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Score comments]
+      summary: Bình luận trên một đoạn ô nhịp (cần quyền góp ý - COMMENT); người được nhắc tên nhận thông báo
+      description: "Lỗi: 3902 nội dung 1-2000 ký tự, 3903 ô nhịp ngoài phạm vi, 3904 cần quyền góp ý (COMMENT), 3906 không được nhắc tên người này, 3907 id bè / nốt sai"
+      operationId: createScoresComments
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScoreCommentRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseScoreCommentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/comments/mentionable:
+    get:
+      tags: [Score comments]
+      summary: "Những người có thể @nhắc tên trên bản nhạc này (chủ, người được chia sẻ, team; bản công khai: người từng bình luận)"
+      operationId: mentionable
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: q
+          in: query
+          description: Lọc theo tên (chứa) hoặc email (bắt đầu bằng)
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListCommentMemberResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Score reviews ───────────────────────────
+  /api/scores/{scoreId}/reviews:
+    get:
+      tags: [Score reviews]
+      summary: Đánh giá của bản nhạc kèm điểm trung bình (cần quyền xem)
+      operationId: getReviews
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseReviewListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/reviews/me:
+    put:
+      tags: [Score reviews]
+      summary: "Tạo hoặc cập nhật đánh giá của tôi (ai xem được bản nhạc đều đánh giá được, kể cả bản công khai)"
+      description: "Cần điểm sao (1-5) và/hoặc lời nhận xét. Lỗi: 2410 điểm sai, 2411 nhận xét quá dài, 2412 đánh giá rỗng"
+      operationId: saveMyReview
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseReviewListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/reviews/{reviewId}:
+    delete:
+      tags: [Score reviews]
+      summary: Xóa đánh giá (tác giả đánh giá, chủ bản nhạc hoặc ADMIN)
+      description: "Lỗi: 2413 không tìm thấy đánh giá"
+      operationId: deleteReview
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: reviewId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseReviewListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Score suggestions ───────────────────────
+  /api/scores/{scoreId}/suggestions:
+    get:
+      tags: [Score suggestions]
+      summary: Đề xuất sửa của bản nhạc, mới nhất trước (người sửa thấy tất cả, người góp ý chỉ thấy của mình)
+      operationId: listScoresSuggestions
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            default: ALL
+            enum:
+              - OPEN
+              - CLOSED
+              - ALL
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePageResponseSuggestionSummaryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Score suggestions]
+      summary: Gửi đề xuất sửa dưới dạng file MusicXML (cần quyền góp ý - COMMENT); chủ và người sửa được thông báo
+      description: "Lỗi: 3110 tiêu đề / mô tả sai, 3111 không có thay đổi, 3112 quá nhiều đề xuất đang mở (10), 3117 quá 30 đề xuất trong 24 giờ, 2013 MusicXML không hợp lệ, 2201 bản nhạc đang bận, 2801 phiên bản gốc không còn"
+      operationId: createScoresSuggestions
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: baseVersion
+          in: query
+          description: Version MusicXML mà file được sửa từ đó
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - name: title
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: description
+          in: query
+          required: false
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseSuggestionDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/suggestions/{id}:
+    get:
+      tags: [Score suggestions]
+      summary: Chi tiết đề xuất sửa kèm cờ xung đột và lỗi thời (tác giả hoặc người sửa)
+      operationId: getSuggestions
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseSuggestionDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Score suggestions]
+      summary: Rút lại đề xuất sửa đang mở của tôi
+      operationId: withdraw
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/suggestions/{id}/accept:
+    post:
+      tags: [Score suggestions]
+      summary: Chấp nhận các ô nhịp đã chọn (tất cả nếu changeIds là null) thành phiên bản mới (cần quyền EDIT)
+      description: "Header If-Match: \"v{currentVersion}\". Lỗi: 2014 xung đột version, 3113 đề xuất đã lỗi thời, 3114 đề xuất không còn mở, 3116 changeIds sai"
+      operationId: acceptSuggestions
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: If-Match
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuggestionDecisionRequest'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseSuggestionDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/suggestions/{id}/content:
+    get:
+      tags: [Score suggestions]
+      summary: MusicXML của đề xuất sửa (tác giả hoặc người sửa)
+      description: "option = 1 (mặc định) là nội dung chính; 2, 3 là phương án khác của gợi ý hợp âm (xem optionCount). 2002 khi file đã bị dọn sau 30 ngày kể từ lúc đề xuất đóng hoặc không có phương án đó"
+      operationId: content
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: option
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 1
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/vnd.recordare.musicxml+xml:
+              schema:
+                type: string
+                format: byte
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/suggestions/{id}/reject:
+    post:
+      tags: [Score suggestions]
+      summary: Từ chối đề xuất sửa (cần quyền EDIT)
+      operationId: reject
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuggestionDecisionRequest'
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseSuggestionDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Reports ─────────────────────────────────
+  /api/comments/{commentId}/reports:
+    post:
+      tags: [Reports]
+      summary: Báo cáo bình luận trên bản nhạc bạn xem được (cùng quy tắc và mã lỗi như báo cáo bản nhạc)
+      operationId: reportComment
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/forum/posts/{postId}/reports:
+    post:
+      tags: [Reports]
+      summary: Báo cáo một trả lời trên diễn đàn (cùng quy tắc và mã lỗi như báo cáo bản nhạc)
+      operationId: reportForumPost
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/forum/threads/{threadId}/reports:
+    post:
+      tags: [Reports]
+      summary: Báo cáo một chủ đề diễn đàn (cùng quy tắc và mã lỗi như báo cáo bản nhạc)
+      operationId: reportForumThread
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/scores/{scoreId}/reports:
+    post:
+      tags: [Reports]
+      summary: "Báo cáo bản nhạc bạn xem được (reason COPYRIGHT|SPAM|INAPPROPRIATE|OTHER, details tối đa 1000 ký tự, bắt buộc với OTHER). Lỗi: 4002 lý do sai, 4003 nội dung của chính mình, 4004 đã có báo cáo đang chờ, 4005 gửi quá nhiều"
+      operationId: reportScore
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: scoreId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Access token trả về khi đăng nhập (header Authorization: Bearer ...)"
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+      description: Web app gửi access token qua cookie HttpOnly access_token
+    internalKey:
+      type: apiKey
+      in: header
+      name: X-Internal-Key
+      description: Khóa bí mật dùng chung với music-ai (biến môi trường AI_INTERNAL_KEY); chỉ nhận từ mạng nội bộ
+
+  responses:
+    BadRequest:
+      description: Dữ liệu không hợp lệ (code nghiệp vụ trong body, ví dụ 1009)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Unauthorized:
+      description: Chưa đăng nhập, token hết hạn (1001) hoặc sai X-Internal-Key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Forbidden:
+      description: Không có quyền thực hiện (1002)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    NotFound:
+      description: Không tìm thấy tài nguyên
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+
+  schemas:
+    AccessRequestRequest:
+      type: object
+      properties:
+        permission:
+          type: string
+          enum:
+            - "1"
+            - "2"
+            - "3"
+        message:
+          type: string
+          maxLength: 500
+          minLength: 0
+      required:
+        - permission
+    AccessRequestResponse:
+      type: object
+      properties:
+        memberId:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        requestedPermission:
+          type: string
+          enum:
+            - "1"
+            - "2"
+            - "3"
+        currentPermission:
+          type: string
+          enum:
+            - "1"
+            - "2"
+            - "3"
+        message:
+          type: string
+        requestedAt:
+          type: string
+          format: date-time
+    CommentMemberResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        avatarUrl:
+          type: string
+    MyAccessResponse:
+      type: object
+      properties:
+        accessLevel:
+          type: string
+        requestedPermission:
+          type: string
+          enum:
+            - "1"
+            - "2"
+            - "3"
+    PageResponseSuggestionSummaryResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/SuggestionSummaryResponse'
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    ReportRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          enum:
+            - COPYRIGHT
+            - SPAM
+            - INAPPROPRIATE
+            - OTHER
+        details:
+          type: string
+    ReviewListResponse:
+      type: object
+      properties:
+        averageRating:
+          type: number
+          format: double
+        ratingCount:
+          type: integer
+          format: int64
+        reviews:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewResponse'
+    ReviewRequest:
+      type: object
+      properties:
+        rating:
+          type: integer
+          format: int32
+          maximum: 5
+          minimum: 1
+        comment:
+          type: string
+          maxLength: 2000
+          minLength: 0
+    ReviewResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        memberId:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        rating:
+          type: integer
+          format: int32
+        comment:
+          type: string
+        mine:
+          type: boolean
+        canDelete:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ScoreCommentReplyRequest:
+      type: object
+      properties:
+        content:
+          type: string
+        mentionIds:
+          type: array
+          items:
+            type: string
+    ScoreCommentRequest:
+      type: object
+      properties:
+        content:
+          type: string
+        startMeasure:
+          type: integer
+          format: int32
+        endMeasure:
+          type: integer
+          format: int32
+        partId:
+          type: string
+        noteIds:
+          type: array
+          items:
+            type: string
+        mentionIds:
+          type: array
+          items:
+            type: string
+    ScoreCommentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        scoreId:
+          type: string
+        parentId:
+          type: string
+        author:
+          $ref: '#/components/schemas/CommentMemberResponse'
+        content:
+          type: string
+        mentions:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommentMemberResponse'
+        createdAt:
+          type: string
+          format: date-time
+        editedAt:
+          type: string
+          format: date-time
+        startMeasure:
+          type: integer
+          format: int32
+        endMeasure:
+          type: integer
+          format: int32
+        partId:
+          type: string
+        noteIds:
+          type: array
+          items:
+            type: string
+        scoreVersion:
+          type: integer
+          format: int32
+        outdated:
+          type: boolean
+        status:
+          type: string
+          enum:
+            - OPEN
+            - RESOLVED
+        resolvedBy:
+          $ref: '#/components/schemas/CommentMemberResponse'
+        resolvedAt:
+          type: string
+          format: date-time
+        replies:
+          type: array
+          items: {}
+        canEdit:
+          type: boolean
+        canDelete:
+          type: boolean
+        canResolve:
+          type: boolean
+    ScoreCommentUpdateRequest:
+      type: object
+      properties:
+        content:
+          type: string
+        status:
+          type: string
+          enum:
+            - OPEN
+            - RESOLVED
+        mentionIds:
+          type: array
+          items:
+            type: string
+    ScoreCommentsResponse:
+      type: object
+      properties:
+        canComment:
+          type: boolean
+        measureCount:
+          type: integer
+          format: int32
+        currentVersion:
+          type: integer
+          format: int32
+        openCount:
+          type: integer
+          format: int64
+        resolvedCount:
+          type: integer
+          format: int64
+        mentionedCount:
+          type: integer
+          format: int64
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScoreCommentResponse'
+    ScoreLinkRequest:
+      type: object
+      properties:
+        permission:
+          type: string
+          enum:
+            - "1"
+            - "2"
+            - "3"
+    ScoreSharingResponse:
+      type: object
+      properties:
+        visibility:
+          type: string
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShareMemberResponse'
+        pendingRequests:
+          type: integer
+          format: int64
+    ShareMemberRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          minLength: 1
+        permission:
+          type: string
+          enum:
+            - "1"
+            - "2"
+            - "3"
+      required:
+        - email
+        - permission
+    ShareMemberResponse:
+      type: object
+      properties:
+        memberId:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        permission:
+          type: string
+          enum:
+            - "1"
+            - "2"
+            - "3"
+        source:
+          type: string
+          enum:
+            - DIRECT
+    SharePermissionRequest:
+      type: object
+      properties:
+        permission:
+          type: string
+          enum:
+            - "1"
+            - "2"
+            - "3"
+      required:
+        - permission
+    SuggestionChangeResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        partIndex:
+          type: integer
+          format: int32
+        partName:
+          type: string
+        measureIndex:
+          type: integer
+          format: int32
+        measureNumber:
+          type: string
+        status:
+          type: string
+          enum:
+            - PENDING
+            - ACCEPTED
+            - REJECTED
+        conflict:
+          type: boolean
+    SuggestionDecisionRequest:
+      type: object
+      properties:
+        changeIds:
+          type: array
+          items:
+            type: string
+        note:
+          type: string
+    SuggestionDetailResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+          enum:
+            - OPEN
+            - ACCEPTED
+            - PARTIAL
+            - REJECTED
+            - WITHDRAWN
+            - OUTDATED
+        structural:
+          type: boolean
+        stale:
+          type: boolean
+        changeCount:
+          type: integer
+          format: int32
+        author:
+          $ref: '#/components/schemas/CommentMemberResponse'
+        createdAt:
+          type: string
+          format: date-time
+        decidedAt:
+          type: string
+          format: date-time
+        scoreId:
+          type: string
+        scoreTitle:
+          type: string
+        description:
+          type: string
+        source:
+          type: string
+          enum:
+            - EDITOR
+            - CHORD_GENERATION
+        baseVersion:
+          type: integer
+          format: int32
+        currentVersion:
+          type: integer
+          format: int32
+        staleReason:
+          type: string
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SuggestionChangeResponse'
+        decidedBy:
+          $ref: '#/components/schemas/CommentMemberResponse'
+        decisionNote:
+          type: string
+        appliedVersion:
+          type: integer
+          format: int32
+        canDecide:
+          type: boolean
+        canWithdraw:
+          type: boolean
+        optionCount:
+          type: integer
+          format: int32
+          description: "Số phương án (gợi ý hợp âm có tới 3; 0 khi file đã dọn)"
+    SuggestionSummaryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+          enum:
+            - OPEN
+            - ACCEPTED
+            - PARTIAL
+            - REJECTED
+            - WITHDRAWN
+            - OUTDATED
+        structural:
+          type: boolean
+        stale:
+          type: boolean
+        changeCount:
+          type: integer
+          format: int32
+        author:
+          $ref: '#/components/schemas/CommentMemberResponse'
+        createdAt:
+          type: string
+          format: date-time
+        decidedAt:
+          type: string
+          format: date-time
+
+    # ── Wrapped Responses ──
+    ApiResponseListAccessRequestResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessRequestResponse'
+    ApiResponseListCommentMemberResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommentMemberResponse'
+    ApiResponseMyAccessResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/MyAccessResponse'
+    ApiResponsePageResponseSuggestionSummaryResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PageResponseSuggestionSummaryResponse'
+    ApiResponseReviewListResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ReviewListResponse'
+    ApiResponseScoreCommentResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ScoreCommentResponse'
+    ApiResponseScoreCommentsResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ScoreCommentsResponse'
+    ApiResponseScoreSharingResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/ScoreSharingResponse'
+    ApiResponseSuggestionDetailResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/SuggestionDetailResponse'
+    ApiResponseVoid:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result: {}
+    ApiResponseError:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 1002
+        message:
+          type: string
+          example: You do not have permission

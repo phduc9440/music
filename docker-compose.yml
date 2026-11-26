@@ -1,0 +1,89 @@
+# Chạy cả hệ thống: cp .env.example .env && docker compose up --build
+# Web http://localhost:5173 · BE http://localhost:8080/swagger-ui.html
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: music_db
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  music-ai:
+    build: ./music-ai
+    environment:
+      INTERNAL_KEY: ${AI_INTERNAL_KEY}
+      JAVA_BASE_URL: http://music-be:8080
+      STORAGE_ROOT: /data/storage
+      # CPU chậm hơn GPU nhiều, nới thời gian chờ (xem music-ai/README.md)
+      INFERENCE_PAGE_TIMEOUT_S: "300"
+      # Ngân sách một bài = 300 s + số trang × TASK_TIMEOUT_PER_PAGE_S, không quá TASK_TIMEOUT_S (OMR-T03)
+      TASK_TIMEOUT_PER_PAGE_S: "360"
+      TASK_TIMEOUT_S: "3600"
+      # AI xác minh ô nhịp qua dịch vụ ngoài (off / anthropic). music-be đọc cùng biến để trang tải lên báo người dùng (X-05)
+      OMR_LLM: ${OMR_LLM:-off}
+    volumes:
+      - storage:/data/storage
+      - hf-cache:/cache/huggingface
+
+  music-be:
+    build: ./music-be
+    # MuseScore 3.6.2 (xuất PDF, SVG, MP3, WAV) chỉ có bản x86_64: chạy music-be dạng amd64 để Mac Apple Silicon cũng
+    # xuất được (Docker Desktop dùng Rosetta). Không cần xuất file mà muốn BE chạy nhanh hơn trên Mac: BE_PLATFORM=linux/arm64
+    platform: ${BE_PLATFORM:-linux/amd64}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/music_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      JWT_SIGNER_KEY: ${JWT_SIGNER_KEY}
+      JWT_VALID_DURATION: ${JWT_VALID_DURATION:-7}
+      JWT_REFRESHABLE_DURATION: ${JWT_REFRESHABLE_DURATION:-24}
+      AI_BASE_URL: http://music-ai:8000
+      AI_INTERNAL_KEY: ${AI_INTERNAL_KEY}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_IOS_CLIENT_ID: ${GOOGLE_IOS_CLIENT_ID:-}
+      GOOGLE_ANDROID_CLIENT_ID: ${GOOGLE_ANDROID_CLIENT_ID:-}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      VNPAY_TMN_CODE: ${VNPAY_TMN_CODE:-}
+      VNPAY_HASH_SECRET: ${VNPAY_HASH_SECRET:-}
+      VNPAY_RETURN_URL: ${VNPAY_RETURN_URL:-http://localhost:5173/billing/result}
+      APP_WEB_URL: ${APP_WEB_URL:-http://localhost:5173}
+      # Các địa chỉ khác được mở web (127.0.0.1, IP trong mạng LAN khi demo), cách nhau bởi dấu phẩy; APP_WEB_URL luôn được phép
+      APP_CORS_ORIGINS: ${APP_CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
+      APP_STORAGE_LOCAL_ROOT: /data/storage
+      OMR_LLM: ${OMR_LLM:-off}
+    volumes:
+      - storage:/data/storage
+    ports:
+      - "${BE_PORT:-8080}:8080"
+
+  web:
+    build:
+      context: ./music-web
+      args:
+        # Gọi API cùng nguồn qua nginx (nginx.conf đã proxy /api và /ws), không phụ thuộc CORS/cookie khác cổng (X-07).
+        # Muốn trình duyệt gọi thẳng BE ở địa chỉ khác thì đặt WEB_API_BASE_URL trong .env.
+        VITE_API_BASE_URL: ${WEB_API_BASE_URL:-/api}
+        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+    depends_on:
+      - music-be
+    ports:
+      - "${WEB_PORT:-5173}:80"
+
+volumes:
+  mysql-data:
+  storage:
+  hf-cache:

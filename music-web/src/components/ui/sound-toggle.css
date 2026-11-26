@@ -1,0 +1,16 @@
+/* Mục "Âm thanh nốt nhạc khi bấm" trong menu tài khoản: nhãn trạng thái dạng viên thuốc ở bên phải; đang bật tô xanh
+   ngọc nhạt, đang tắt thì xám. */
+.sound-item__state {
+  margin-left: auto;
+  padding: 0.05rem 0.55rem;
+  border-radius: 999px;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-xs);
+  font-weight: 600;
+}
+
+.sound-item__state.is-on {
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { authApi } from '../services';
+import { t, translateError } from '../i18n/core';
 
 interface Props {
   isOpen: boolean;
@@ -18,20 +19,20 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      toast.error('New passwords do not match');
+      toast.error(t('profile.password.mismatch'));
       return;
     }
 
     setIsLoading(true);
     try {
       await authApi.changePassword({ oldPassword, newPassword });
-      toast.success('Password changed successfully');
+      toast.success(t('profile.password.changed'));
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
       onClose();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to change password');
+    } catch (error) {
+      toast.error(translateError(error, t('profile.password.failed')));
     } finally {
       setIsLoading(false);
     }
@@ -39,16 +40,16 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
 
   return (
     <div className="modal-overlay active">
-      <div className="glass-container modal-content" style={{ maxWidth: '400px' }}>
+      <div className="auth-card modal-content" style={{ maxWidth: '400px' }}>
         <div className="modal-header">
-          <h3>Change Password</h3>
+          <h3>{t('common.header.changePassword')}</h3>
           <button onClick={onClose} className="modal-close" disabled={isLoading}>
             &times;
           </button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Current Password</label>
+            <label>{t('profile.password.current')}</label>
             <input
               type="password"
               className="form-control"
@@ -58,7 +59,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
             />
           </div>
           <div className="form-group">
-            <label>New Password</label>
+            <label>{t('profile.password.new')}</label>
             <input
               type="password"
               className="form-control"
@@ -69,7 +70,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
             />
           </div>
           <div className="form-group">
-            <label>Confirm New Password</label>
+            <label>{t('profile.password.confirm')}</label>
             <input
               type="password"
               className="form-control"
@@ -85,7 +86,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
             style={{ width: '100%', marginTop: '1rem' }}
             disabled={isLoading}
           >
-            {isLoading ? 'Saving...' : 'Change Password'}
+            {isLoading ? t('scores.edit.saving') : t('common.header.changePassword')}
           </button>
         </form>
       </div>

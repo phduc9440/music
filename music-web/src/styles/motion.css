@@ -1,0 +1,181 @@
+/*
+ * Hiệu ứng chuyển động dùng chung (mục 5.6): chuyển trang bằng View Transitions, hiện dần khi cuộn (.reveal), khung xương
+ * (.ui-skeleton). Không đặt hiệu ứng trang trí trong Editor và Player. Tắt hết khi người dùng bật "Giảm chuyển động".
+ */
+:root {
+  --ui-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ui-motion-fast: 160ms;
+  --ui-motion-base: 260ms;
+  --ui-motion-slow: 600ms;
+}
+
+/* ---------------------------------------------------------------------------------------- chuyển trang */
+/* Phần khung cố định (thanh trên, thanh bên) có tên riêng để không nhòe theo nội dung khi chuyển trang */
+.app-header,
+.adm-header {
+  view-transition-name: site-header;
+}
+
+.adm-sidebar {
+  view-transition-name: site-sidebar;
+}
+
+::view-transition-group(site-header),
+::view-transition-group(site-sidebar) {
+  animation-duration: 0s;
+}
+
+::view-transition-old(root) {
+  animation: ui-vt-out var(--ui-motion-fast) var(--ui-ease) both;
+}
+
+::view-transition-new(root) {
+  animation: ui-vt-in var(--ui-motion-base) var(--ui-ease) both;
+}
+
+@keyframes ui-vt-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes ui-vt-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Phần tử dùng chung giữa hai trang (ảnh bìa thẻ bản nhạc, chân dung nhạc sĩ): bay từ thẻ sang vị trí mới */
+::view-transition-group(ui-shared-cover) {
+  animation-duration: 380ms;
+  animation-timing-function: var(--ui-ease);
+}
+
+::view-transition-old(ui-shared-cover),
+::view-transition-new(ui-shared-cover) {
+  height: 100%;
+  object-fit: cover;
+  overflow: clip;
+}
+
+/* ------------------------------------------------------------------------------------- hiện dần khi cuộn */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity var(--ui-motion-slow) ease,
+    transform var(--ui-motion-slow) ease;
+}
+
+.reveal.reveal--in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Thẻ trong lưới: hiện bằng animation (không đụng transform/transition của thẻ, nên hiệu ứng rê chuột vẫn chạy) */
+.reveal-item:not(.reveal--in) {
+  opacity: 0;
+}
+
+.reveal-item.reveal--in {
+  animation: ui-rise var(--ui-motion-slow) var(--ui-ease) backwards;
+}
+
+@keyframes ui-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+/* Các thẻ cùng một hàng hiện lần lượt thay vì cùng lúc (6 nhịp lặp lại) */
+.reveal-item:nth-child(6n + 2).reveal--in {
+  animation-delay: 60ms;
+}
+.reveal-item:nth-child(6n + 3).reveal--in {
+  animation-delay: 120ms;
+}
+.reveal-item:nth-child(6n + 4).reveal--in {
+  animation-delay: 180ms;
+}
+.reveal-item:nth-child(6n + 5).reveal--in {
+  animation-delay: 240ms;
+}
+.reveal-item:nth-child(6n + 6).reveal--in {
+  animation-delay: 300ms;
+}
+
+/* -------------------------------------------------------------------------------------------- khung xương */
+.ui-skeleton {
+  display: block;
+  border-radius: var(--ui-radius, 8px);
+  background: linear-gradient(
+    90deg,
+    var(--ui-surface-hover) 25%,
+    var(--ui-surface-muted) 37%,
+    var(--ui-surface-hover) 63%
+  );
+  background-size: 200% 100%;
+  animation: ui-shimmer 1.3s linear infinite;
+}
+
+.ui-skeleton--line {
+  height: 0.9rem;
+  margin: 0.35rem 0;
+}
+
+.ui-skeleton--short {
+  width: 55%;
+}
+
+.ui-skeleton--circle {
+  border-radius: 50%;
+}
+
+.ui-skeleton-stack {
+  display: grid;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.adm-table__skeleton {
+  padding: 0.75rem 0.25rem;
+}
+
+.sc-bell__loading {
+  padding: 0.75rem 1rem;
+}
+
+@keyframes ui-shimmer {
+  to {
+    background-position-x: -200%;
+  }
+}
+
+/* --------------------------------------------------------------------------------------- giảm chuyển động */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .reveal-item:not(.reveal--in) {
+    opacity: 1;
+  }
+
+  .reveal-item.reveal--in {
+    animation: none;
+  }
+
+  .ui-skeleton {
+    animation: none;
+  }
+}

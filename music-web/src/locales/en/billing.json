@@ -1,0 +1,171 @@
+{
+  "unlimited": "Unlimited",
+  "included": "Included",
+  "notIncluded": "Not included",
+  "loadFailed": "Could not load plan information",
+  "limits": {
+    "omrPagesPerMonth": "OMR pages per month",
+    "omrConcurrent": "Concurrent OMR tasks",
+    "storageMb": "Storage",
+    "keptVersions": "Versions kept",
+    "exportsPerMonth": "Exports per month",
+    "chordGenerationsPerMonth": "Chord suggestions per month",
+    "collab": "Real-time co-editing",
+    "team": "Create teams",
+    "omrPriority": "OMR queue priority",
+    "teamMembers": "Members per team",
+    "omrMaxPagesPerJob": "Max pages per OMR upload",
+    "chordOptions": "Options per chord suggestion",
+    "chordMaxMeasures": "Max measures for chord suggestions",
+    "chordAdvanced": "Advanced chord options"
+  },
+  "status": {
+    "ACTIVE": "Active",
+    "FREE": "Free",
+    "UNLIMITED": "Unlimited"
+  },
+  "source": {
+    "PAYMENT": "Purchased online",
+    "POINTS_TRIAL": "Points trial",
+    "ADMIN_GRANT": "Granted by an admin",
+    "ROLE": "From admin role"
+  },
+  "period": {
+    "MONTH": "Monthly",
+    "YEAR": "Yearly"
+  },
+  "periodUnit": {
+    "MONTH": "month",
+    "YEAR": "year"
+  },
+  "myPlan": {
+    "title": "My plan",
+    "subtitle": "Your plans and this month's usage",
+    "expires": "Expires on {date}",
+    "omrUsed": "OMR pages used this month",
+    "usedUnlimited": "{used} (unlimited)",
+    "viewPlans": "View plans",
+    "roleGrant": {
+      "SUPER_ADMIN": "Super admin benefits: unlimited, never expires.",
+      "ADMIN": "Admin benefits: Pro plan with no expiry."
+    },
+    "renewTitle": "Renew plan",
+    "renew": "Renew for 1 {period}",
+    "renewSummary": "Add 1 {period} for {amount}. After payment, your plan expires on {date}.",
+    "expiringSoon_one": "Your plan expires in {count} day. Renew to avoid interruption.",
+    "expiringSoon_other": "Your plan expires in {count} days. Renew to avoid interruption.",
+    "expiresToday": "Your plan expires today. Renew to avoid interruption.",
+    "heldTitle": "Your plans",
+    "heldDesc": "You can hold one personal plan and one team plan at the same time; each has its own expiry and renewal.",
+    "freeNote": "You are on the Free plan.",
+    "addPlan": "Add a plan",
+    "bannedPlan": "This plan is banned, so it cannot be renewed.",
+    "limitsTitle": "Limits in effect",
+    "mergedNote": "You have several plans: each limit uses the higher plan."
+  },
+  "pricing": {
+    "saveUpTo": "Save up to {percent}% with yearly billing",
+    "fullYearPrice": "12 monthly payments: {amount} ₫",
+    "yearSaving": "Save {amount} ₫ ({percent}%)",
+    "yearHint": "Pay yearly: save {percent}% ({amount} ₫)",
+    "title": "Plans",
+    "subtitle": "Pick the plan that fits how you digitize and edit scores",
+    "period": "Billing period",
+    "current": "Current plan",
+    "free": "Free",
+    "buy": "Buy plan",
+    "redirecting": "Redirecting to the payment gateway...",
+    "buyFailed": "Could not create the payment order",
+    "renew": "Renew",
+    "notNeeded": "Not needed",
+    "includedForAdmin": "Included (admin)",
+    "roleNote": {
+      "SUPER_ADMIN": "You are a super admin: every feature is unlimited and you do not need a plan.",
+      "ADMIN": "You are an admin: you already have Pro benefits with no expiry. You can still buy a higher plan."
+    },
+    "bannedButton": "Banned until {date}",
+    "switch": "Switch to this plan",
+    "switchHint": "Your current {plan} plan stops as soon as you buy this one.",
+    "signInToBuy": "Sign in to buy"
+  },
+  "result": {
+    "title": "Payment result",
+    "notFound": "Payment order not found",
+    "plan": "Plan",
+    "amount": "Amount",
+    "paidAt": "Paid at",
+    "tryAgain": "Choose another plan",
+    "status": {
+      "PENDING": "Confirming",
+      "PAID": "Payment successful",
+      "FAILED": "Payment failed",
+      "EXPIRED": "Order expired",
+      "REFUNDED": "Refunded",
+      "GRANTED": "Granted by admin"
+    },
+    "message": {
+      "PENDING": "We are waiting for the payment gateway to confirm. This page updates by itself, no need to reload.",
+      "PAID": "Your plan is now active. Thank you!",
+      "FAILED": "The transaction did not complete, you were not charged for this order.",
+      "EXPIRED": "The order ran out of payment time. Please create a new one.",
+      "REFUNDED": "This order was refunded."
+    },
+    "success": "Payment successful, your plan is now active!"
+  },
+  "history": {
+    "title": "Plan purchase history",
+    "empty": "You have no transactions yet.",
+    "pay": "Continue payment",
+    "payFailed": "Could not reopen the payment page",
+    "provider": "Payment gateway",
+    "createdAt": "Created at",
+    "orderCode": "Order code",
+    "pendingNote": "{kind} order for the {plan} plan ({period}), {amount}, not paid yet. Complete it before {time} or it will expire.",
+    "countdown": "{time} left to pay",
+    "spent": "Total spent on plans",
+    "spentOrders_one": "{count} paid order",
+    "spentOrders_other": "{count} paid orders",
+    "spentRefunded_one": "{amount} refunded ({count} order, not counted)",
+    "spentRefunded_other": "{amount} refunded ({count} orders, not counted)",
+    "grantFree": "Granted, no charge",
+    "grantMonths": "{count} months",
+    "validUntil": "Valid until"
+  },
+  "provider": {
+    "VNPAY": "VNPay",
+    "ADMIN_GRANT": "Granted by admin"
+  },
+  "kind": {
+    "NEW": "New purchase",
+    "RENEW": "Renewal"
+  },
+  "audience": {
+    "PERSONAL": "Personal",
+    "TEAM": "Team"
+  },
+  "audienceDesc": {
+    "PERSONAL": "For one person digitizing and editing their own scores.",
+    "TEAM": "For groups working together; limits are shared by the whole team."
+  },
+  "unlimitedPlan": "Unlimited",
+  "banned": "You are banned from the {plan} plan until {date}. Free and other plans are still available.",
+  "upgrade": {
+    "title": "Plan limit reached",
+    "viewPlans": "View plans",
+    "suggest": "Upgrade to the {plan} plan to keep going.",
+    "reason": {
+      "OMR_PAGES": "You have used {used}/{limit} OMR pages this month.",
+      "EXPORTS": "You have used {used}/{limit} exports this month.",
+      "CHORD_GENERATIONS": "You have used {used}/{limit} chord suggestions this month.",
+      "STORAGE_MB": "You are using {used} MB of {limit} MB storage.",
+      "DEFAULT": "You have reached the limit of your current plan.",
+      "OMR_PAGES_PER_JOB": "This file has {used} pages; your plan allows up to {limit} pages per upload.",
+      "CHORD_MEASURES": "This score has {used} measures; your plan suggests chords for up to {limit} measures.",
+      "CHORD_ADVANCED": "Colourful and Sevenths / Jazz colours, Bold creativity and Dense changes are available on higher plans."
+    },
+    "titles": {
+      "perRequest": "Over your plan's per-use limit",
+      "feature": "Available on higher plans"
+    }
+  }
+}

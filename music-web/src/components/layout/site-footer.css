@@ -1,0 +1,165 @@
+/* Chân trang dùng chung: dải xanh ngọc → xám đá chuyển sắc khép trang lại, cùng màu với khối đầu trang. Token chữ / viền được
+   khai báo lại trong dải để logo, cột liên kết, dòng kẻ khuông tự sang chữ ngà. */
+.site-footer {
+  --sf-max: 1120px;
+  --ui-text: var(--ui-hero-text);
+  --ui-text-2: var(--ui-hero-text-2);
+  --ui-border-strong: var(--ui-hero-line);
+  --ui-primary: var(--ui-hero-text);
+  margin-top: 4rem;
+  background: linear-gradient(160deg, var(--ui-hero-from), var(--ui-hero-to));
+  color: var(--ui-hero-text);
+}
+
+.site-footer__inner {
+  max-width: var(--sf-max);
+  margin: 0 auto;
+  padding: 3rem 16px 2rem;
+  display: grid;
+  /* --sf-cols: số cột liên kết, do SiteFooter đặt */
+  grid-template-columns: minmax(0, 1.6fr) repeat(var(--sf-cols, 3), minmax(0, 1fr));
+  gap: 2rem;
+}
+
+.site-footer__logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--ui-text);
+  font-family: var(--ui-font-display);
+  font-size: 1.15rem;
+  font-weight: 480;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+}
+
+/* biểu tượng Scorewise (BrandMark, SVG tự vẽ nền và màu): chỉ giữ không co lại */
+.site-footer__mark {
+  flex: none;
+}
+
+.site-footer__brand p {
+  max-width: 300px;
+  margin: 0.75rem 0 0;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-md);
+  line-height: 1.6;
+}
+
+.site-footer__col h2 {
+  margin: 0 0 0.75rem;
+  color: var(--ui-text);
+  font-size: var(--ui-text-md);
+  font-weight: 500;
+}
+
+.site-footer__col ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.site-footer__col a {
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-md);
+  text-decoration: none;
+}
+
+.site-footer__col a:hover {
+  color: var(--ui-text);
+  text-decoration: underline;
+}
+
+.site-footer a:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.site-footer__bottom {
+  max-width: var(--sf-max);
+  margin: 0 auto;
+  padding: 0 16px 1.5rem;
+}
+
+/* năm dòng kẻ khuông làm đường phân cách */
+.site-footer__staff {
+  display: block;
+  height: 17px;
+  margin-bottom: 1rem;
+  background: repeating-linear-gradient(to bottom, var(--ui-border-strong) 0 1px, transparent 1px 4px);
+}
+
+.site-footer__legal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-sm);
+}
+
+@media (max-width: 860px) {
+  .site-footer__inner {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .site-footer__brand {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---- bản cho trang đã đăng nhập và khu quản trị: gọn hơn ---- */
+@media (max-width: 480px) {
+  .site-footer__inner {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---- bản gọn (trang đã đăng nhập): một hàng logo + liên kết hay dùng, ngăn với dòng bản quyền bằng một vạch mảnh ---- */
+.site-footer--compact {
+  margin-top: 0;
+}
+
+.site-footer__compact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  max-width: var(--sf-max);
+  margin: 0 auto;
+  padding: 1.5rem 16px 1rem;
+}
+
+.site-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-footer__links a {
+  color: var(--ui-text-2);
+  font-size: var(--ui-text-md);
+  text-decoration: none;
+}
+
+.site-footer__links a:hover {
+  color: var(--ui-text);
+  text-decoration: underline;
+}
+
+.site-footer--compact .site-footer__bottom {
+  padding-bottom: 1.25rem;
+}
+
+.site-footer--compact .site-footer__legal {
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--ui-border-strong);
+}

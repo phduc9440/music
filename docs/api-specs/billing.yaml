@@ -1,0 +1,478 @@
+# ============================================================
+# Billing — OpenAPI 3.0 Specification
+# ============================================================
+openapi: 3.0.3
+info:
+  title: Billing API
+  description: |
+    Gói dịch vụ và thanh toán: bảng giá, gói hiện tại và hạn mức, tạo đơn / thanh toán lại qua VNPay, IPN.
+
+    Mọi phản hồi JSON bọc trong ApiResponse {code, message, result}; code = 200 khi thành công,
+    lỗi trả mã nghiệp vụ (ví dụ 1001 chưa đăng nhập, 1002 không có quyền) kèm HTTP status tương ứng.
+    Sinh từ controller của music-be (springdoc /v3/api-docs) rồi chia theo nhóm chức năng.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: music-be (Spring Boot) khi chạy local
+tags:
+  - name: Billing
+    description: Gói dịch vụ và hạn mức
+  - name: Payments
+    description: Mua gói qua cổng thanh toán (VNPay sandbox)
+
+paths:
+  # ─── Billing ─────────────────────────────────
+  /api/public/plans:
+    get:
+      tags: [Billing]
+      summary: Danh sách gói (bảng giá), không cần đăng nhập
+      operationId: plans
+      security: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListPlanResponse'
+  /api/subscriptions/me:
+    get:
+      tags: [Billing]
+      summary: Gói hiện tại và số đã dùng trong tháng
+      operationId: mineSubscriptionsMe
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMySubscriptionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ─── Payments ────────────────────────────────
+  /api/payments/orders:
+    get:
+      tags: [Payments]
+      summary: Lịch sử đơn mua gói của tôi, mới nhất trước
+      operationId: myOrders
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseListPaymentOrderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Payments]
+      summary: Tạo đơn mua gói, trả payUrl của cổng để chuyển hướng người dùng
+      description: "Errors: 3701 gói không tồn tại, 3711 cổng chưa cấu hình, 3712 gói không mua được, 3715 chu kỳ sai"
+      operationId: createOrder
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentOrderRequest'
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePaymentOrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/payments/orders/{orderCode}:
+    get:
+      tags: [Payments]
+      summary: Trạng thái đơn của tôi (trang kết quả chỉ hỏi và hiển thị, không kích hoạt gói)
+      description: "Errors: 3713 đơn không tồn tại hoặc không phải của bạn"
+      operationId: getOrder
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: orderCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePaymentOrderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/payments/orders/{orderCode}/pay:
+    post:
+      tags: [Payments]
+      summary: Lấy lại link thanh toán cho đơn đang chờ của tôi
+      description: "Errors: 3713 đơn không tồn tại hoặc không phải của bạn, 3717 đơn không còn chờ thanh toán"
+      operationId: resumeOrder
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: orderCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePaymentOrderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/payments/vnpay/ipn:
+    get:
+      tags: [Payments]
+      summary: IPN của VNPay (cổng gọi, không cần đăng nhập, kiểm chữ ký)
+      operationId: vnpayIpn
+      security: []
+      parameters:
+        - name: params
+          in: query
+          required: true
+          schema:
+            type: object
+            additionalProperties:
+              type: string
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/payments/vnpay/return:
+    post:
+      tags: [Payments]
+      summary: Trang kết quả gửi tham số VNPay đưa về; chỉ chấp nhận khi chữ ký đúng
+      description: "Errors: 3713 sai chữ ký hoặc đơn không tồn tại / không phải của bạn"
+      operationId: vnpayReturn
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                type: string
+        required: true
+      responses:
+        '200':
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponsePaymentOrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Access token trả về khi đăng nhập (header Authorization: Bearer ...)"
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+      description: Web app gửi access token qua cookie HttpOnly access_token
+    internalKey:
+      type: apiKey
+      in: header
+      name: X-Internal-Key
+      description: Khóa bí mật dùng chung với music-ai (biến môi trường AI_INTERNAL_KEY); chỉ nhận từ mạng nội bộ
+
+  responses:
+    BadRequest:
+      description: Dữ liệu không hợp lệ (code nghiệp vụ trong body, ví dụ 1009)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Unauthorized:
+      description: Chưa đăng nhập, token hết hạn (1001) hoặc sai X-Internal-Key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Forbidden:
+      description: Không có quyền thực hiện (1002)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    NotFound:
+      description: Không tìm thấy tài nguyên
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+
+  schemas:
+    CreatePaymentOrderRequest:
+      type: object
+      properties:
+        planCode:
+          type: string
+        period:
+          type: string
+          enum:
+            - MONTH
+            - YEAR
+        provider:
+          type: string
+          enum:
+            - VNPAY
+    HeldPlan:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        source:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+    HeldSubscription:
+      type: object
+      properties:
+        plan:
+          $ref: '#/components/schemas/PlanResponse'
+        source:
+          type: string
+        startsAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        banned:
+          type: boolean
+    MySubscriptionResponse:
+      type: object
+      properties:
+        plan:
+          $ref: '#/components/schemas/PlanResponse'
+        limits:
+          $ref: '#/components/schemas/PlanLimits'
+        subscriptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/HeldSubscription'
+        status:
+          type: string
+        source:
+          type: string
+        roleGrant:
+          type: string
+        heldPlans:
+          type: array
+          items:
+            $ref: '#/components/schemas/HeldPlan'
+        bans:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanBanInfo'
+        startsAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        omrPagesUsed:
+          type: integer
+          format: int32
+    PaymentOrderResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        orderCode:
+          type: string
+        planCode:
+          type: string
+        planName:
+          type: string
+        period:
+          type: string
+        kind:
+          type: string
+        amount:
+          type: integer
+          format: int64
+        provider:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        paidAt:
+          type: string
+          format: date-time
+        memberEmail:
+          type: string
+        payUrl:
+          type: string
+    PlanBanInfo:
+      type: object
+      properties:
+        planCode:
+          type: string
+        planName:
+          type: string
+        until:
+          type: string
+          format: date-time
+    PlanLimits:
+      type: object
+      properties:
+        omrPagesPerMonth:
+          type: integer
+          format: int32
+        omrConcurrent:
+          type: integer
+          format: int32
+        storageMb:
+          type: integer
+          format: int32
+        keptVersions:
+          type: integer
+          format: int32
+        exportsPerMonth:
+          type: integer
+          format: int32
+        collab:
+          type: boolean
+        team:
+          type: boolean
+        omrPriority:
+          type: boolean
+        teamMembers:
+          type: integer
+          format: int32
+        chordGenerationsPerMonth:
+          type: integer
+          format: int32
+    PlanResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        audience:
+          type: string
+        priceMonth:
+          type: integer
+          format: int64
+        priceYear:
+          type: integer
+          format: int64
+        limits:
+          $ref: '#/components/schemas/PlanLimits'
+        sortOrder:
+          type: integer
+          format: int32
+
+    # ── Wrapped Responses ──
+    ApiResponseListPaymentOrderResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentOrderResponse'
+    ApiResponseListPlanResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanResponse'
+    ApiResponseMySubscriptionResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/MySubscriptionResponse'
+    ApiResponsePaymentOrderResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          example: 200
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PaymentOrderResponse'
+    ApiResponseError:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 1002
+        message:
+          type: string
+          example: You do not have permission

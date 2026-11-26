@@ -1,0 +1,743 @@
+/* Khung chung của các trang người dùng. Màu và kích thước lấy từ styles/tokens.css (cùng bộ với trang quản trị). */
+
+.app-shell {
+  isolation: isolate; /* để ảnh đàn nền (z-index -1) nằm dưới nội dung nhưng trên nền khung */
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  font-family: var(--ui-font);
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  /* thanh trên là bề mặt nổi mờ (frosted) cùng hệ với khung nội dung: nền --ui-panel trong suốt nhẹ, viền dưới ấm,
+     bóng cấp 1 để tách khỏi trang khi cuộn */
+  background: color-mix(in srgb, var(--ui-panel) 88%, transparent);
+  border-bottom: 1px solid var(--ui-panel-border);
+  box-shadow: var(--ui-elev-1);
+  backdrop-filter: blur(12px);
+}
+
+/* Kiểu Facebook: thanh trên chiếm hết chiều ngang, ba cột bằng nhau hai bên, điều hướng nằm giữa */
+.app-header__inner {
+  height: var(--ui-header-h);
+  padding: 0 1rem;
+  display: grid;
+  /* hai bên vừa nội dung, điều hướng chiếm phần giữa: bên phải nhiều nút (Nâng cấp, thông báo...) cũng không đè lên menu */
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+}
+
+.app-header__left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  justify-self: start;
+}
+
+.app-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+  color: var(--ui-text);
+  font-family: var(--ui-font-display);
+  font-size: 1rem;
+  font-weight: 480;
+  letter-spacing: 0.01em;
+}
+
+.app-brand:hover {
+  color: var(--ui-text);
+}
+
+/* biểu tượng Scorewise (BrandMark, SVG tự vẽ nền và màu): chỉ giữ không co lại */
+.app-brand__logo {
+  flex: none;
+}
+
+.app-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 0;
+  height: 100%;
+}
+
+.app-nav__item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 40px;
+  padding: 0 1rem;
+  border-radius: 40px;
+  color: var(--ui-text);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  white-space: nowrap;
+  transition: background-color 0.15s ease;
+}
+
+.app-nav__item:hover {
+  background: var(--ui-flat-2);
+  color: var(--ui-text);
+}
+
+/* mục đang mở: viên thuốc nền nhấn nhạt, chữ màu tương tác */
+.app-nav__item--active,
+.app-nav__item--active:hover {
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+  font-weight: 500;
+}
+
+/* nhóm điều hướng (menu thả xuống) */
+.app-navgroup {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.app-navgroup__trigger {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.app-navgroup__trigger svg {
+  transition: transform 0.15s ease;
+}
+
+.app-navgroup--open .app-navgroup__trigger svg {
+  transform: rotate(180deg);
+}
+
+.app-navgroup__label {
+  display: none;
+}
+
+.app-navgroup__panel {
+  display: none;
+  position: absolute;
+  top: calc(100% - 6px);
+  left: 0;
+  z-index: 300;
+  min-width: 220px;
+  padding: 0.35rem;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow-pop);
+}
+
+.app-navgroup--open .app-navgroup__panel {
+  display: block;
+}
+
+.app-navgroup__item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-text);
+  font-size: var(--ui-text-md);
+  white-space: nowrap;
+}
+
+.app-navgroup__item:hover {
+  background: var(--ui-surface-hover);
+  color: var(--ui-text);
+}
+
+.app-navgroup__item--active,
+.app-navgroup__item--active:hover {
+  background: var(--ui-primary-soft);
+  color: var(--ui-primary);
+  font-weight: 600;
+}
+
+/* nút tạo bản nhạc và ô tìm kiếm trên thanh trên */
+/* nút hành động chính của thanh trên (như "Open account" của Mercury): viên thuốc xanh ngọc đậm (--ui-cta), chữ trắng */
+.app-create {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 40px;
+  padding: 0 1.1rem;
+  border: 1px solid var(--ui-cta-border);
+  border-radius: 32px;
+  background: var(--ui-cta);
+  color: var(--ui-on-cta);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.app-create:hover {
+  background: var(--ui-cta-hover);
+  color: var(--ui-on-cta);
+}
+
+/* Đăng nhập (trang khách): viên thuốc viền mảnh cùng cỡ, đứng cạnh nút Đăng ký (--ui-cta) */
+.app-signin {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 1.1rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 32px;
+  color: var(--ui-text);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background-color 0.18s ease;
+}
+.app-signin:hover {
+  background: var(--ui-surface-hover);
+  color: var(--ui-text);
+}
+
+/* gói đang dùng, đứng cạnh nút tạo bản nhạc; gói Free nổi bật hơn để mời nâng cấp */
+/* nút phụ kiểu Mercury: viên thuốc viền mảnh màu chữ */
+.app-plan {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 40px;
+  padding: 0 1.1rem;
+  border: 1px solid var(--ui-text);
+  border-radius: 40px;
+  color: var(--ui-text);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.app-plan:hover {
+  background: var(--ui-flat-2);
+  color: var(--ui-text);
+}
+
+.app-plan--free {
+  background: var(--ui-flat);
+}
+
+/* Ô tìm kiếm (mở bảng lệnh Ctrl K): trường nhập chìm kiểu Swiss, nền kem nhạt không bóng để không tranh với nút chính;
+   rê chuột sáng lên và viền xanh ngọc nhạt; focus bằng bàn phím có vòng sáng xanh ngọc. Phím tắt hiện dạng nút phím. */
+.app-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 260px;
+  min-width: 0;
+  height: 40px;
+  padding: 0 0.4rem 0 0.85rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-3);
+  font: inherit;
+  font-size: var(--ui-text-md);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease;
+}
+
+.app-search:hover {
+  border-color: var(--ui-primary-border);
+  background: var(--ui-panel);
+  color: var(--ui-text-2);
+}
+
+.app-shell .app-search:focus-visible {
+  outline: none;
+  border-color: var(--ui-primary);
+  background: var(--ui-panel);
+  box-shadow: 0 0 0 3px var(--ui-primary-ring);
+}
+
+.app-search svg {
+  flex: none;
+  color: var(--ui-primary);
+}
+
+.app-search__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* nút phím: nền khung, viền dưới dày hơn như phím thật */
+.app-search__kbd {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 0.45rem;
+  border: 1px solid var(--ui-border);
+  border-bottom-width: 2px;
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-panel);
+  color: var(--ui-text-3);
+  font-family: inherit;
+  font-size: var(--ui-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-search {
+    transition: none;
+  }
+}
+
+/* thanh tab dưới cùng: chỉ dành cho điện thoại */
+.app-tabbar {
+  display: none;
+}
+
+.app-header__right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-self: end;
+}
+
+.app-iconbtn {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ui-text-2);
+  cursor: pointer;
+}
+
+.app-iconbtn:hover {
+  background: var(--ui-surface-hover);
+  color: var(--ui-text);
+}
+
+.app-header__burger {
+  display: none;
+}
+
+.app-usermenu {
+  position: relative;
+}
+
+.app-usermenu__trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.4rem 0.2rem 0.2rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ui-text-2);
+  cursor: pointer;
+}
+
+.app-usermenu__trigger:hover,
+.app-usermenu__trigger[aria-expanded='true'] {
+  background: var(--ui-surface-hover);
+  border-color: var(--ui-border);
+}
+
+.app-usermenu__panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 240px;
+  padding: 0.35rem;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow-pop);
+  z-index: 300;
+}
+
+.app-usermenu__who {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.5rem 0.65rem 0.6rem;
+  margin-bottom: 0.25rem;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.app-usermenu__who span {
+  color: var(--ui-text-3);
+  font-size: var(--ui-text-xs);
+  word-break: break-all;
+}
+
+.app-usermenu__item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 0;
+  border-radius: var(--ui-radius-sm);
+  background: transparent;
+  color: var(--ui-text);
+  font: inherit;
+  font-size: var(--ui-text-md);
+  text-align: left;
+  cursor: pointer;
+}
+
+.app-usermenu__item:hover {
+  background: var(--ui-surface-hover);
+}
+
+.app-usermenu__item--danger {
+  color: var(--ui-danger);
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  /* cao ít nhất bằng màn hình: chân trang chỉ hiện khi cuộn xuống cuối */
+  min-height: calc(100vh - var(--ui-header-h));
+}
+
+.app-backdrop {
+  display: none;
+}
+
+.app-shell :focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
+
+/* màn hình vừa: bỏ icon trong menu cho đỡ chật */
+/* màn hình vừa: ô tìm kiếm gọn lại để điều hướng ở giữa không bị chen */
+/* Thu gọn thanh trên theo từng mốc để menu giữa (Khám phá, Học tập, Không gian của tôi) luôn đủ chỗ, không tràn chữ
+   đè lên nút Tạo bản nhạc (UI-01). Chữ menu không xuống dòng nên mỗi mốc phải chừa đủ chỗ cho cả ba nhóm. */
+@media (max-width: 1440px) {
+  .app-search__text,
+  .app-search__kbd,
+  .app-plan span {
+    display: none;
+  }
+
+  .app-plan,
+  .app-search {
+    width: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 1180px) {
+  .app-search__text,
+  .app-create span,
+  .app-plan span {
+    display: none;
+  }
+
+  .app-create,
+  .app-plan,
+  .app-search {
+    width: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+}
+
+/* màn vừa (trước khi đổi sang menu ☰): bỏ chữ thương hiệu, thu khoảng cách để ba nhóm menu vẫn vừa một hàng */
+@media (min-width: 901px) and (max-width: 1100px) {
+  .app-header__inner:not(.app-header__inner--guest) {
+    gap: 0.5rem;
+  }
+
+  .app-header__inner:not(.app-header__inner--guest) .app-brand {
+    font-size: 0;
+    gap: 0;
+  }
+
+  .app-nav .app-navgroup__trigger {
+    padding: 0 0.6rem;
+  }
+}
+
+/* màn hình nhỏ: điều hướng thành ngăn thả xuống */
+@media (max-width: 900px) {
+  /* điện thoại: bỏ lưới ba cột, điều hướng thành ngăn thả xuống */
+  .app-header__inner {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 1rem;
+    gap: 0.5rem;
+  }
+
+  .app-header__burger {
+    display: inline-flex;
+  }
+
+  .app-nav {
+    position: fixed;
+    top: var(--ui-header-h);
+    left: 0;
+    right: 0;
+    z-index: 250;
+    height: auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 0.5rem;
+    background: var(--ui-surface);
+    border-bottom: 1px solid var(--ui-border);
+    box-shadow: var(--ui-shadow-pop);
+    transform: translateY(-120%);
+    visibility: hidden;
+    transition:
+      transform 0.2s ease,
+      visibility 0.2s;
+  }
+
+  .app-nav--open {
+    transform: translateY(0);
+    visibility: visible;
+  }
+
+  .app-nav {
+    max-height: calc(100vh - var(--ui-header-h) - 4.5rem);
+    overflow-y: auto;
+  }
+
+  /* trên điện thoại mỗi nhóm hiện sẵn: tiêu đề rồi danh sách các mục */
+  .app-navgroup {
+    display: block;
+    height: auto;
+    padding: 0.25rem 0;
+  }
+
+  .app-navgroup__trigger {
+    display: none;
+  }
+
+  .app-navgroup__label {
+    display: block;
+    padding: 0.4rem 0.75rem 0.15rem;
+    color: var(--ui-text-3);
+    font-size: var(--ui-text-xs);
+    font-weight: 600;
+    text-transform: none;
+  }
+
+  .app-navgroup__panel {
+    display: block;
+    position: static;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .app-navgroup__item {
+    padding: 0.7rem 0.75rem;
+  }
+
+  /* nút tạo và tìm kiếm đã có ở thanh tab / hộp tìm: bớt chật thanh trên */
+  .app-create,
+  .app-plan {
+    display: none;
+  }
+
+  .app-tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 220;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--ui-surface);
+    border-top: 1px solid var(--ui-border);
+  }
+
+  .app-tabbar__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    padding: 0.45rem 0.25rem 0.4rem;
+    color: var(--ui-text-3);
+    font-size: 0.6875rem;
+    font-weight: 500;
+  }
+
+  .app-tabbar__item--active {
+    color: var(--ui-primary);
+    font-weight: 600;
+  }
+
+  /* tab đang mở "sáng lên": biểu tượng nằm trong viên thuốc nền màu chính nhạt (trừ nút Tạo ở giữa, vốn đã là nút tròn) */
+  .app-tabbar__item:not(.app-tabbar__item--primary) .app-tabbar__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 28px;
+    border-radius: 999px;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .app-tabbar__item--active:not(.app-tabbar__item--primary) .app-tabbar__icon {
+    background: color-mix(in srgb, var(--ui-primary) 18%, transparent);
+    color: var(--ui-primary);
+  }
+
+  .app-tabbar__item--primary .app-tabbar__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    margin-top: -0.9rem;
+    border-radius: 50%;
+    background: var(--ui-primary);
+    color: var(--ui-on-accent);
+    box-shadow: var(--ui-shadow);
+  }
+
+  /* chừa chỗ cho thanh tab dưới cùng (đặt ở khung để chân trang cũng nằm trên thanh tab) */
+  .app-shell {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+
+  /* lớp phủ làm tối nội dung phía sau menu thả xuống. Phải nằm DƯỚI thanh đầu trang (z-index 200): menu là con của
+     thanh đầu trang nên z-index của menu chỉ có tác dụng bên trong thanh, lớp phủ cao hơn 200 sẽ đè lên làm menu tối đi */
+  .app-backdrop {
+    display: block;
+    position: fixed;
+    inset: var(--ui-header-h) 0 0 0;
+    z-index: 190;
+    background: var(--ui-overlay-soft);
+  }
+}
+
+/* ---- khung cho khách chưa đăng nhập (GuestLayout): điều hướng phẳng, không có tìm kiếm và nút tạo ---- */
+.app-nav--guest {
+  justify-content: flex-start;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.app-nav--guest::-webkit-scrollbar {
+  display: none;
+}
+
+.app-header__right {
+  gap: 0.5rem;
+}
+
+@media (max-width: 720px) {
+  /* Điện thoại: thương hiệu và nút ở hàng trên, các mục điều hướng xuống hàng dưới và cuộn ngang */
+  .app-header__inner--guest {
+    height: auto;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'left right'
+      'nav nav';
+    gap: 0.25rem 0.75rem;
+    padding: 0.5rem 1rem 0;
+  }
+
+  .app-header__inner--guest .app-header__left {
+    grid-area: left;
+  }
+
+  .app-header__inner--guest .app-header__right {
+    grid-area: right;
+  }
+
+  .app-header__inner--guest .app-nav--guest {
+    grid-area: nav;
+    height: 44px;
+  }
+}
+
+/* ---- điện thoại: thanh trên của khu đã đăng nhập (menu, logo, tìm kiếm | ngôn ngữ, giao diện, thông báo, tài khoản)
+   phải vừa một hàng. Nút không bị bóp méo, ngôn ngữ chỉ còn biểu tượng, bỏ mũi tên cạnh avatar, thu khoảng cách ---- */
+@media (max-width: 560px) {
+  .app-header__inner {
+    padding-inline: 0.75rem;
+  }
+
+  .app-header__left {
+    gap: 0.35rem;
+  }
+
+  .app-header__right {
+    gap: 0.25rem;
+  }
+
+  .app-header__left > *,
+  .app-header__right > * {
+    flex-shrink: 0;
+  }
+
+  .app-header .app-iconbtn,
+  .app-header .theme-toggle__trigger,
+  .app-header .app-search {
+    width: 36px;
+    height: 36px;
+  }
+
+  .app-header .language-toggle__trigger {
+    font-size: 0;
+  }
+
+  .app-header .language-toggle__trigger svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+  }
+
+  .app-usermenu__trigger {
+    padding: 0.15rem;
+  }
+
+  .app-usermenu__trigger > svg {
+    display: none;
+  }
+}
+
+/* màn rất hẹp: chỉ giữ biểu tượng Scorewise, ẩn chữ thương hiệu */
+@media (max-width: 400px) {
+  .app-brand {
+    font-size: 0;
+    gap: 0;
+  }
+}
