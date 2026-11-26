@@ -97,8 +97,8 @@
     "title": "Piano keys",
     "range": "88 keys · A0–C8",
     "rangeHint": "Some score notes are outside the 88-key piano range (A0–C8).",
-    "computerRange": "Computer keys play {from}–{to}; press Z to go down an octave, X to go up.",
-    "outOfRange": "Some notes are outside this range: shift with Z/X when you reach them, or practise one hand at a time."
+    "computerRange": "Computer keys play {from}–{to} (two octaves); press Z to go down an octave, X to go up.",
+    "outOfRange": "Some notes are outside this range: shift with Z/X when you reach them."
   },
   "keyboardGuide": {
     "open": "How to play",
@@ -108,15 +108,15 @@
       "touch": "On-screen piano",
       "mic": "Microphone (Real piano)"
     },
-    "keyboardDesc": "Use letter keys on your keyboard to play. Matching keys are also labeled directly on the virtual piano keys:",
+    "keyboardDesc": "The lower pitch range (usually the left hand) and higher pitch range (usually the right hand) are color-coded. Matching computer keys are also labeled directly on the virtual piano:",
     "touchDesc": "Tap or click the 88 virtual piano keys. Tapping closer to the bottom edge produces higher velocity. You can also slide across keys (glissando) or use multi-touch.",
     "micDesc": "Place your laptop or microphone near your acoustic or digital piano (30–50cm away). Keep the room quiet. The Basic Pitch AI recognizes notes directly from your piano audio in real time.",
     "handsDesc": "Hand colors: Teal/Blue is right hand, gold/amber is left hand. Play when each note reaches the hit line.",
     "stepInput": "In setup, choose “Computer keyboard” to use letter keys, or “Tap the on-screen piano” to play by touching the piano.",
-    "stepRange": "The on-screen piano always shows all 88 keys (A0–C8). Computer keys play one octave around the middle of the part you practise; press Z / X to shift down / up an octave.",
+    "stepRange": "Computer keys cover two octaves around the middle of the part: the left-hand range uses C, 1, V, 2, B, N, 3, M, 4, comma, 5, period; the right-hand range uses A, W, S, E, D, F, T, G, Y, H, U, J, K. Press Z / X to shift the whole range down / up an octave.",
     "stepPlay": "Note colors indicate hands: right hand is blue and left hand is orange. Press the matching key when a note reaches the play line, or tap its on-screen piano key.",
     "stepFeedback": "Check the result below the piano: green means in time, yellow means early/late, and red means wrong note or missed.",
-    "keyMap": "Computer keys play one octave using this map:"
+    "keyMap": "Computer key map (lower orange range, higher teal range):"
   },
   "recovery": {
     "title": "Another practice session is active",
