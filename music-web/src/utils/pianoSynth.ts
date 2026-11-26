@@ -81,3 +81,26 @@ export function playPianoNote(midi: number, velocity = 0.8) {
     // trình duyệt không có Web Audio: phím vẫn sáng, chỉ không có tiếng
   }
 }
+
+/**
+ * Tiếng gõ đếm nhịp vào bài (count-in) sau `delayS` giây; phách đầu cao hơn (ST-02). Dùng chung AudioContext với tiếng
+ * đàn nên đi qua cùng bộ nén; không có Web Audio thì bỏ qua.
+ */
+export function playClick(accent: boolean, delayS = 0) {
+  try {
+    const { ctx: ac, master: out } = audio();
+    const start = ac.currentTime + Math.max(0, delayS);
+    const osc = ac.createOscillator();
+    const env = ac.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = accent ? 1320 : 880;
+    env.gain.setValueAtTime(0.0001, start);
+    env.gain.exponentialRampToValueAtTime(accent ? 0.9 : 0.6, start + 0.002);
+    env.gain.exponentialRampToValueAtTime(0.0001, start + 0.06);
+    osc.connect(env).connect(out);
+    osc.start(start);
+    osc.stop(start + 0.08);
+  } catch {
+    // trình duyệt không có Web Audio
+  }
+}

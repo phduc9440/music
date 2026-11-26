@@ -2,7 +2,9 @@
   "modes": {
     "1": "Free play",
     "2": "Loop a section",
-    "3": "Scored"
+    "3": "Scored",
+    "4": "Wait for notes",
+    "5": "Play along"
   },
   "durationMinutes": "{m} min {s} s",
   "durationSeconds": "{s} s",

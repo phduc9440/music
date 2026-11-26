@@ -2,7 +2,9 @@
   "modes": {
     "1": "Tự do",
     "2": "Lặp đoạn",
-    "3": "Chấm điểm"
+    "3": "Chấm điểm",
+    "4": "Chờ nốt",
+    "5": "Chạy theo nhạc"
   },
   "durationMinutes": "{m} phút {s} giây",
   "durationSeconds": "{s} giây",

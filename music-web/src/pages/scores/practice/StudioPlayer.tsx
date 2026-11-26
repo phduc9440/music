@@ -14,12 +14,12 @@ import type {
 import { fetchMusicXml, scoreApi, studioApi } from '../../../services';
 import { t, translateError } from '../../../i18n/core';
 import { useNavigate } from '../../../routes/useTransitionNavigate';
-import { playPianoNote } from '../../../utils/pianoSynth';
+import { playClick, playPianoNote } from '../../../utils/pianoSynth';
 import { DEFAULT_TOLERANCE_WINDOW_MS, FreeRunScorer } from '../../../components/player/engine/FreeRunScorer';
 import type { PracticeNoteEvent } from '../../../components/player/engine/FreeRunScorer';
 import { WaitModeScorer } from '../../../components/player/engine/WaitModeScorer';
 import { StudioMicError, StudioMicInput } from '../../../components/player/engine/StudioMicInput';
-import { buildStudioSchedule } from '../../../components/player/engine/studioSchedule';
+import { buildStudioSchedule, countInOf } from '../../../components/player/engine/studioSchedule';
 import type { StudioSchedule } from '../../../components/player/engine/studioSchedule';
 import {
   STUDIO_PIANO_MAX_MIDI,
@@ -46,6 +46,7 @@ const LOOP_LOOKAHEAD_MS = 1200;
  * loạt nốt đầu bài bắn nhãn cùng lúc.
  */
 const FREE_RUN_LEAD_IN_MS = STUDIO_WATERFALL_WINDOW_MS;
+
 const COMPUTER_KEYBOARD_DEFAULT_BASE_MIDI = 60;
 const KEYBOARD_MAP: Record<string, number> = {
   a: 0,
@@ -100,7 +101,9 @@ export default function StudioPlayer() {
   const [activeSession, setActiveSession] = useState<StudioSessionResponse | null>(null);
   const computerKeyboardBaseRef = useRef(COMPUTER_KEYBOARD_DEFAULT_BASE_MIDI);
   const handModeRef = useRef<StudioHandMode>(handMode);
-  useEffect(() => { handModeRef.current = handMode; }, [handMode]);
+  useEffect(() => {
+    handModeRef.current = handMode;
+  }, [handMode]);
   const [sessionSchedule, setSessionSchedule] = useState<StudioSchedule | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [waitVisualElapsedMs, setWaitVisualElapsedMs] = useState(0);
@@ -123,6 +126,8 @@ export default function StudioPlayer() {
   const sessionRef = useRef<StudioSessionResponse | null>(null);
   const micInputRef = useRef<StudioMicInput | null>(null);
   const micDurationRef = useRef<number | null>(null);
+  /** Thời gian đếm nhịp trước nốt đầu khi tập bằng micro; thời điểm micro báo về trừ đi khoảng này (ST-02). */
+  const micLeadInRef = useRef(0);
   const scorerRef = useRef<FreeRunScorer | null>(null);
   const waitScorerRef = useRef<WaitModeScorer | null>(null);
   const scheduleRef = useRef<StudioSchedule | null>(null);
@@ -195,7 +200,8 @@ export default function StudioPlayer() {
             midi,
             result: event.result,
             atMs: feedbackAtMs ?? event.playedMs ?? elapsedMsRef.current,
-            noteId: event.noteId,
+            // nốt sai chỉ gắn với nốt chuẩn để báo cáo theo ô; trên màn hình không tô nốt rơi đó thành "sai"
+            noteId: event.result === 'WRONG_PITCH' ? null : event.noteId,
             expectedMs: event.expectedMs,
           },
         ];
@@ -205,11 +211,14 @@ export default function StudioPlayer() {
   }, []);
 
   const handleMicUpdate = useCallback(
-    (notes: { midi: number; playedMs: number }[], coveredUntilMs: number) => {
+    (notes: { midi: number; playedMs: number }[], micCoveredUntilMs: number) => {
       const currentSession = sessionRef.current;
       const scorer = scorerRef.current;
       const schedule = scheduleRef.current;
       if (!currentSession || currentSession.inputSource !== 'MIC' || !scorer || !schedule) return;
+      // thời gian micro tính từ lúc bật; trừ phần đếm nhịp để khớp mốc 0 của bài, bỏ âm thanh trong lúc đếm (kể cả tiếng gõ)
+      const leadIn = micLeadInRef.current;
+      const coveredUntilMs = micCoveredUntilMs - leadIn;
 
       if (currentSession.loopStartMeasure !== null) {
         let cyclesAdded = 0;
@@ -228,10 +237,12 @@ export default function StudioPlayer() {
 
       const feedbackAtMs = elapsedMsRef.current;
       for (const note of notes) {
-        queueEvents(scorer.play({ midi: note.midi, playedMs: note.playedMs }), feedbackAtMs);
+        const playedMs = note.playedMs - leadIn;
+        if (playedMs < 0) continue;
+        queueEvents(scorer.play({ midi: note.midi, playedMs }), feedbackAtMs);
       }
       const safeCoverageMs = Math.max(0, coveredUntilMs - DEFAULT_TOLERANCE_WINDOW_MS);
-      const latestNoteMs = notes.reduce((latest, note) => Math.max(latest, note.playedMs), 0);
+      const latestNoteMs = notes.reduce((latest, note) => Math.max(latest, note.playedMs - leadIn), 0);
       const scorerCoverageMs = Math.max(lastScoredAtRef.current, safeCoverageMs, latestNoteMs);
       if (scorerCoverageMs >= lastScoredAtRef.current) {
         queueEvents(scorer.advanceTo(scorerCoverageMs), feedbackAtMs);
@@ -285,7 +296,7 @@ export default function StudioPlayer() {
           if (micDurationRef.current === null) {
             const micInput = micInputRef.current;
             if (!micInput) throw new Error('Microphone input is not available');
-            micDurationRef.current = await micInput.stop();
+            micDurationRef.current = Math.max(0, (await micInput.stop()) - micLeadInRef.current);
           }
           practiceDurationMs = micDurationRef.current;
           coveredUntilMs = Math.max(lastScoredAtRef.current, Math.round(practiceDurationMs));
@@ -439,8 +450,12 @@ export default function StudioPlayer() {
         const currentStep = waitScorer?.getCurrentStep() ?? null;
         const stepTransitionCount = waitScorer?.getStepTransitionCount() ?? 0;
         elapsedMsRef.current = playedMs;
-        const playedHand = handModeRef.current === 'LEFT_ONLY' ? 'LEFT' as const :
-                           handModeRef.current === 'RIGHT_ONLY' ? 'RIGHT' as const : undefined;
+        const playedHand =
+          handModeRef.current === 'LEFT_ONLY'
+            ? ('LEFT' as const)
+            : handModeRef.current === 'RIGHT_ONLY'
+              ? ('RIGHT' as const)
+              : undefined;
         const events = scorer.play({ midi, playedMs, hand: playedHand });
         playPianoNote(midi, velocity);
         // chế độ chờ: qua bước thì đánh luôn phần đệm của bước đó, nhẹ hơn để không lấn nốt người chơi
@@ -531,7 +546,9 @@ export default function StudioPlayer() {
       scheduledCyclesRef.current = 1;
       inputLockedRef.current = false;
       finishingRef.current = false;
-      const leadInMs = inputSource === 'MIC' ? 0 : mode === 'FREE_RUN' ? FREE_RUN_LEAD_IN_MS : 0;
+      const countIn = inputSource === 'MIC' ? countInOf(loadState.timeline, selectedStart, tempoPercent) : null;
+      const leadInMs = countIn ? countIn.leadInMs : mode === 'FREE_RUN' ? FREE_RUN_LEAD_IN_MS : 0;
+      micLeadInRef.current = countIn ? countIn.leadInMs : 0;
       startedAtRef.current = performance.now() + leadInMs;
       micDurationRef.current = null;
       lastScoredAtRef.current = -leadInMs;
@@ -541,7 +558,10 @@ export default function StudioPlayer() {
       sessionRef.current = created.data;
       if (micInput) {
         micInputRef.current = micInput;
-        startedAtRef.current = await micInput.start();
+        startedAtRef.current = (await micInput.start()) + leadInMs;
+        if (countIn) {
+          for (let beat = 0; beat < countIn.beats; beat += 1) playClick(beat === 0, (beat * countIn.beatMs) / 1000);
+        }
       }
       setMicLatencyMs(null);
       setSession(created.data);
@@ -673,7 +693,7 @@ export default function StudioPlayer() {
   }, [loadState, repeatSection, startMeasure, endMeasure, tempoPercent, handMode]);
 
   const stopPreview = useCallback(() => {
-    previewTimeoutRef.current.forEach(id => window.clearTimeout(id));
+    previewTimeoutRef.current.forEach((id) => window.clearTimeout(id));
     previewTimeoutRef.current = [];
     setIsPlayingPreview(false);
   }, []);
@@ -686,7 +706,7 @@ export default function StudioPlayer() {
     const schedule = previewSchedule;
     if (!schedule) return;
     setIsPlayingPreview(true);
-    schedule.visualNotes.forEach(note => {
+    schedule.visualNotes.forEach((note) => {
       const id = window.setTimeout(() => {
         playPianoNote(note.midi, 0.7);
       }, note.expectedMs);
@@ -784,7 +804,9 @@ export default function StudioPlayer() {
 
   // Bản nhạc xem trước: lúc thiết lập nằm chung cột trái với thẻ thiết lập (cột tự cuộn), lúc đang luyện ở dưới vùng luyện
   const scorePanel = (
-    <section className={`studio-player__score${!session && !showScoreSheet ? ' is-collapsed' : ''}${session && !showSessionScore ? ' is-hidden' : ''}`}>
+    <section
+      className={`studio-player__score${!session && !showScoreSheet ? ' is-collapsed' : ''}${session && !showSessionScore ? ' is-hidden' : ''}`}
+    >
       <div className="studio-player__section-head">
         <div>
           <h2>{t('studioPlayer.score.title')}</h2>
@@ -817,7 +839,9 @@ export default function StudioPlayer() {
   );
 
   return (
-    <div className={`sc-page studio-player${session ? ' studio-player--fullscreen' : ''}${session && showSessionScore ? ' has-score-panel' : ''}`}>
+    <div
+      className={`sc-page studio-player${session ? ' studio-player--fullscreen' : ''}${session && showSessionScore ? ' has-score-panel' : ''}`}
+    >
       <main className="sc-container">
         <header className="studio-player__header">
           <Link className="studio-player__back" to={`/scores/${score.id}`}>
@@ -1295,7 +1319,15 @@ export default function StudioPlayer() {
         <Modal title={t('studioPlayer.keyboardGuide.title')} onClose={() => setShowKeyboardGuide(false)}>
           <div className="studio-player__guide-content">
             <div className="studio-player__guide-section">
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 0 0.5rem', fontSize: '1.05rem' }}>
+              <h3
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  margin: '0 0 0.5rem',
+                  fontSize: '1.05rem',
+                }}
+              >
                 <Icon
                   name={inputSource === 'KEYBOARD' ? 'type' : inputSource === 'TOUCH' ? 'select' : 'activity'}
                   size={18}

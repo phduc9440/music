@@ -15,7 +15,8 @@ import { formatDateTime, getLocale, labelMap, t } from '../../../i18n/core';
 
 const PAGE_SIZE = 20;
 const DAY_MS = 24 * 3600 * 1000;
-const MODE_LABELS: Record<number, string> = labelMap('practice.modes', [1, 2, 3]);
+// 1–3 phiên luyện tập cũ, 4 Chờ nốt và 5 Chạy theo nhạc là phiên Studio (ST-03)
+const MODE_LABELS: Record<number, string> = labelMap('practice.modes', [1, 2, 3, 4, 5]);
 /** Năm loại nốt theo thứ tự hiển thị trên thanh phân bố (khớp màu .pr-kind--*). */
 const KINDS = ['perfect', 'early', 'late', 'wrong', 'missed'] as const;
 type Kind = (typeof KINDS)[number];

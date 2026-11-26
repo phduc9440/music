@@ -150,11 +150,14 @@ export class FreeRunScorer {
       return events;
     }
 
+    // Gắn nốt sai vào nốt chuẩn gần nhất để báo cáo theo ô nhịp đếm được (ST-01); nốt đó vẫn chờ người chơi đánh đúng
+    const nearbyIndex = this.closestExpectedNote(playedMidi, null, playedMs, false);
+    const nearby = nearbyIndex < 0 ? null : this.pending[nearbyIndex];
     events.push(
       this.createEvent({
-        noteId: null,
-        measure: null,
-        hand: note.hand ?? null,
+        noteId: nearby?.noteId ?? null,
+        measure: nearby?.measure ?? null,
+        hand: nearby?.hand ?? note.hand ?? null,
         expectedMidi: null,
         playedMidi,
         expectedMs: null,

@@ -181,3 +181,17 @@ export function buildStudioSchedule(timeline: StudioTimeline, options: StudioSch
     durationMs,
   };
 }
+
+/**
+ * Đếm nhịp vào bài khi tập bằng micro (ST-02): một ô theo số chỉ nhịp và nhịp độ ở ô bắt đầu, 2–8 phách. Nốt đầu
+ * không còn rơi đúng lúc micro vừa bật nên không bị tính Bỏ lỡ.
+ */
+export function countInOf(timeline: StudioTimeline, startMeasure: number, tempoPercent: number) {
+  const latest = <T extends { measure: number }>(items: T[]): T | undefined =>
+    items.filter((item) => item.measure <= startMeasure).sort((a, b) => b.measure - a.measure)[0];
+  const signature = latest(timeline.timeSignatures) ?? timeline.timeSignatures[0];
+  const bpm = (latest(timeline.tempoChanges)?.bpm ?? timeline.tempoBpm ?? 100) * (tempoPercent / 100);
+  const beats = Math.min(8, Math.max(2, signature?.beats ?? 4));
+  const beatMs = 60000 / Math.max(20, bpm);
+  return { beats, beatMs, leadInMs: Math.round(beats * beatMs) };
+}
