@@ -34,7 +34,7 @@
   "2014": "Bản nhạc vừa được lưu ở nơi khác, hãy tải bản mới nhất hoặc ghi đè bản của bạn",
   "2015": "File MusicXML không hợp lệ hoặc bị hỏng",
   "2016": "File MIDI không hợp lệ hoặc bị hỏng",
-  "2017": "Tiêu đề là bắt buộc và tối đa 255 ký tự",
+  "2017": "Tiêu đề là bắt buộc và tối đa 80 ký tự",
   "2018": "Tên tác giả tối đa 255 ký tự",
   "2019": "Ghi chú tối đa 5000 ký tự",
   "2020": "Giá trị bộ lọc không hợp lệ",

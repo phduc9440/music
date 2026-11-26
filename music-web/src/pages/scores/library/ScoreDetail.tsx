@@ -305,8 +305,8 @@ export default function ScoreDetail({ admin = false }: { admin?: boolean }) {
               <ScoreSidebar score={score} />
             </div>
           )}
-          {activeTab === 'files' && <FilesTable files={score.files} />}
-          {activeTab === 'tasks' && <TasksTable tasks={score.latestTasks} files={score.files} />}
+          {activeTab === 'files' && <FilesTable files={score.files} title={score.title} />}
+          {activeTab === 'tasks' && <TasksTable tasks={score.latestTasks} files={score.files} title={score.title} />}
           {activeTab === 'comments' && (
             <CommentsSection
               scoreId={score.id}

@@ -9,7 +9,6 @@ import type { UploadItem } from '../../../components/scores/upload/UploadFileIte
 import { billingApi, omrApi } from '../../../services';
 import type { MySubscription, OmrConfig, OmrSourceType } from '../../../types';
 import {
-  fileNameWithoutExtension,
   getScorePath,
   getUploadErrorMessage,
   guessSourceType,
@@ -17,6 +16,7 @@ import {
   MAX_COMPOSER,
   MAX_TITLE,
   OMR_SOURCE_LABELS,
+  titleFromFileName,
   UPLOAD_MAX_PDF_PAGES,
   validateUploadBatch,
   validateUploadFile,
@@ -65,9 +65,7 @@ export default function ScoreUpload() {
   const navigate = useNavigate();
   const [initial] = useState<UploadItem[]>(() => takePendingScan().map(newItem));
   const [items, setItems] = useState<UploadItem[]>(initial);
-  const [title, setTitle] = useState(() =>
-    initial.length ? fileNameWithoutExtension(initial[0].file.name).slice(0, MAX_TITLE) : '',
-  );
+  const [title, setTitle] = useState(() => (initial.length ? titleFromFileName(initial[0].file.name) : ''));
   const [titleTouched, setTitleTouched] = useState(false); // người dùng đã tự sửa tiêu đề thì không tự điền nữa
   const [composer, setComposer] = useState('');
   const [sourceType, setSourceType] = useState<OmrSourceType>(() => guessSourceType(initial.map((it) => it.file)));
@@ -159,7 +157,7 @@ export default function ScoreUpload() {
     setItems(next);
     const nextFiles = next.map((it) => it.file);
     // Tiêu đề tự điền theo tên file đầu tiên, loại nguồn tự đoán theo loại file, trừ khi người dùng đã tự sửa
-    if (!titleTouched) setTitle(next.length ? fileNameWithoutExtension(next[0].file.name).slice(0, MAX_TITLE) : '');
+    if (!titleTouched) setTitle(next.length ? titleFromFileName(next[0].file.name) : '');
     if (!sourceTouched) setSourceType(guessSourceType(nextFiles));
   };
 
@@ -210,8 +208,8 @@ export default function ScoreUpload() {
     setUploading(true);
     setProgress(0);
     try {
-      // Không có tên (và tên file trống) thì gửi tên mặc định theo ngôn ngữ người dùng, không để BE ghi "Untitled score"
-      const finalTitle = title.trim() || fileNameWithoutExtension(items[0].file.name).trim() || t('upload.untitled');
+      // Để trống thì lấy theo tên file; tên file rỗng hoặc dài hơn MAX_TITLE thì là "Untitled" (T37)
+      const finalTitle = title.trim() || titleFromFileName(items[0].file.name);
       const res = await omrApi.upload({ files: finalFiles, title: finalTitle, composer, sourceType }, setProgress);
       toast.success(t('upload.uploaded'));
       const created = res.data.result;
@@ -280,6 +278,9 @@ export default function ScoreUpload() {
           <aside className="sc-upload__side">
             <label className="sc-label" htmlFor="up-title">
               {t('upload.fieldTitle')}
+              <span className="sc-counter">
+                {title.length}/{MAX_TITLE}
+              </span>
             </label>
             <input
               id="up-title"

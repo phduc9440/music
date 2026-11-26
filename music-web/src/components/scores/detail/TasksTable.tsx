@@ -1,6 +1,6 @@
 import { toast } from 'react-toastify';
 import { downloadFile } from '../../../services';
-import { TASK_STATUS_LABELS, TASK_TYPE_LABELS, formatDateTime } from '../../../utils/score';
+import { TASK_STATUS_LABELS, TASK_TYPE_LABELS, formatDateTime, scoreDownloadName } from '../../../utils/score';
 import type { AiTaskInfo, ScoreFileInfo } from '../../../types';
 import { EXPORT_TASK_TYPES, stepLabel, translateTaskError } from '../../export/exportUtils';
 import { OMR_TASK_TYPE, describeTaskError, omrStepLabel, parseTaskError } from '../../../utils/omr';
@@ -38,7 +38,16 @@ const exportedFileOf = (task: AiTaskInfo, files: ScoreFileInfo[]): ScoreFileInfo
 };
 
 /** Tác vụ mới nhất của mỗi loại, kèm thanh tiến độ. Tác vụ xuất file đã xong có nút Tải xuống. */
-export default function TasksTable({ tasks, files = [] }: { tasks: AiTaskInfo[]; files?: ScoreFileInfo[] }) {
+export default function TasksTable({
+  tasks,
+  files = [],
+  title,
+}: {
+  tasks: AiTaskInfo[];
+  files?: ScoreFileInfo[];
+  /** Tên bản nhạc, đặt tên file xuất khi tải về (T37). */
+  title: string;
+}) {
   if (tasks.length === 0) {
     return <div className="sc-panel sc-panel--empty">{tr('scores.tasks.none')}</div>;
   }
@@ -77,9 +86,10 @@ export default function TasksTable({ tasks, files = [] }: { tasks: AiTaskInfo[];
                     <button
                       className="sc-btn sc-btn--sm"
                       onClick={() =>
-                        downloadFile(exported.downloadUrl, exported.originalFileName || exported.id).catch(() =>
-                          toast.error(tr('scores.files.downloadFailed')),
-                        )
+                        downloadFile(
+                          exported.downloadUrl,
+                          scoreDownloadName(title, exported, exported.fileType.toLowerCase()),
+                        ).catch(() => toast.error(tr('scores.files.downloadFailed')))
                       }
                     >
                       {tr('scores.tasks.download')}

@@ -70,6 +70,7 @@ import com.ptit.music_be.service.billing.EntitlementService;
 import com.ptit.music_be.service.billing.PlanLimits;
 import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.service.storage.FileStorageService;
+import com.ptit.music_be.utils.ScoreTitles;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;
@@ -85,7 +86,8 @@ import lombok.extern.slf4j.Slf4j;
 public class OmrServiceImpl implements OmrService {
 
     static final String DEFAULT_VISIBILITY = "PRIVATE";
-    static final int MAX_TITLE_LENGTH = 255;
+    /** Tên file gốc lưu ở score_files (không phải tên bài). */
+    static final int MAX_FILE_NAME_LENGTH = 255;
     static final int MAX_COMPOSER_LENGTH = 255;
     /** Tác vụ OMR "đang chạy" = còn chờ hoặc đang xử lý; dùng để giới hạn số task mỗi người. */
     static final List<AiTaskStatus> ACTIVE_STATUSES = List.of(AiTaskStatus.PENDING, AiTaskStatus.PROCESSING);
@@ -132,16 +134,13 @@ public class OmrServiceImpl implements OmrService {
     @Value("${app.omr.llm-mode:${OMR_LLM:off}}")
     String llmMode;
 
-    /** Tên dự phòng khi không có tiêu đề lẫn tên file; web luôn gửi tên theo ngôn ngữ người dùng nên hiếm khi dùng. */
-    static final String FALLBACK_TITLE = "Untitled score";
-
     @Override
     @Transactional
     public OmrUploadResponse upload(List<MultipartFile> files, String title, String composer, String sourceType) {
         // Kiểm tra rẻ trước (tham số chữ), rồi mới đọc nội dung file
         String cleanComposer = resolveComposer(composer);
         // Tiêu đề người dùng nhập quá dài thì báo lỗi (giống PATCH), không âm thầm cắt
-        if (title != null && title.trim().length() > MAX_TITLE_LENGTH) {
+        if (ScoreTitles.isTooLong(title)) {
             throw new AppException(ScoreErrorCode.SCORE_TITLE_INVALID);
         }
         List<UploadKind> kinds = validate(files);
@@ -859,14 +858,9 @@ public class OmrServiceImpl implements OmrService {
         }
     }
 
+    /** Tên bài (T37): tên người dùng gõ (đã kiểm ≤ 80 ký tự), không có thì lấy tên file; tên file > 80 ký tự → "Untitled". */
     private String resolveTitle(String title, MultipartFile firstFile) {
-        String resolved = StringUtils.hasText(title)
-                ? title.trim()
-                : StringUtils.stripFilenameExtension(cleanFileName(firstFile.getOriginalFilename()));
-        if (!StringUtils.hasText(resolved)) {
-            resolved = FALLBACK_TITLE;
-        }
-        return resolved.length() > MAX_TITLE_LENGTH ? resolved.substring(0, MAX_TITLE_LENGTH) : resolved;
+        return StringUtils.hasText(title) ? title.trim() : ScoreTitles.fromFileName(firstFile.getOriginalFilename());
     }
 
     private String cleanFileName(String originalFileName) {
@@ -877,6 +871,6 @@ public class OmrServiceImpl implements OmrService {
         if (name == null) {
             return "";
         }
-        return name.length() > MAX_TITLE_LENGTH ? name.substring(name.length() - MAX_TITLE_LENGTH) : name;
+        return name.length() > MAX_FILE_NAME_LENGTH ? name.substring(name.length() - MAX_FILE_NAME_LENGTH) : name;
     }
 }

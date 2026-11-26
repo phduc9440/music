@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import { downloadFile, fetchFileBlob } from '../../services';
 import type { ExportFileInfo, MeasureNumbers, PdfOptions, PdfOrientation, PdfPageSize } from '../../types/export';
 import { renderPdfPageToUrl } from '../../utils/pdfRender';
+import { scoreDownloadName } from '../../utils/score';
 import Modal from '../scores/common/Modal';
 import ExportRunningView from './ExportRunningView';
 import { translateTaskError, validatePdfOptions } from './exportUtils';
@@ -12,6 +13,8 @@ import './export.css';
 
 interface Props {
   scoreId: string;
+  /** Tên bản nhạc, dùng đặt tên file PDF tải về (T37). */
+  title: string;
   /** Hộp thoại đang mở; đóng thì vẫn theo dõi tác vụ đang chạy. */
   open: boolean;
   onOpen: () => void;
@@ -34,7 +37,7 @@ const MEASURE_NUMBERS: MeasureNumbers[] = ['SYSTEM', 'EVERY', 'NONE'];
  * Hộp thoại "Xuất PDF" (mục 1.30): chọn khổ giấy, hướng, cỡ khuông, lề, tiêu đề, đánh số ô nhịp, hợp âm; chạy nền;
  * xong thì xem trước trang 1 và tải về. Luôn được gắn khi trang còn mở để đóng hộp thoại không dừng theo dõi tác vụ.
  */
-export default function ExportPdfDialog({ scoreId, open, onOpen, onClose }: Props) {
+export default function ExportPdfDialog({ scoreId, title, open, onOpen, onClose }: Props) {
   const flow = useExportFlow({ scoreId, isOpen: open, readyMessage: t('export.pdf.ready'), reopen: onOpen });
   if (!open) return null;
 
@@ -42,7 +45,7 @@ export default function ExportPdfDialog({ scoreId, open, onOpen, onClose }: Prop
   return (
     <Modal title={t('export.pdf.title')} onClose={onClose}>
       {file ? (
-        <PdfResultView key={file.id} file={file} onAgain={flow.again} onClose={onClose} />
+        <PdfResultView key={file.id} file={file} title={title} onAgain={flow.again} onClose={onClose} />
       ) : flow.running && flow.task ? (
         <ExportRunningView
           task={flow.task}
@@ -194,11 +197,21 @@ function PdfForm({
   );
 }
 
-function PdfResultView({ file, onAgain, onClose }: { file: ExportFileInfo; onAgain: () => void; onClose: () => void }) {
+function PdfResultView({
+  file,
+  title,
+  onAgain,
+  onClose,
+}: {
+  file: ExportFileInfo;
+  title: string;
+  onAgain: () => void;
+  onClose: () => void;
+}) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewFailed, setPreviewFailed] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const name = file.originalFileName || 'ban-nhac.pdf';
+  const name = scoreDownloadName(title, file, 'pdf');
 
   // Tải PDF về dạng blob rồi vẽ trang 1 bằng pdf.js làm ảnh xem trước (API cần cookie đăng nhập)
   useEffect(() => {

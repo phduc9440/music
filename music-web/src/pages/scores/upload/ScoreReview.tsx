@@ -186,7 +186,7 @@ export default function ScoreReview() {
     if (!id || !score) return;
     setExporting(kind);
     try {
-      await downloadScoreExport(id, kind, `${score.title || 'ban-nhac'}.${kind === 'midi' ? 'mid' : 'musicxml'}`);
+      await downloadScoreExport(id, kind, `${toSafeFileName(score.title)}.${kind === 'midi' ? 'mid' : 'musicxml'}`);
     } catch (err) {
       toast.error(getErrorMessage(err, kind === 'midi' ? t('upload.review.midiFailed') : t('upload.review.xmlFailed')));
     } finally {

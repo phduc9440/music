@@ -42,7 +42,9 @@ public class OmrController {
             security = @SecurityRequirement(name = "bearerAuth"))
     public ApiResponse<OmrUploadResponse> upload(
             @RequestPart("files") List<MultipartFile> files,
-            @Parameter(description = "Score title, defaults to the first file name")
+            @Parameter(
+                            description = "Score title, at most 80 characters; defaults to the first file name"
+                                    + " (\"Untitled\" if that name is longer than 80 characters)")
                     @RequestParam(value = "title", required = false)
                     String title,
             @Parameter(description = "Composer, at most 255 characters")

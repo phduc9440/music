@@ -31,6 +31,7 @@ import com.ptit.music_be.service.score.ScoreCreateService;
 import com.ptit.music_be.service.storage.FileStorageService;
 import com.ptit.music_be.utils.MusicXmlInspector;
 import com.ptit.music_be.utils.MusicXmlSummary;
+import com.ptit.music_be.utils.ScoreTitles;
 import com.ptit.music_be.utils.SecurityUtils;
 import com.ptit.music_be.utils.StorageCleanup;
 
@@ -40,7 +41,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ScoreCreateServiceImpl implements ScoreCreateService {
 
-    static final int MAX_TITLE = 255;
+    static final int MAX_TITLE = ScoreTitles.MAX_LENGTH;
     static final int MAX_COMPOSER = 255;
     static final int MIN_KEY_FIFTHS = -7;
     static final int MAX_KEY_FIFTHS = 7;

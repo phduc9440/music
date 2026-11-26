@@ -40,7 +40,7 @@ public enum ScoreErrorCode implements ErrorCode {
     MIDI_INVALID(2016, "File MIDI không hợp lệ hoặc bị hỏng", HttpStatus.BAD_REQUEST),
     IMPORT_TYPE_NOT_SUPPORTED(
             2030, "Chỉ hỗ trợ một file .musicxml, .xml, .mxl, .mid hoặc .midi", HttpStatus.BAD_REQUEST),
-    SCORE_TITLE_INVALID(2017, "Tiêu đề là bắt buộc và tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
+    SCORE_TITLE_INVALID(2017, "Tiêu đề là bắt buộc và tối đa 80 ký tự", HttpStatus.BAD_REQUEST),
     SCORE_COMPOSER_INVALID(2018, "Tên tác giả tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     SCORE_NOTES_INVALID(2019, "Ghi chú tối đa 5000 ký tự", HttpStatus.BAD_REQUEST),
     INVALID_FILTER(2020, "Giá trị bộ lọc không hợp lệ", HttpStatus.BAD_REQUEST),

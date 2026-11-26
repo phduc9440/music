@@ -7,7 +7,7 @@ import type { ExportFileInfo, ExportFormat } from '../../../types/export';
 import ExportAudioDialog from '../../export/ExportAudioDialog';
 import ExportPdfDialog from '../../export/ExportPdfDialog';
 import ExportSvgDialog from '../../export/ExportSvgDialog';
-import { DOWNLOAD_FORMATS, getErrorMessage } from '../../../utils/score';
+import { DOWNLOAD_FORMATS, getErrorMessage, scoreDownloadName } from '../../../utils/score';
 import { IconDownload } from './ViewerIcons';
 import { t } from '../../../i18n/core';
 
@@ -76,7 +76,7 @@ export default function DownloadMenu({
 
   const handleDownload = async (file: ScoreFileInfo) => {
     setOpen(false);
-    const fileName = file.originalFileName || `${file.fileType}-${file.id}`;
+    const fileName = scoreDownloadName(title, file, file.fileType.toLowerCase());
     try {
       if (file.fileType === 'MUSICXML' || file.fileType === 'MIDI') {
         setBusyType(file.fileType);
@@ -178,6 +178,7 @@ export default function DownloadMenu({
       />
       <ExportPdfDialog
         scoreId={scoreId}
+        title={title ?? 'ban-nhac'}
         open={dialog === 'PDF'}
         onOpen={() => setDialog('PDF')}
         onClose={() => setDialog(null)}

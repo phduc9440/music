@@ -69,6 +69,7 @@ import com.ptit.music_be.service.score.PublicScoreFilter;
 import com.ptit.music_be.service.score.ScoreCopyService;
 import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.service.score.ScoreService;
+import com.ptit.music_be.utils.ScoreTitles;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;
@@ -214,7 +215,7 @@ public class ScoreServiceImpl implements ScoreService {
         // PATCH: trường nào null thì giữ nguyên
         if (request.getTitle() != null) {
             String title = request.getTitle().trim();
-            if (title.isEmpty()) {
+            if (!ScoreTitles.isValid(title)) {
                 throw new AppException(ScoreErrorCode.SCORE_TITLE_INVALID);
             }
             score.setTitle(title);

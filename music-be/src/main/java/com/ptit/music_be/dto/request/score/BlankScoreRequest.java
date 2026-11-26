@@ -13,7 +13,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class BlankScoreRequest {
-    /** Tiêu đề, 1 đến 255 ký tự sau khi bỏ khoảng trắng hai đầu. */
+    /** Tiêu đề, 1 đến 80 ký tự sau khi bỏ khoảng trắng hai đầu (ScoreTitles.MAX_LENGTH). */
     String title;
     /** Tác giả, tối đa 255 ký tự; tùy chọn. */
     String composer;

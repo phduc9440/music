@@ -34,7 +34,7 @@
   "2014": "The score was just saved elsewhere; load the latest version or overwrite it with yours",
   "2015": "The MusicXML file is invalid or corrupted",
   "2016": "The MIDI file is invalid or corrupted",
-  "2017": "A title is required (up to 255 characters)",
+  "2017": "A title is required (up to 80 characters)",
   "2018": "The composer name can be up to 255 characters",
   "2019": "Notes can be up to 5,000 characters",
   "2020": "Invalid filter value",

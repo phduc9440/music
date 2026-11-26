@@ -462,7 +462,6 @@
     }
   },
   "sourceHint": "Photos, scans and native PDFs are cleaned up differently; choosing the right type improves recognition.",
-  "untitled": "Untitled score",
   "externalAiNote": "Note: AI verification is on. Cropped images of some doubtful measures (up to 10 per score) are sent to an external AI service for checking.",
   "quota": {
     "summary": "{remaining}/{limit} pages left this month · up to {max} pages/upload",

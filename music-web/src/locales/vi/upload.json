@@ -458,7 +458,6 @@
     }
   },
   "sourceHint": "Ảnh chụp, bản scan và PDF gốc được làm sạch theo cách khác nhau; chọn đúng loại giúp nhận diện chính xác hơn.",
-  "untitled": "Bản nhạc chưa đặt tên",
   "externalAiNote": "Lưu ý: hệ thống đang bật AI xác minh. Ảnh cắt của một số ô nhịp nghi ngờ (tối đa 10 ô mỗi bản) được gửi tới dịch vụ AI bên ngoài để đối chiếu.",
   "quota": {
     "summary": "Tháng này còn {remaining}/{limit} trang · tối đa {max} trang/lần",

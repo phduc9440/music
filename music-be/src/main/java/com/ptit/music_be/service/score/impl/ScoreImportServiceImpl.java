@@ -52,6 +52,7 @@ import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.service.billing.EntitlementService;
 import com.ptit.music_be.service.score.ScoreImportService;
 import com.ptit.music_be.service.storage.FileStorageService;
+import com.ptit.music_be.utils.ScoreTitles;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.AccessLevel;
@@ -66,7 +67,9 @@ import lombok.extern.slf4j.Slf4j;
 public class ScoreImportServiceImpl implements ScoreImportService {
 
     static final int MAX_TAGS_PER_SCORE = 10;
-    static final int MAX_TITLE_LENGTH = 255;
+    static final int MAX_TITLE_LENGTH = ScoreTitles.MAX_LENGTH;
+    /** Tên file gốc lưu ở score_files (không phải tên bài). */
+    static final int MAX_FILE_NAME_LENGTH = 255;
     static final int MAX_COMPOSER_LENGTH = 255;
     /** Giới hạn dung lượng XML sau khi giải nén (chống zip bomb). */
     static final int MAX_XML_BYTES = 50 * 1024 * 1024;
@@ -516,18 +519,18 @@ public class ScoreImportServiceImpl implements ScoreImportService {
                 : value.length() > MAX_COMPOSER_LENGTH ? value.substring(0, MAX_COMPOSER_LENGTH) : value;
     }
 
+    /**
+     * Tên bài (T37): tên người dùng gõ (đã kiểm ≤ 80 ký tự) → work-title/movement-title trong file nếu vừa 80 ký tự → tên
+     * file; tên tự suy ra dài hơn 80 ký tự thì thành "Untitled".
+     */
     private String resolveTitle(String given, MusicXmlInfo info, String originalFileName) {
-        String resolved = given;
-        if (resolved == null && info != null) {
-            resolved = info.title();
+        if (StringUtils.hasText(given)) {
+            return given;
         }
-        if (!StringUtils.hasText(resolved)) {
-            resolved = StringUtils.stripFilenameExtension(cleanFileName(originalFileName));
+        if (info != null && StringUtils.hasText(info.title()) && !ScoreTitles.isTooLong(info.title())) {
+            return info.title().strip();
         }
-        if (!StringUtils.hasText(resolved)) {
-            resolved = "Untitled score";
-        }
-        return resolved.length() > MAX_TITLE_LENGTH ? resolved.substring(0, MAX_TITLE_LENGTH) : resolved;
+        return ScoreTitles.fromFileName(originalFileName);
     }
 
     private String cleanFileName(String originalFileName) {
@@ -538,6 +541,6 @@ public class ScoreImportServiceImpl implements ScoreImportService {
         if (name == null) {
             return "";
         }
-        return name.length() > MAX_TITLE_LENGTH ? name.substring(name.length() - MAX_TITLE_LENGTH) : name;
+        return name.length() > MAX_FILE_NAME_LENGTH ? name.substring(name.length() - MAX_FILE_NAME_LENGTH) : name;
     }
 }
