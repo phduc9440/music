@@ -69,6 +69,8 @@ import lombok.extern.slf4j.Slf4j;
 public class ChordGenerationWorker {
 
     static final int QUEUE_CAPACITY = 20;
+
+    static final int WORKERS = 2;
     static final int MAX_ERROR_LENGTH = 500;
     /** music-ai trả tối đa chừng này phương án hợp âm. */
     static final int MAX_OPTIONS = 3;
@@ -84,8 +86,9 @@ public class ChordGenerationWorker {
     /** Báo người bấm khi gợi ý lỗi (OMR-02); tiêm qua setter nên test dựng worker bằng tay không cần nó. */
     private AiTaskNotifier aiTaskNotifier;
 
+    // CH-10: hai luồng để một bài dài không chặn mọi người phía sau (music-ai chạy gợi ý hợp âm trên CPU, nhanh)
     private final ThreadPoolExecutor executor = new ThreadPoolExecutor(
-            1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(QUEUE_CAPACITY), runnable -> {
+            WORKERS, WORKERS, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(QUEUE_CAPACITY), runnable -> {
                 Thread thread = new Thread(runnable, "chord-worker");
                 thread.setDaemon(true);
                 return thread;

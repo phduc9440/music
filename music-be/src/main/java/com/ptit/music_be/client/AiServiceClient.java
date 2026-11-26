@@ -24,10 +24,12 @@ public class AiServiceClient {
 
     /** Dùng cho các lệnh chuyển đổi đồng bộ (đợi kết quả), read timeout dài hơn lệnh giao việc. */
     private final RestClient convertClient;
+    private final RestClient chordClient;
 
     public AiServiceClient(AiServiceProperties properties) {
         this.restClient = buildClient(properties, properties.getReadTimeoutMs());
         this.convertClient = buildClient(properties, properties.getConvertTimeoutMs());
+        this.chordClient = buildClient(properties, properties.getChordTimeoutMs());
     }
 
     private static RestClient buildClient(AiServiceProperties properties, int readTimeoutMs) {
@@ -149,7 +151,7 @@ public class AiServiceClient {
         if (melody != null && melody.staff() != null) {
             body.put("staff", melody.staff());
         }
-        return convertClient
+        return chordClient
                 .post()
                 .uri("/chords/generate")
                 .contentType(MediaType.APPLICATION_JSON)
