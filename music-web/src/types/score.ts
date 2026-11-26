@@ -52,7 +52,8 @@ export interface AccessRequest {
 export interface Review {
   id: string;
   memberId: string;
-  email: string;
+  /** Chỉ có với nhận xét của chính mình hoặc khi người xem là quản trị viên. */
+  email?: string | null;
   fullName?: string | null;
   rating?: number | null;
   comment?: string | null;

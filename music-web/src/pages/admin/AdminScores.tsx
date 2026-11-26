@@ -385,11 +385,11 @@ export default function AdminScores() {
                 </td>
                 <td>
                   {/* T50 (Q11): bản riêng tư chỉ chủ sở hữu xem được, quản trị viên không có liên kết vào nội dung */}
-                  <CellTitle sub={s.composer || undefined}>
+                  <CellTitle sub={s.composer || undefined} fullTitle={s.title}>
                     {s.visibility === 'PRIVATE' ? (
                       <span className="adm-private" title={t('admin.scores.privateHint')}>
                         <Icon name="lock" size={13} />
-                        {s.title}
+                        <span className="adm-private__text">{s.title}</span>
                       </span>
                     ) : (
                       <Link to={`/admin/scores/${s.id}`}>{s.title}</Link>

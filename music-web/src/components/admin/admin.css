@@ -1156,6 +1156,26 @@
   font-size: var(--adm-text-sm);
 }
 
+/* Tên dài (T38): cắt một dòng, tên đầy đủ ở chú thích của ô */
+.adm-cell-title--clamp {
+  min-width: 0;
+  max-width: 22rem;
+}
+.adm-cell-title--clamp .adm-cell-title__main,
+.adm-cell-title--clamp .adm-cell-title__sub {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.adm-cell-title--clamp .adm-private {
+  display: flex;
+  min-width: 0;
+}
+.adm-cell-title--clamp .adm-private__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .adm-pager {
   display: flex;
   align-items: center;

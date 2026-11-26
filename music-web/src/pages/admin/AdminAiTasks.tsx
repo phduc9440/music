@@ -350,7 +350,7 @@ export default function AdminAiTasks() {
                 <Fragment key={task.id}>
                   <tr>
                     <td>
-                      <CellTitle sub={task.memberEmail ?? undefined}>
+                      <CellTitle sub={task.memberEmail ?? undefined} fullTitle={task.scoreTitle ?? undefined}>
                         {task.scoreId ? <Link to={`/admin/scores/${task.scoreId}`}>{task.scoreTitle}</Link> : '—'}
                       </CellTitle>
                     </td>

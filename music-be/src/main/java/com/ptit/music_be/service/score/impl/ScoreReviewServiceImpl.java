@@ -121,12 +121,14 @@ public class ScoreReviewServiceImpl implements ScoreReviewService {
     }
 
     private ReviewListResponse toResponse(Score score) {
+        boolean admin = SecurityUtils.isAdmin();
         List<ReviewResponse> reviews = reviewRepository.findByScoreIdFetchMember(score.getId()).stream()
                 .map(r -> ReviewResponse.builder()
                         .id(r.getId())
                         .memberId(r.getMember().getId())
-                        .email(r.getMember().getEmail())
-                        .fullName(r.getMember().getFullName())
+                        // N-05: email người viết chỉ cho chính họ và quản trị viên; người khác thấy tên hiển thị
+                        .email(admin || isMine(r) ? r.getMember().getEmail() : null)
+                        .fullName(ScoreServiceImpl.displayNameOf(r.getMember()))
                         .rating(r.getRating())
                         .comment(r.getComment())
                         .mine(isMine(r))

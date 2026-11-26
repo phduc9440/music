@@ -459,9 +459,13 @@ export function DescriptionList({ items }: { items: [string, ReactNode][] }) {
 }
 
 /** Tên chính kèm dòng phụ nhỏ bên dưới (ví dụ tên bản nhạc + email chủ sở hữu). */
-export function CellTitle({ children, sub }: { children: ReactNode; sub?: ReactNode }) {
+/**
+ * Ô tiêu đề của bảng quản trị. `fullTitle`: tên đầy đủ, khi có thì ô cắt một dòng kèm "…" và hiện tên đầy đủ khi rê
+ * chuột (tên bài dài tới 80 ký tự không đẩy bảng tràn ngang, T38).
+ */
+export function CellTitle({ children, sub, fullTitle }: { children: ReactNode; sub?: ReactNode; fullTitle?: string }) {
   return (
-    <div className="adm-cell-title">
+    <div className={`adm-cell-title${fullTitle !== undefined ? ' adm-cell-title--clamp' : ''}`} title={fullTitle}>
       <div className="adm-cell-title__main">{children}</div>
       {sub && <div className="adm-cell-title__sub">{sub}</div>}
     </div>

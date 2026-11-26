@@ -125,6 +125,28 @@ class ScoreReviewServiceImplTest {
     }
 
     @Test
+    void otherMembersSeeTheWritersNameButNotTheirEmail() {
+        as("someone@x.com", "ROLE_USER");
+
+        ReviewListResponse list = service.getReviews(SCORE_ID);
+
+        // N-05: chưa có họ tên thì hiện phần trước @, không lộ email
+        assertThat(list.getReviews()).singleElement().satisfies(r -> {
+            assertThat(r.getEmail()).isNull();
+            assertThat(r.getFullName()).isEqualTo("writer");
+        });
+    }
+
+    @Test
+    void writerAndAdminStillSeeTheEmail() {
+        as("writer@x.com", "ROLE_USER");
+        assertThat(service.getReviews(SCORE_ID).getReviews().getFirst().getEmail()).isEqualTo("writer@x.com");
+
+        as("admin@x.com", "ROLE_ADMIN");
+        assertThat(service.getReviews(SCORE_ID).getReviews().getFirst().getEmail()).isEqualTo("writer@x.com");
+    }
+
+    @Test
     void writerCanDeleteOwnReview() {
         as("writer@x.com", "ROLE_USER");
 
