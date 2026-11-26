@@ -96,9 +96,8 @@ public class StudioReportServiceImpl implements StudioReportService {
         session.setLateCount(counts.late());
         session.setWrongPitchCount(counts.wrongPitch());
         session.setMissedCount(counts.missed());
-        session.setAccuracyPct(accuracyPct(counts, total));
-        session.setTimingAccuracyPct(timingAccuracyPct(counts, session.getMode(), total));
-        session.setScorePoints((double) scorePoints(counts, session, total));
+        // accuracy_pct, timing_accuracy_pct, score_points: MySQL tự tính từ các cột đếm (cột sinh tự động, cùng công
+        // thức)
 
         PracticeSession saved = practiceSessionRepository.save(session);
         return buildReport(saved, counts);

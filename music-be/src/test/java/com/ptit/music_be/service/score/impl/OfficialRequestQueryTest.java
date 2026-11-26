@@ -101,7 +101,6 @@ class OfficialRequestQueryTest {
         return requestRepository.save(OfficialRequest.builder()
                 .score(score)
                 .requestedBy(admin)
-                .owner(owner)
                 .status(status)
                 .copyScoreId(copyId)
                 .build());

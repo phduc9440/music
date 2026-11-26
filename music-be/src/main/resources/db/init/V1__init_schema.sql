@@ -49,7 +49,8 @@ CREATE TABLE IF NOT EXISTS members (
     UNIQUE KEY uk_members_referral_code (referral_code),
     KEY idx_members_referred_by (referred_by),
     CONSTRAINT fk_members_referred_by FOREIGN KEY (referred_by) REFERENCES members (id),
-    CONSTRAINT fk_members_status_changed_by FOREIGN KEY (status_changed_by) REFERENCES members (id)
+    CONSTRAINT fk_members_status_changed_by FOREIGN KEY (status_changed_by) REFERENCES members (id),
+    CONSTRAINT chk_members_status CHECK (status IS NULL OR status IN (1, 2))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS member_roles (
@@ -80,7 +81,6 @@ CREATE TABLE IF NOT EXISTS composers (
     id            VARCHAR(36)   NOT NULL,
     name          VARCHAR(255)  NOT NULL,
     slug          VARCHAR(120)  NOT NULL,
-    aliases       VARCHAR(500)  NULL COMMENT 'Tên khác, cách nhau bằng dấu phẩy (ví dụ "Bach, J.S. Bach"), dùng để tự gắn bản nhạc',
     birth_year    INT           NULL,
     death_year    INT           NULL,
     country       VARCHAR(100)  NULL,
@@ -95,11 +95,23 @@ CREATE TABLE IF NOT EXISTS composers (
     UNIQUE KEY uk_composers_slug (slug)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Tên khác của nhạc sĩ (1NF: mỗi dòng một tên, thay cho cột aliases chứa danh sách cách nhau bằng dấu phẩy). Dùng để tự
+-- gắn bản nhạc với nhạc sĩ ("J.S. Bach", "Bach" đều khớp Johann Sebastian Bach) và để tìm nhạc sĩ theo tên khác.
+CREATE TABLE IF NOT EXISTS composer_aliases (
+    composer_id VARCHAR(36)  NOT NULL,
+    position    INT          NOT NULL COMMENT 'Thứ tự hiển thị, từ 0',
+    alias       VARCHAR(120) NOT NULL,
+    PRIMARY KEY (composer_id, position),
+    UNIQUE KEY uk_composer_aliases_alias (composer_id, alias),
+    KEY idx_composer_aliases_alias (alias),
+    CONSTRAINT fk_composer_aliases_composer FOREIGN KEY (composer_id) REFERENCES composers (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS scores (
     id                VARCHAR(36)  NOT NULL,
     member_id         VARCHAR(36)  NULL,
     title             VARCHAR(255) NOT NULL,
-    composer          VARCHAR(255) NULL,
+    composer          VARCHAR(255) NULL COMMENT 'Tên tác giả gõ tay, chỉ khi không khớp nhạc sĩ nào (khớp thì dùng composer_id)',
     difficulty        VARCHAR(16)  NULL,
     study_notes       TEXT         NULL,
     processing_status VARCHAR(255) NULL,
@@ -136,8 +148,20 @@ CREATE TABLE IF NOT EXISTS scores (
     KEY idx_scores_composer (composer_id),
     KEY idx_scores_forked_from (forked_from_score_id),
     CONSTRAINT fk_scores_member   FOREIGN KEY (member_id)   REFERENCES members (id),
-    CONSTRAINT fk_scores_composer FOREIGN KEY (composer_id) REFERENCES composers (id) ON DELETE SET NULL,
-    CONSTRAINT fk_scores_forked_from FOREIGN KEY (forked_from_score_id) REFERENCES scores (id) ON DELETE SET NULL
+    -- Không SET NULL (MySQL không cho cột trong CHECK có hành động khóa ngoại): xóa nhạc sĩ thì service trả tên về cột
+    -- composer và bỏ liên kết trước (ComposerServiceImpl.delete)
+    CONSTRAINT fk_scores_composer FOREIGN KEY (composer_id) REFERENCES composers (id),
+    CONSTRAINT fk_scores_forked_from FOREIGN KEY (forked_from_score_id) REFERENCES scores (id) ON DELETE SET NULL,
+    CONSTRAINT fk_scores_original FOREIGN KEY (original_score_id) REFERENCES scores (id) ON DELETE SET NULL,
+    CONSTRAINT fk_scores_deleted_by FOREIGN KEY (deleted_by) REFERENCES members (id) ON DELETE SET NULL,
+    -- 3NF: đã gắn nhạc sĩ (composer_id) thì tên lấy từ composers.name, cột composer chỉ giữ tên gõ tay khi không khớp ai
+    CONSTRAINT chk_scores_composer_one CHECK (composer_id IS NULL OR composer IS NULL),
+    CONSTRAINT chk_scores_visibility CHECK (visibility IS NULL OR visibility IN ('PRIVATE', 'PENDING', 'PUBLIC')),
+    CONSTRAINT chk_scores_processing_status CHECK (processing_status IS NULL
+        OR processing_status IN ('NONE', 'PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'CANCELLED')),
+    CONSTRAINT chk_scores_difficulty CHECK (difficulty IS NULL OR difficulty IN ('EASY', 'MEDIUM', 'HARD', 'EXPERT')),
+    CONSTRAINT chk_scores_license CHECK (license IS NULL
+        OR license IN ('ALL_RIGHTS_RESERVED', 'CC0', 'CC_BY', 'CC_BY_SA', 'CC_BY_NC'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS score_files (
@@ -179,7 +203,9 @@ CREATE TABLE IF NOT EXISTS ai_tasks (
     KEY idx_ai_tasks_status (status),
     KEY idx_ai_tasks_score (score_id),
     CONSTRAINT fk_ai_tasks_member FOREIGN KEY (member_id) REFERENCES members (id) ON DELETE CASCADE,
-    CONSTRAINT fk_ai_tasks_score  FOREIGN KEY (score_id)  REFERENCES scores (id)  ON DELETE CASCADE
+    CONSTRAINT fk_ai_tasks_score  FOREIGN KEY (score_id)  REFERENCES scores (id)  ON DELETE CASCADE,
+    CONSTRAINT chk_ai_tasks_type CHECK (task_type IN ('OMR_CONVERSION', 'CHORD_GENERATION', 'AUDIO_SYNTHESIS', 'FORMAT_CONVERSION')),
+    CONSTRAINT chk_ai_tasks_status CHECK (status IN ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'CANCELLED'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS member_scores (
@@ -197,7 +223,9 @@ CREATE TABLE IF NOT EXISTS member_scores (
     UNIQUE KEY uk_member_scores (member_id, score_id),
     CONSTRAINT fk_member_scores_member     FOREIGN KEY (member_id)  REFERENCES members (id),
     CONSTRAINT fk_member_scores_score      FOREIGN KEY (score_id)   REFERENCES scores (id),
-    CONSTRAINT fk_member_scores_granted_by FOREIGN KEY (granted_by) REFERENCES members (id)
+    CONSTRAINT fk_member_scores_granted_by FOREIGN KEY (granted_by) REFERENCES members (id),
+    CONSTRAINT chk_member_scores_permission CHECK (permission IS NULL OR permission IN (1, 2, 3)),
+    CONSTRAINT chk_member_scores_requested CHECK (requested_permission IS NULL OR requested_permission IN (1, 2, 3))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS score_reviews (
@@ -375,7 +403,12 @@ CREATE TABLE IF NOT EXISTS content_reports (
     CONSTRAINT fk_content_reports_forum_thread FOREIGN KEY (forum_thread_id) REFERENCES forum_threads (id) ON DELETE SET NULL,
     CONSTRAINT fk_content_reports_forum_post   FOREIGN KEY (forum_post_id)   REFERENCES forum_posts (id) ON DELETE SET NULL,
     CONSTRAINT fk_content_reports_reporter FOREIGN KEY (reporter_id) REFERENCES members (id),
-    CONSTRAINT fk_content_reports_resolver FOREIGN KEY (resolved_by) REFERENCES members (id) ON DELETE SET NULL
+    CONSTRAINT fk_content_reports_resolver FOREIGN KEY (resolved_by) REFERENCES members (id) ON DELETE SET NULL,
+    -- target_type không suy ra được từ các khóa ngoại (báo cáo bài trả lời ghi cả forum_thread_id lẫn forum_post_id; đối
+    -- tượng bị xóa thì khóa ngoại về NULL) nên giữ cột này, chỉ ràng buộc giá trị
+    CONSTRAINT chk_content_reports_target CHECK (target_type IN ('SCORE', 'COMMENT', 'FORUM_THREAD', 'FORUM_POST')),
+    CONSTRAINT chk_content_reports_reason CHECK (reason IN ('COPYRIGHT', 'SPAM', 'INAPPROPRIATE', 'OTHER')),
+    CONSTRAINT chk_content_reports_status CHECK (status IN ('PENDING', 'RESOLVED', 'DISMISSED'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- @nhắc tên trong góp ý (mục 4.2): người được nhắc nhận thông báo COMMENT_MENTION; dùng cho bộ lọc "Nhắc tới tôi".
@@ -440,7 +473,8 @@ CREATE TABLE IF NOT EXISTS notifications (
     created_at   DATETIME(6)  NULL,
     PRIMARY KEY (id),
     KEY idx_notifications_recipient (recipient_id, is_read, created_at),
-    CONSTRAINT fk_notifications_recipient FOREIGN KEY (recipient_id) REFERENCES members (id)
+    CONSTRAINT fk_notifications_recipient FOREIGN KEY (recipient_id) REFERENCES members (id),
+    CONSTRAINT fk_notifications_score     FOREIGN KEY (score_id)     REFERENCES scores (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS notification_preferences (
@@ -475,9 +509,29 @@ CREATE TABLE IF NOT EXISTS practice_sessions (
     late_count          INT          NULL COMMENT 'Số nốt đúng cao độ nhưng chơi trễ',
     wrong_pitch_count   INT          NULL COMMENT 'Số nốt chơi sai cao độ',
     missed_count        INT          NULL COMMENT 'Số nốt bỏ lỡ, không chơi',
-    accuracy_pct        DOUBLE       NULL COMMENT '% đúng = (đúng giờ + sớm + trễ) / tổng nốt x 100',
-    timing_accuracy_pct DOUBLE       NULL COMMENT '% đúng nhịp = nốt đúng giờ / tổng nốt x 100',
-    score_points        DOUBLE       NULL COMMENT 'Điểm số của phiên (chủ yếu ở chế độ TEST)',
+    -- 3 cột dưới tính từ các cột đếm (3NF): DB tự tính (GENERATED ... STORED), không ai ghi được giá trị lệch. Công thức
+    -- giống StudioReportServiceImpl (accuracyPct, timingAccuracyPct, scorePoints); sửa một bên thì sửa cả bên kia.
+    accuracy_pct        DOUBLE       GENERATED ALWAYS AS (CASE WHEN COALESCE(total_notes, 0) = 0 THEN NULL
+                            ELSE ROUND((COALESCE(perfect_count, 0) + COALESCE(early_count, 0) + COALESCE(late_count, 0))
+                                       * 10000 / total_notes) / 100 END) STORED
+                                     COMMENT '% đúng cao độ = (đúng giờ + sớm + trễ) / tổng nốt x 100',
+    timing_accuracy_pct DOUBLE       GENERATED ALWAYS AS (CASE WHEN mode = 4 THEN NULL
+                            WHEN COALESCE(total_notes, 0) = 0
+                                 OR COALESCE(perfect_count, 0) + COALESCE(early_count, 0) + COALESCE(late_count, 0) = 0
+                                THEN 0
+                            ELSE ROUND(COALESCE(perfect_count, 0) * 10000
+                                       / (COALESCE(perfect_count, 0) + COALESCE(early_count, 0) + COALESCE(late_count, 0)))
+                                 / 100 END) STORED
+                                     COMMENT '% đúng nhịp = đúng giờ / (đúng giờ + sớm + trễ) x 100; chế độ Chờ nốt (4) không chấm nhịp',
+    score_points        DOUBLE       GENERATED ALWAYS AS (CASE WHEN total_notes IS NULL THEN NULL WHEN total_notes = 0 THEN 0
+                            ELSE ROUND(GREATEST(0, LEAST(1,
+                                (CASE WHEN mode = 4
+                                      THEN COALESCE(perfect_count, 0) + COALESCE(early_count, 0) + COALESCE(late_count, 0)
+                                      ELSE COALESCE(perfect_count, 0) + 0.7 * (COALESCE(early_count, 0) + COALESCE(late_count, 0))
+                                 END
+                                 - CASE WHEN input_source = 'MIC' THEN 0 ELSE 0.3 * COALESCE(wrong_pitch_count, 0) END)
+                                / total_notes)) * 10000) END) STORED
+                                     COMMENT 'Điểm 0-10000; micro không trừ nốt sai; Chờ nốt không chấm nhịp',
     is_completed        TINYINT(1)   NULL COMMENT 'Có chơi hết phiên (1) hay bỏ giữa chừng (0)',
     error_log           JSON         NULL COMMENT 'Log lỗi chi tiết từng nốt (mảng JSON)',
     active_member_id    VARCHAR(36)  GENERATED ALWAYS AS (CASE WHEN status = 'IN_PROGRESS' THEN member_id ELSE NULL END) STORED
@@ -522,17 +576,17 @@ CREATE TABLE IF NOT EXISTS official_requests (
     id            VARCHAR(36) NOT NULL,
     score_id      VARCHAR(36) NOT NULL,
     requested_by  VARCHAR(36) NOT NULL,
-    owner_id      VARCHAR(36) NOT NULL,
     status        VARCHAR(16) NOT NULL COMMENT 'PENDING / ACCEPTED / DECLINED / CANCELED',
     copy_score_id VARCHAR(36) NULL COMMENT 'Bản sao trong kho mẫu khi chủ đã đồng ý',
+    -- Không có cột chủ sở hữu (3NF): chủ là scores.member_id của score_id, bản nhạc không đổi chủ.
     created_at    DATETIME(6) NULL,
     resolved_at   DATETIME(6) NULL,
     PRIMARY KEY (id),
-    KEY idx_official_requests_owner (owner_id, status),
     KEY idx_official_requests_score (score_id, status),
     CONSTRAINT fk_official_requests_score     FOREIGN KEY (score_id)     REFERENCES scores (id) ON DELETE CASCADE,
     CONSTRAINT fk_official_requests_requester FOREIGN KEY (requested_by) REFERENCES members (id),
-    CONSTRAINT fk_official_requests_owner     FOREIGN KEY (owner_id)     REFERENCES members (id)
+    CONSTRAINT fk_official_requests_copy      FOREIGN KEY (copy_score_id) REFERENCES scores (id) ON DELETE SET NULL,
+    CONSTRAINT chk_official_requests_status CHECK (status IN ('PENDING', 'ACCEPTED', 'DECLINED', 'CANCELED'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Gói dịch vụ (mục 7.2/7.3). limits là JSON: omrPagesPerMonth, omrConcurrent, storageMb, keptVersions, exportsPerMonth,
@@ -563,7 +617,8 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     PRIMARY KEY (id),
     KEY idx_subscriptions_member (member_id, status, expires_at),
     CONSTRAINT fk_subscriptions_member FOREIGN KEY (member_id) REFERENCES members (id),
-    CONSTRAINT fk_subscriptions_plan   FOREIGN KEY (plan_id)   REFERENCES plans (id)
+    CONSTRAINT fk_subscriptions_plan   FOREIGN KEY (plan_id)   REFERENCES plans (id),
+    CONSTRAINT chk_subscriptions_status CHECK (status IN ('ACTIVE', 'CANCELED', 'EXPIRED'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Xử lý vi phạm về gói (SUPER_ADMIN thực hiện). REVOKE: thu hồi gói đang dùng (subscription bị hủy ngay, muốn dùng lại
@@ -634,7 +689,8 @@ CREATE TABLE IF NOT EXISTS payment_orders (
     KEY idx_payment_orders_paid (status, paid_at),
     KEY idx_payment_orders_member (member_id, created_at),
     CONSTRAINT fk_payment_orders_member FOREIGN KEY (member_id) REFERENCES members (id),
-    CONSTRAINT fk_payment_orders_plan   FOREIGN KEY (plan_id)   REFERENCES plans (id)
+    CONSTRAINT fk_payment_orders_plan   FOREIGN KEY (plan_id)   REFERENCES plans (id),
+    CONSTRAINT chk_payment_orders_status CHECK (status IN ('PENDING', 'PAID', 'FAILED', 'EXPIRED', 'REFUNDED'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Team và Show (mục 4.1). Quyền trên bản nhạc của team suy ra từ vai trò (TeamAccessResolverImpl): OWNER/MANAGER = chủ,
@@ -667,34 +723,72 @@ CREATE TABLE IF NOT EXISTS teams (
 --              SHA-256, mã gốc hiện một lần lúc tạo), status, invited_by, expires_at (7 ngày, dùng một lần); khi chấp
 --              nhận thì member_id = người chấp nhận, joined_at = lúc chấp nhận.
 --   ACTIVITY   nhật ký hoạt động: member_id = người làm, type, params (JSON để web dựng câu).
--- Mỗi người chỉ có một dòng MEMBER trong một team: khóa trên cột sinh member_key (chỉ có giá trị khi kind = MEMBER, các
--- loại khác là NULL nên không vướng). Cột sinh không cho FK của cột gốc có ON DELETE SET NULL, nên member_id dùng FK thường
--- (tài khoản không bị xóa cứng, chỉ khóa).
+-- Nhóm có bốn loại dữ liệu, mỗi loại một bảng (3NF: không gộp chung một bảng với cột kind và các cột chỉ dùng cho một
+-- loại): thành viên, lời mời, nhật ký hoạt động, quyền theo vai trò.
+
+-- Thành viên của team: mỗi người tối đa một dòng trong một team.
 CREATE TABLE IF NOT EXISTS team_members (
     id         VARCHAR(36)  NOT NULL,
     team_id    VARCHAR(36)  NOT NULL,
-    kind       VARCHAR(12)  NOT NULL COMMENT 'MEMBER / INVITATION / ACTIVITY',
-    member_id  VARCHAR(36)  NULL COMMENT 'MEMBER: thành viên; INVITATION: người đã chấp nhận; ACTIVITY: người làm',
-    email      VARCHAR(255) NULL COMMENT 'INVITATION: email được mời, NULL = link mời',
-    role       VARCHAR(10)  NULL COMMENT 'MEMBER, INVITATION: OWNER / MANAGER / ARRANGER / VIEWER',
-    status     VARCHAR(10)  NULL COMMENT 'INVITATION: PENDING / ACCEPTED / REVOKED (hết hạn suy ra từ expires_at)',
-    token_hash CHAR(64)     NULL COMMENT 'INVITATION: SHA-256 của mã mời',
-    invited_by VARCHAR(36)  NULL COMMENT 'INVITATION: người mời',
-    expires_at DATETIME(6)  NULL COMMENT 'INVITATION: hết hạn lúc này',
-    type       VARCHAR(32)  NULL COMMENT 'ACTIVITY: loại hoạt động',
-    params     JSON         NULL COMMENT 'ACTIVITY: tham số để dựng câu',
-    joined_at  DATETIME(6)  NULL COMMENT 'MEMBER: lúc vào team; INVITATION: lúc được chấp nhận',
+    member_id  VARCHAR(36)  NOT NULL,
+    role       VARCHAR(10)  NOT NULL COMMENT 'OWNER / MANAGER / ARRANGER / VIEWER',
+    joined_at  DATETIME(6)  NULL,
     created_at DATETIME(6)  NULL,
-    member_key VARCHAR(36)  GENERATED ALWAYS AS (CASE WHEN kind = 'MEMBER' THEN member_id END) STORED,
     PRIMARY KEY (id),
-    UNIQUE KEY uk_team_members_member (team_id, member_key),
-    UNIQUE KEY uk_team_members_token (token_hash),
-    KEY idx_team_members_team (team_id, kind, created_at),
-    KEY idx_team_members_member (member_id, kind),
-    KEY idx_team_members_email (email, kind),
-    CONSTRAINT fk_team_members_team       FOREIGN KEY (team_id)    REFERENCES teams (id) ON DELETE CASCADE,
-    CONSTRAINT fk_team_members_member     FOREIGN KEY (member_id)  REFERENCES members (id),
-    CONSTRAINT fk_team_members_invited_by FOREIGN KEY (invited_by) REFERENCES members (id)
+    UNIQUE KEY uk_team_members_member (team_id, member_id),
+    KEY idx_team_members_member (member_id),
+    CONSTRAINT fk_team_members_team   FOREIGN KEY (team_id)   REFERENCES teams (id) ON DELETE CASCADE,
+    CONSTRAINT fk_team_members_member FOREIGN KEY (member_id) REFERENCES members (id),
+    CONSTRAINT chk_team_members_role CHECK (role IN ('OWNER', 'MANAGER', 'ARRANGER', 'VIEWER'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Lời mời vào team: theo email, hoặc link mời (email NULL, ai có link đều dùng được một lần).
+CREATE TABLE IF NOT EXISTS team_invitations (
+    id          VARCHAR(36)  NOT NULL,
+    team_id     VARCHAR(36)  NOT NULL,
+    email       VARCHAR(255) NULL COMMENT 'Email được mời; NULL = link mời',
+    role        VARCHAR(10)  NOT NULL COMMENT 'Vai trò khi vào (không mời thẳng làm OWNER)',
+    status      VARCHAR(10)  NOT NULL COMMENT 'PENDING / ACCEPTED / DECLINED / REVOKED (hết hạn suy ra từ expires_at)',
+    token_hash  CHAR(64)     NOT NULL COMMENT 'SHA-256 của mã mời; mã gốc chỉ trả về một lần lúc tạo',
+    invited_by  VARCHAR(36)  NULL,
+    expires_at  DATETIME(6)  NOT NULL,
+    accepted_by VARCHAR(36)  NULL COMMENT 'Người đã chấp nhận',
+    accepted_at DATETIME(6)  NULL,
+    created_at  DATETIME(6)  NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_team_invitations_token (token_hash),
+    KEY idx_team_invitations_team (team_id, status, expires_at),
+    KEY idx_team_invitations_email (email, status),
+    CONSTRAINT fk_team_invitations_team        FOREIGN KEY (team_id)     REFERENCES teams (id) ON DELETE CASCADE,
+    CONSTRAINT fk_team_invitations_invited_by  FOREIGN KEY (invited_by)  REFERENCES members (id) ON DELETE SET NULL,
+    CONSTRAINT fk_team_invitations_accepted_by FOREIGN KEY (accepted_by) REFERENCES members (id) ON DELETE SET NULL,
+    CONSTRAINT chk_team_invitations_role CHECK (role IN ('MANAGER', 'ARRANGER', 'VIEWER')),
+    CONSTRAINT chk_team_invitations_status CHECK (status IN ('PENDING', 'ACCEPTED', 'DECLINED', 'REVOKED'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Nhật ký hoạt động của team (tab Hoạt động): params là tham số để web dựng câu theo ngôn ngữ người đọc.
+CREATE TABLE IF NOT EXISTS team_activities (
+    id         VARCHAR(36) NOT NULL,
+    team_id    VARCHAR(36) NOT NULL,
+    member_id  VARCHAR(36) NULL COMMENT 'Người làm',
+    type       VARCHAR(32) NOT NULL,
+    params     JSON        NULL,
+    created_at DATETIME(6) NULL,
+    PRIMARY KEY (id),
+    KEY idx_team_activities_team (team_id, created_at),
+    CONSTRAINT fk_team_activities_team   FOREIGN KEY (team_id)   REFERENCES teams (id) ON DELETE CASCADE,
+    CONSTRAINT fk_team_activities_member FOREIGN KEY (member_id) REFERENCES members (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Quyền của một vai trò do chủ nhóm chỉnh (mỗi team tối đa một dòng cho mỗi vai trò; chưa có dòng thì dùng quyền mặc định).
+CREATE TABLE IF NOT EXISTS team_role_permissions (
+    team_id     VARCHAR(36) NOT NULL,
+    role        VARCHAR(10) NOT NULL COMMENT 'MANAGER / ARRANGER / VIEWER',
+    permissions JSON        NOT NULL COMMENT 'Mảng tên TeamPermission',
+    created_at  DATETIME(6) NULL,
+    PRIMARY KEY (team_id, role),
+    CONSTRAINT fk_team_role_permissions_team FOREIGN KEY (team_id) REFERENCES teams (id) ON DELETE CASCADE,
+    CONSTRAINT chk_team_role_permissions_role CHECK (role IN ('MANAGER', 'ARRANGER', 'VIEWER'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS shows (
@@ -745,6 +839,10 @@ CREATE TABLE IF NOT EXISTS show_items (
 ALTER TABLE scores
     ADD CONSTRAINT fk_scores_team FOREIGN KEY (team_id) REFERENCES teams (id) ON DELETE SET NULL;
 
+-- score_files tạo trước ai_tasks nên khóa ngoại tới tác vụ sinh ra file thêm ở đây
+ALTER TABLE score_files
+    ADD CONSTRAINT fk_score_files_source_task FOREIGN KEY (source_task_id) REFERENCES ai_tasks (id) ON DELETE SET NULL;
+
 -- Đề xuất sửa (mục 4.3): người có quyền nhận xét gửi bản sửa; người có quyền sửa nhận/từ chối từng ô nhịp. Nhận thì tạo
 -- version MusicXML mới ghi tên người đề xuất (score_files.meta). File đề xuất xóa sau 30 ngày kể từ lúc đóng (storage_path = NULL).
 CREATE TABLE IF NOT EXISTS score_suggestions (
@@ -771,7 +869,10 @@ CREATE TABLE IF NOT EXISTS score_suggestions (
     KEY idx_score_suggestions_cleanup (status, decided_at),
     CONSTRAINT fk_score_suggestions_score   FOREIGN KEY (score_id)   REFERENCES scores (id) ON DELETE CASCADE,
     CONSTRAINT fk_score_suggestions_author  FOREIGN KEY (author_id)  REFERENCES members (id),
-    CONSTRAINT fk_score_suggestions_decider FOREIGN KEY (decided_by) REFERENCES members (id)
+    CONSTRAINT fk_score_suggestions_decider FOREIGN KEY (decided_by) REFERENCES members (id),
+    CONSTRAINT chk_score_suggestions_status
+        CHECK (status IN ('OPEN', 'ACCEPTED', 'PARTIAL', 'REJECTED', 'WITHDRAWN', 'OUTDATED')),
+    CONSTRAINT chk_score_suggestions_source CHECK (source IN ('EDITOR', 'CHORD_GENERATION', 'LIVE_RECOVERY'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS score_suggestion_changes (
@@ -800,7 +901,8 @@ CREATE TABLE IF NOT EXISTS score_live_ops (
     PRIMARY KEY (score_id, seq),
     UNIQUE KEY uk_score_live_ops_op (op_id),
     KEY idx_score_live_ops_created (created_at),
-    CONSTRAINT fk_score_live_ops_score FOREIGN KEY (score_id) REFERENCES scores (id) ON DELETE CASCADE
+    CONSTRAINT fk_score_live_ops_score  FOREIGN KEY (score_id)  REFERENCES scores (id) ON DELETE CASCADE,
+    CONSTRAINT fk_score_live_ops_member FOREIGN KEY (member_id) REFERENCES members (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Bộ nhớ đệm timeline phát nhạc của bản nhạc; content_hash đổi (MusicXML đổi) thì tính lại.
@@ -811,4 +913,19 @@ CREATE TABLE IF NOT EXISTS score_timeline (
     created_at   DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     PRIMARY KEY (score_id),
     CONSTRAINT fk_score_timeline_score FOREIGN KEY (score_id) REFERENCES scores (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Sổ điểm thưởng (X-02): mỗi dòng là một lần cộng; (reason, ref_id) duy nhất để một sự việc chỉ cộng một lần.
+CREATE TABLE IF NOT EXISTS points_ledger (
+    id         VARCHAR(36) NOT NULL PRIMARY KEY,
+    member_id  VARCHAR(36) NOT NULL,
+    reason     VARCHAR(40) NOT NULL COMMENT 'RewardReason: SCORE_PUBLISHED, SCORE_OFFICIAL, REFERRAL_DIGITIZED...',
+    ref_id     VARCHAR(36) NOT NULL COMMENT 'Mã sự việc (bản nhạc, đề xuất, câu trả lời...)',
+    xp         INT         NOT NULL,
+    notes      INT         NOT NULL COMMENT 'Số "Nốt" (tiền tệ trong ứng dụng)',
+    created_at DATETIME(6) NOT NULL,
+    UNIQUE KEY uk_points_ledger_reason_ref (reason, ref_id),
+    KEY idx_points_ledger_member (member_id, created_at),
+    KEY idx_points_ledger_member_reason (member_id, reason, created_at),
+    CONSTRAINT fk_points_ledger_member FOREIGN KEY (member_id) REFERENCES members (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

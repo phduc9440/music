@@ -149,9 +149,7 @@ class AdminTeamServiceImplTest {
                         .getSingleResult());
         assertEquals(
                 2L,
-                em.createQuery(
-                                "select count(m) from TeamMember m where m.team.id = :id and m.kind = 'MEMBER'",
-                                Long.class)
+                em.createQuery("select count(m) from TeamMember m where m.team.id = :id", Long.class)
                         .setParameter("id", team.getId())
                         .getSingleResult());
         assertEquals(

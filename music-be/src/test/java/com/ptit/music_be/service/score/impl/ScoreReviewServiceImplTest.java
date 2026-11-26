@@ -140,10 +140,12 @@ class ScoreReviewServiceImplTest {
     @Test
     void writerAndAdminStillSeeTheEmail() {
         as("writer@x.com", "ROLE_USER");
-        assertThat(service.getReviews(SCORE_ID).getReviews().getFirst().getEmail()).isEqualTo("writer@x.com");
+        assertThat(service.getReviews(SCORE_ID).getReviews().getFirst().getEmail())
+                .isEqualTo("writer@x.com");
 
         as("admin@x.com", "ROLE_ADMIN");
-        assertThat(service.getReviews(SCORE_ID).getReviews().getFirst().getEmail()).isEqualTo("writer@x.com");
+        assertThat(service.getReviews(SCORE_ID).getReviews().getFirst().getEmail())
+                .isEqualTo("writer@x.com");
     }
 
     @Test

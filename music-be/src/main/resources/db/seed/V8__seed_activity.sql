@@ -4,10 +4,10 @@
 INSERT INTO practice_sessions
     (id, member_id, score_id, mode, tempo_percent, loop_start_measure, loop_end_measure, started_at, ended_at,
      duration_seconds, total_notes, perfect_count, early_count, late_count, wrong_pitch_count, missed_count,
-     accuracy_pct, timing_accuracy_pct, score_points, is_completed, error_log)
+     is_completed, error_log)
 SELECT UUID(), m.id, s.id, t.mode, t.tempo_percent, t.loop_start_measure, t.loop_end_measure, t.started_at, t.ended_at,
        t.duration_seconds, t.total_notes, t.perfect_count, t.early_count, t.late_count, t.wrong_pitch_count,
-       t.missed_count, t.accuracy_pct, t.timing_accuracy_pct, t.score_points, t.is_completed, t.error_log
+       t.missed_count, t.is_completed, t.error_log
 FROM (
     SELECT 'user@music.com' AS email, 'Ode to Joy' AS title, 1 AS mode, 80.0 AS tempo_percent, NULL AS loop_start_measure, NULL AS loop_end_measure, NOW(6) - INTERVAL 50 MINUTE AS started_at, NOW(6) - INTERVAL 50 MINUTE + INTERVAL 1522 SECOND AS ended_at, 1522 AS duration_seconds, 140 AS total_notes, 100 AS perfect_count, 10 AS early_count, 5 AS late_count, 15 AS wrong_pitch_count, 10 AS missed_count, 82.1 AS accuracy_pct, 71.4 AS timing_accuracy_pct, NULL AS score_points, 1 AS is_completed, '[{"measure": 16, "beat": 3, "type": "WRONG_PITCH", "expected": "F4", "played": "D4"}, {"measure": 4, "beat": 3, "type": "MISSED", "expected": "E4"}, {"measure": 3, "beat": 2, "type": "LATE", "expected": "D4"}, {"measure": 2, "beat": 4, "type": "LATE", "expected": "C4"}]' AS error_log
     UNION ALL SELECT 'user@music.com', 'Gymnopédie No. 1', 3, 80.0, NULL, NULL, CURDATE() - INTERVAL 1 DAY + INTERVAL 19 HOUR + INTERVAL 17 MINUTE, CURDATE() - INTERVAL 1 DAY + INTERVAL 19 HOUR + INTERVAL 17 MINUTE + INTERVAL 923 SECOND, 923, 277, 204, 15, 26, 17, 15, 88.4, 73.6, 69.9, 1, '[{"measure": 24, "beat": 2, "type": "LATE", "expected": "D4"}, {"measure": 14, "beat": 3, "type": "WRONG_PITCH", "expected": "D4", "played": "D4"}, {"measure": 7, "beat": 4, "type": "MISSED", "expected": "F4"}, {"measure": 2, "beat": 2, "type": "LATE", "expected": "E4"}]'

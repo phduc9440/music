@@ -83,7 +83,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
 			select s from Score s
 			where s.member.id = :memberId
 			and (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
-				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\')
+				or lower(coalesce(s.composer, (select cp.name from Composer cp where cp.id = s.composerId), '')) like lower(concat('%', :keyword, '%')) escape '\\')
 			and (:status = '' or s.processingStatus = :status)
 			and (:source = '' or s.sourceType = :source)
 			and (:difficulty = '' or cast(s.difficulty as string) = :difficulty)
@@ -106,7 +106,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
 			select s from Score s
 			where s.isOfficial = true
 			and (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
-				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\')
+				or lower(coalesce(s.composer, (select cp.name from Composer cp where cp.id = s.composerId), '')) like lower(concat('%', :keyword, '%')) escape '\\')
 			and (:difficulty = '' or cast(s.difficulty as string) = :difficulty)
 			and (:composerId = '' or s.composerId = :composerId)
 			order by case cast(s.difficulty as string)
@@ -129,7 +129,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
 			from Score s
 			where s.visibility = 'PUBLIC' and s.originalScoreId is null
 			and (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
-				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\')
+				or lower(coalesce(s.composer, (select cp.name from Composer cp where cp.id = s.composerId), '')) like lower(concat('%', :keyword, '%')) escape '\\')
 			and (:difficulty = '' or cast(s.difficulty as string) = :difficulty)
 			and (:tagId = '' or exists (select 1 from ScoreTag st where st.score = s and st.tag.id = :tagId))
 			and (:composerId = '' or s.composerId = :composerId)
@@ -175,7 +175,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
 					or (r.status = com.ptit.music_be.dto.enums.score.OfficialRequestStatus.ACCEPTED
 						and exists (select 1 from Score c where c.id = r.copyScoreId))))
 			and (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
-				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\')
+				or lower(coalesce(s.composer, (select cp.name from Composer cp where cp.id = s.composerId), '')) like lower(concat('%', :keyword, '%')) escape '\\')
 			order by s.updatedAt desc, s.id
 			""")
     Page<Score> searchOfficialCandidates(@Param("keyword") String keyword, Pageable pageable);
@@ -184,7 +184,7 @@ public interface ScoreRepository extends JpaRepository<Score, String> {
     @Query("""
 			select s from Score s
 			where (lower(s.title) like lower(concat('%', :keyword, '%')) escape '\\'
-				or lower(coalesce(s.composer, '')) like lower(concat('%', :keyword, '%')) escape '\\'
+				or lower(coalesce(s.composer, (select cp.name from Composer cp where cp.id = s.composerId), '')) like lower(concat('%', :keyword, '%')) escape '\\'
 				or lower(s.member.email) like lower(concat('%', :keyword, '%')) escape '\\')
 			and (:visibility = '' or s.visibility = :visibility)
 			and (:official = ''

@@ -29,7 +29,7 @@ public interface ComposerRepository extends JpaRepository<Composer, String> {
 				and s.visibility = 'PUBLIC' and s.originalScoreId is null) as publicCount
 			from Composer c
 			where (:keyword = '' or lower(c.name) like lower(concat('%', :keyword, '%')) escape '\\'
-				or lower(coalesce(c.aliases, '')) like lower(concat('%', :keyword, '%')) escape '\\')
+				or exists (select 1 from c.aliasList a where lower(a) like lower(concat('%', :keyword, '%')) escape '\\'))
 			and (:period = '' or c.period = :period)
 			order by publicCount desc, c.name
 			""")
@@ -51,27 +51,31 @@ public interface ComposerRepository extends JpaRepository<Composer, String> {
 			""")
     List<String> publicTitlesOf(@Param("composerId") String composerId, Pageable pageable);
 
-    /** Bản nhạc cần gắn lại sau khi danh sách nhạc sĩ đổi: chưa gắn mà có tên tác giả, hoặc đang gắn với {@code id}. */
+    /**
+     * Bản nhạc còn chữ tác giả gõ tay (chưa gắn nhạc sĩ), cần thử gắn lại khi danh sách nhạc sĩ đổi. Bản đã gắn không có
+     * chữ gõ tay (3NF) nên giữ nguyên liên kết.
+     */
     @Query("""
 			select s from Score s
-			where (s.composerId is null and s.composer is not null and trim(s.composer) <> '')
-			or s.composerId = :composerId
+			where s.composerId is null and s.composer is not null and trim(s.composer) <> ''
 			""")
-    List<Score> findRelinkCandidates(@Param("composerId") String composerId);
-
-    /** Mọi bản nhạc có chữ tác giả, để gắn lại toàn bộ. */
-    @Query("select s from Score s where s.composer is not null and trim(s.composer) <> ''")
-    List<Score> findAllWithComposerText();
+    List<Score> findUnlinkedWithComposerText();
 
     @Query("select count(s) from Score s where s.composerId = :composerId")
     long countByLinkedScores(@Param("composerId") String composerId);
 
     /** Cập nhật hàng loạt, không qua entity, để không đổi "cập nhật lần cuối" của bản nhạc. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query("update Score s set s.composerId = :composerId where s.id in :ids")
+    @Query("update Score s set s.composerId = :composerId, s.composer = null where s.id in :ids")
     int setComposerId(@Param("composerId") String composerId, @Param("ids") List<String> ids);
 
+    /**
+     * Trước khi xóa nhạc sĩ: các bản đang gắn (cả bản trong thùng rác) nhận lại tên nhạc sĩ làm chữ gõ tay, để khóa ngoại
+     * SET NULL không làm mất tên tác giả.
+     */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query("update Score s set s.composerId = null where s.id in :ids")
-    int clearComposerId(@Param("ids") List<String> ids);
+    @Query(
+            value = "update scores set composer = :name, composer_id = null where composer_id = :composerId",
+            nativeQuery = true)
+    int restoreComposerName(@Param("composerId") String composerId, @Param("name") String name);
 }

@@ -14,12 +14,12 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ptit.music_be.dto.enums.team.TeamMemberKind;
 import com.ptit.music_be.dto.enums.team.TeamPermission;
 import com.ptit.music_be.dto.enums.team.TeamRole;
 import com.ptit.music_be.entity.Team;
 import com.ptit.music_be.entity.TeamMember;
-import com.ptit.music_be.repository.team.TeamMemberRepository;
+import com.ptit.music_be.entity.TeamRolePermission;
+import com.ptit.music_be.repository.team.TeamRolePermissionRepository;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Đọc / ghi bảng quyền của team: mỗi vai trò chỉnh được (MANAGER, ARRANGER, VIEWER) là một dòng kind = PERMISSION trong
- * team_members, params là mảng JSON tên quyền. Vai trò chưa có dòng thì dùng {@link TeamPermission#defaultsOf}.
+ * team_role_permissions, cột permissions là mảng JSON tên quyền. Vai trò chưa có dòng thì dùng {@link TeamPermission#defaultsOf}.
  */
 @Slf4j
 @Component
@@ -41,7 +41,7 @@ public class TeamPermissionStore {
 
     static final TypeReference<List<String>> LIST = new TypeReference<>() {};
 
-    TeamMemberRepository repository;
+    TeamRolePermissionRepository repository;
     ObjectMapper objectMapper;
 
     /** Quyền của người có tư cách thành viên {@code tm}. */
@@ -74,7 +74,7 @@ public class TeamPermissionStore {
             result.put(id, m);
         }
         if (!teamIds.isEmpty()) {
-            for (TeamMember row : repository.findPermissions(teamIds)) {
+            for (TeamRolePermission row : repository.findPermissions(teamIds)) {
                 Map<TeamRole, Set<TeamPermission>> m = result.get(row.getTeam().getId());
                 if (m != null && row.getRole() != null && row.getRole() != TeamRole.OWNER) {
                     m.put(row.getRole(), parse(row));
@@ -87,11 +87,10 @@ public class TeamPermissionStore {
     /** Ghi quyền của một vai trò (đã thêm quyền phải có kèm); trả về bộ quyền đã lưu. */
     public Set<TeamPermission> save(Team team, TeamRole role, Set<TeamPermission> permissions) {
         Set<TeamPermission> normalized = TeamPermission.withRequired(permissions);
-        TeamMember row = repository.findPermission(team.getId(), role).orElseGet(() -> TeamMember.builder()
-                .kind(TeamMemberKind.PERMISSION)
-                .team(team)
-                .role(role)
-                .build());
+        TeamRolePermission row = repository
+                .findPermission(team.getId(), role)
+                .orElseGet(
+                        () -> TeamRolePermission.builder().team(team).role(role).build());
         List<String> names = new ArrayList<>();
         // Ghi theo thứ tự khai báo để dễ đọc khi xem thẳng trong DB
         for (TeamPermission p : TeamPermission.values()) {
@@ -100,7 +99,7 @@ public class TeamPermissionStore {
             }
         }
         try {
-            row.setParams(objectMapper.writeValueAsString(names));
+            row.setPermissions(objectMapper.writeValueAsString(names));
         } catch (JsonProcessingException e) {
             throw new IllegalStateException(e);
         }
@@ -108,13 +107,13 @@ public class TeamPermissionStore {
         return normalized;
     }
 
-    private Set<TeamPermission> parse(TeamMember row) {
+    private Set<TeamPermission> parse(TeamRolePermission row) {
         Set<TeamPermission> result = EnumSet.noneOf(TeamPermission.class);
-        if (row.getParams() == null) {
+        if (row.getPermissions() == null) {
             return result;
         }
         try {
-            for (String name : objectMapper.readValue(row.getParams(), LIST)) {
+            for (String name : objectMapper.readValue(row.getPermissions(), LIST)) {
                 try {
                     result.add(TeamPermission.valueOf(name));
                 } catch (IllegalArgumentException ignored) {

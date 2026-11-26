@@ -4,6 +4,9 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
 
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
+
 import com.ptit.music_be.converter.PracticeModeConverter;
 import com.ptit.music_be.dto.enums.PracticeSessionStatus;
 import com.ptit.music_be.dto.enums.StudioHandMode;
@@ -91,13 +94,19 @@ public class PracticeSession {
     @Column(name = "missed_count")
     Integer missedCount;
 
-    @Column(name = "accuracy_pct")
+    // Ba cột dưới do MySQL tự tính từ các cột đếm (GENERATED ... STORED, xem V1): không ghi từ Java, Hibernate đọc lại
+    // sau
+    // mỗi lần lưu (3NF: không lưu giá trị suy ra được mà có thể bị ghi lệch)
+    @Generated(event = {EventType.INSERT, EventType.UPDATE})
+    @Column(name = "accuracy_pct", insertable = false, updatable = false)
     Double accuracyPct;
 
-    @Column(name = "timing_accuracy_pct")
+    @Generated(event = {EventType.INSERT, EventType.UPDATE})
+    @Column(name = "timing_accuracy_pct", insertable = false, updatable = false)
     Double timingAccuracyPct;
 
-    @Column(name = "score_points")
+    @Generated(event = {EventType.INSERT, EventType.UPDATE})
+    @Column(name = "score_points", insertable = false, updatable = false)
     Double scorePoints;
 
     @Column(name = "is_completed")

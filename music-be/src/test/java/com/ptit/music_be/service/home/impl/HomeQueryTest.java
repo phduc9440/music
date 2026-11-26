@@ -124,9 +124,9 @@ class HomeQueryTest {
         long allBefore = homeQueryRepository.countScores();
 
         score(owner, "Public", "PUBLIC", null, 0);
-        score(owner, "Private", "PRIVATE", null, 0);
+        Score original = score(owner, "Private", "PRIVATE", null, 0);
         Score copy = score(owner, "Copy", "PUBLIC", null, 0);
-        copy.setOriginalScoreId(UUID.randomUUID().toString()); // bản sao trong kho mẫu không tính hai lần
+        copy.setOriginalScoreId(original.getId()); // bản sao trong kho mẫu không tính hai lần
         scoreRepository.save(copy);
 
         assertEquals(publicBefore + 1, homeQueryRepository.countPublicScores());

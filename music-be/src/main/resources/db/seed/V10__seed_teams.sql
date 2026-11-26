@@ -25,27 +25,27 @@ VALUES
     ('seed-team-4', 'Nhóm bản phối nhạc phim', 'Chia sẻ bản phối lại nhạc phim.', NULL, (SELECT id FROM members WHERE email = 'khoa.bui@music.com'), NOW(6) - INTERVAL 15 DAY, NOW(6) - INTERVAL 3 DAY, NOW(6) - INTERVAL 3 DAY, (SELECT id FROM members WHERE email = 'admin2@music.com'), 1, 'Chia sẻ bản phối nhạc phim chưa xin phép bản quyền'),
     ('seed-team-5', 'Nhóm thử nghiệm cũ', 'Nhóm tạo để thử, không còn dùng.', NULL, (SELECT id FROM members WHERE email = 'user@music.com'), NOW(6) - INTERVAL 60 DAY, NOW(6) - INTERVAL 45 DAY, NOW(6) - INTERVAL 45 DAY, (SELECT id FROM members WHERE email = 'user@music.com'), 0, NULL);
 
-INSERT IGNORE INTO team_members (id, team_id, kind, member_id, role, joined_at, created_at)
+INSERT IGNORE INTO team_members (id, team_id, member_id, role, joined_at, created_at)
 VALUES
-    ('seed-tm-1-1', 'seed-team-1', 'MEMBER', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'OWNER', NOW(6) - INTERVAL 40 DAY, NOW(6) - INTERVAL 40 DAY),
-    ('seed-tm-1-2', 'seed-team-1', 'MEMBER', (SELECT id FROM members WHERE email = 'user@music.com'), 'MANAGER', NOW(6) - INTERVAL 38 DAY, NOW(6) - INTERVAL 38 DAY),
-    ('seed-tm-1-3', 'seed-team-1', 'MEMBER', (SELECT id FROM members WHERE email = 'an.vo@music.com'), 'ARRANGER', NOW(6) - INTERVAL 36 DAY, NOW(6) - INTERVAL 36 DAY),
-    ('seed-tm-1-4', 'seed-team-1', 'MEMBER', (SELECT id FROM members WHERE email = 'duy.pham@music.com'), 'ARRANGER', NOW(6) - INTERVAL 35 DAY, NOW(6) - INTERVAL 35 DAY),
-    ('seed-tm-1-5', 'seed-team-1', 'MEMBER', (SELECT id FROM members WHERE email = 'bao.hoang@music.com'), 'VIEWER', NOW(6) - INTERVAL 30 DAY, NOW(6) - INTERVAL 30 DAY),
-    ('seed-tm-2-1', 'seed-team-2', 'MEMBER', (SELECT id FROM members WHERE email = 'trang.dang@music.com'), 'OWNER', NOW(6) - INTERVAL 33 DAY, NOW(6) - INTERVAL 33 DAY),
-    ('seed-tm-2-2', 'seed-team-2', 'MEMBER', (SELECT id FROM members WHERE email = 'mai.ngo@music.com'), 'MANAGER', NOW(6) - INTERVAL 31 DAY, NOW(6) - INTERVAL 31 DAY),
-    ('seed-tm-2-3', 'seed-team-2', 'MEMBER', (SELECT id FROM members WHERE email = 'bao.hoang@music.com'), 'ARRANGER', NOW(6) - INTERVAL 29 DAY, NOW(6) - INTERVAL 29 DAY),
-    ('seed-tm-3-1', 'seed-team-3', 'MEMBER', (SELECT id FROM members WHERE email = 'mai.ngo@music.com'), 'OWNER', NOW(6) - INTERVAL 28 DAY, NOW(6) - INTERVAL 28 DAY),
-    ('seed-tm-3-2', 'seed-team-3', 'MEMBER', (SELECT id FROM members WHERE email = 'duy.pham@music.com'), 'VIEWER', NOW(6) - INTERVAL 26 DAY, NOW(6) - INTERVAL 26 DAY),
-    ('seed-tm-4-1', 'seed-team-4', 'MEMBER', (SELECT id FROM members WHERE email = 'khoa.bui@music.com'), 'OWNER', NOW(6) - INTERVAL 15 DAY, NOW(6) - INTERVAL 15 DAY),
-    ('seed-tm-5-1', 'seed-team-5', 'MEMBER', (SELECT id FROM members WHERE email = 'user@music.com'), 'OWNER', NOW(6) - INTERVAL 60 DAY, NOW(6) - INTERVAL 60 DAY);
+    ('seed-tm-1-1', 'seed-team-1', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'OWNER', NOW(6) - INTERVAL 40 DAY, NOW(6) - INTERVAL 40 DAY),
+    ('seed-tm-1-2', 'seed-team-1', (SELECT id FROM members WHERE email = 'user@music.com'), 'MANAGER', NOW(6) - INTERVAL 38 DAY, NOW(6) - INTERVAL 38 DAY),
+    ('seed-tm-1-3', 'seed-team-1', (SELECT id FROM members WHERE email = 'an.vo@music.com'), 'ARRANGER', NOW(6) - INTERVAL 36 DAY, NOW(6) - INTERVAL 36 DAY),
+    ('seed-tm-1-4', 'seed-team-1', (SELECT id FROM members WHERE email = 'duy.pham@music.com'), 'ARRANGER', NOW(6) - INTERVAL 35 DAY, NOW(6) - INTERVAL 35 DAY),
+    ('seed-tm-1-5', 'seed-team-1', (SELECT id FROM members WHERE email = 'bao.hoang@music.com'), 'VIEWER', NOW(6) - INTERVAL 30 DAY, NOW(6) - INTERVAL 30 DAY),
+    ('seed-tm-2-1', 'seed-team-2', (SELECT id FROM members WHERE email = 'trang.dang@music.com'), 'OWNER', NOW(6) - INTERVAL 33 DAY, NOW(6) - INTERVAL 33 DAY),
+    ('seed-tm-2-2', 'seed-team-2', (SELECT id FROM members WHERE email = 'mai.ngo@music.com'), 'MANAGER', NOW(6) - INTERVAL 31 DAY, NOW(6) - INTERVAL 31 DAY),
+    ('seed-tm-2-3', 'seed-team-2', (SELECT id FROM members WHERE email = 'bao.hoang@music.com'), 'ARRANGER', NOW(6) - INTERVAL 29 DAY, NOW(6) - INTERVAL 29 DAY),
+    ('seed-tm-3-1', 'seed-team-3', (SELECT id FROM members WHERE email = 'mai.ngo@music.com'), 'OWNER', NOW(6) - INTERVAL 28 DAY, NOW(6) - INTERVAL 28 DAY),
+    ('seed-tm-3-2', 'seed-team-3', (SELECT id FROM members WHERE email = 'duy.pham@music.com'), 'VIEWER', NOW(6) - INTERVAL 26 DAY, NOW(6) - INTERVAL 26 DAY),
+    ('seed-tm-4-1', 'seed-team-4', (SELECT id FROM members WHERE email = 'khoa.bui@music.com'), 'OWNER', NOW(6) - INTERVAL 15 DAY, NOW(6) - INTERVAL 15 DAY),
+    ('seed-tm-5-1', 'seed-team-5', (SELECT id FROM members WHERE email = 'user@music.com'), 'OWNER', NOW(6) - INTERVAL 60 DAY, NOW(6) - INTERVAL 60 DAY);
 
 -- Lời mời đang chờ: một theo email (trang.dang vào Ban nhạc Sao Mai), một link mời (email NULL), hết hạn sau 7 ngày kể từ lúc mời.
-INSERT IGNORE INTO team_members (id, team_id, kind, email, role, status, token_hash, invited_by, expires_at, created_at)
+INSERT IGNORE INTO team_invitations (id, team_id, email, role, status, token_hash, invited_by, expires_at, created_at)
 VALUES
-    ('seed-inv-1', 'seed-team-1', 'INVITATION', 'trang.dang@music.com', 'ARRANGER', 'PENDING', SHA2('seed-invitation-1', 256),
+    ('seed-inv-1', 'seed-team-1', 'trang.dang@music.com', 'ARRANGER', 'PENDING', SHA2('seed-invitation-1', 256),
      (SELECT id FROM members WHERE email = 'huong.le@music.com'), NOW(6) + INTERVAL 5 DAY, NOW(6) - INTERVAL 2 DAY),
-    ('seed-inv-2', 'seed-team-1', 'INVITATION', NULL, 'VIEWER', 'PENDING', SHA2('seed-invitation-2', 256),
+    ('seed-inv-2', 'seed-team-1', NULL, 'VIEWER', 'PENDING', SHA2('seed-invitation-2', 256),
      (SELECT id FROM members WHERE email = 'user@music.com'), NOW(6) + INTERVAL 6 DAY, NOW(6) - INTERVAL 1 DAY);
 
 -- Bản nhạc vào team (scores.team_id). Team đã xóa mềm vẫn giữ team_id; bản nhạc vẫn hiện như bản cá nhân của chủ.
@@ -78,19 +78,19 @@ VALUES
     ('seed-item-8', 'seed-show-4', (SELECT id FROM scores WHERE member_id = (SELECT id FROM members WHERE email = 'bao.hoang@music.com') AND title = 'Sao Mai (hợp xướng)' AND deleted_at IS NULL LIMIT 1), 2, (SELECT id FROM members WHERE email = 'bao.hoang@music.com'), (SELECT id FROM members WHERE email = 'trang.dang@music.com'), CURDATE() + INTERVAL 15 DAY, 'TODO', NULL, NULL, NOW(6) - INTERVAL 10 DAY, NOW(6) - INTERVAL 1 DAY),
     ('seed-item-9', 'seed-show-5', (SELECT id FROM scores WHERE member_id = (SELECT id FROM members WHERE email = 'mai.ngo@music.com') AND title = 'Hà Nội mùa vắng những cơn mưa' AND deleted_at IS NULL LIMIT 1), 1, NULL, NULL, CURDATE() + INTERVAL 20 DAY, 'TODO', NULL, NULL, NOW(6) - INTERVAL 10 DAY, NOW(6) - INTERVAL 1 DAY);
 
--- Nhật ký hoạt động (kind = ACTIVITY): params là JSON để web dựng câu theo ngôn ngữ người xem.
-INSERT IGNORE INTO team_members (id, team_id, kind, member_id, type, params, created_at)
+-- Nhật ký hoạt động (bảng team_activities): params là JSON để web dựng câu theo ngôn ngữ người xem.
+INSERT IGNORE INTO team_activities (id, team_id, member_id, type, params, created_at)
 VALUES
-    ('seed-act-1', 'seed-team-1', 'ACTIVITY', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'TEAM_CREATED', '{"team":"Ban nhạc Sao Mai"}', NOW(6) - INTERVAL 40 DAY),
-    ('seed-act-2', 'seed-team-1', 'ACTIVITY', (SELECT id FROM members WHERE email = 'user@music.com'), 'MEMBER_JOINED', '{"name":"Demo User","role":"MANAGER"}', NOW(6) - INTERVAL 38 DAY),
-    ('seed-act-3', 'seed-team-1', 'ACTIVITY', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'SHOW_CREATED', '{"show":"Đêm nhạc mùa thu","showId":"seed-show-1"}', NOW(6) - INTERVAL 25 DAY),
-    ('seed-act-4', 'seed-team-1', 'ACTIVITY', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'ITEM_ADDED', '{"score":"Canon in D","show":"Đêm nhạc mùa thu"}', NOW(6) - INTERVAL 24 DAY),
-    ('seed-act-5', 'seed-team-1', 'ACTIVITY', (SELECT id FROM members WHERE email = 'user@music.com'), 'SHOW_DELETED', '{"show":"Show thử nghiệm (đã xóa)","showId":"seed-show-3"}', NOW(6) - INTERVAL 5 DAY),
-    ('seed-act-6', 'seed-team-2', 'ACTIVITY', (SELECT id FROM members WHERE email = 'trang.dang@music.com'), 'TEAM_CREATED', '{"team":"Hợp xướng Thanh Xuân"}', NOW(6) - INTERVAL 33 DAY),
-    ('seed-act-7', 'seed-team-2', 'ACTIVITY', (SELECT id FROM members WHERE email = 'trang.dang@music.com'), 'SHOW_CREATED', '{"show":"Giáng sinh 2026","showId":"seed-show-4"}', NOW(6) - INTERVAL 20 DAY),
-    ('seed-act-8', 'seed-team-3', 'ACTIVITY', (SELECT id FROM members WHERE email = 'mai.ngo@music.com'), 'TEAM_CREATED', '{"team":"Lớp piano cô Mai"}', NOW(6) - INTERVAL 28 DAY),
-    ('seed-act-9', 'seed-team-4', 'ACTIVITY', (SELECT id FROM members WHERE email = 'khoa.bui@music.com'), 'TEAM_CREATED', '{"team":"Nhóm bản phối nhạc phim"}', NOW(6) - INTERVAL 15 DAY),
-    ('seed-act-10', 'seed-team-5', 'ACTIVITY', (SELECT id FROM members WHERE email = 'user@music.com'), 'TEAM_CREATED', '{"team":"Nhóm thử nghiệm cũ"}', NOW(6) - INTERVAL 60 DAY);
+    ('seed-act-1', 'seed-team-1', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'TEAM_CREATED', '{"team":"Ban nhạc Sao Mai"}', NOW(6) - INTERVAL 40 DAY),
+    ('seed-act-2', 'seed-team-1', (SELECT id FROM members WHERE email = 'user@music.com'), 'MEMBER_JOINED', '{"name":"Demo User","role":"MANAGER"}', NOW(6) - INTERVAL 38 DAY),
+    ('seed-act-3', 'seed-team-1', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'SHOW_CREATED', '{"show":"Đêm nhạc mùa thu","showId":"seed-show-1"}', NOW(6) - INTERVAL 25 DAY),
+    ('seed-act-4', 'seed-team-1', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'ITEM_ADDED', '{"score":"Canon in D","show":"Đêm nhạc mùa thu"}', NOW(6) - INTERVAL 24 DAY),
+    ('seed-act-5', 'seed-team-1', (SELECT id FROM members WHERE email = 'user@music.com'), 'SHOW_DELETED', '{"show":"Show thử nghiệm (đã xóa)","showId":"seed-show-3"}', NOW(6) - INTERVAL 5 DAY),
+    ('seed-act-6', 'seed-team-2', (SELECT id FROM members WHERE email = 'trang.dang@music.com'), 'TEAM_CREATED', '{"team":"Hợp xướng Thanh Xuân"}', NOW(6) - INTERVAL 33 DAY),
+    ('seed-act-7', 'seed-team-2', (SELECT id FROM members WHERE email = 'trang.dang@music.com'), 'SHOW_CREATED', '{"show":"Giáng sinh 2026","showId":"seed-show-4"}', NOW(6) - INTERVAL 20 DAY),
+    ('seed-act-8', 'seed-team-3', (SELECT id FROM members WHERE email = 'mai.ngo@music.com'), 'TEAM_CREATED', '{"team":"Lớp piano cô Mai"}', NOW(6) - INTERVAL 28 DAY),
+    ('seed-act-9', 'seed-team-4', (SELECT id FROM members WHERE email = 'khoa.bui@music.com'), 'TEAM_CREATED', '{"team":"Nhóm bản phối nhạc phim"}', NOW(6) - INTERVAL 15 DAY),
+    ('seed-act-10', 'seed-team-5', (SELECT id FROM members WHERE email = 'user@music.com'), 'TEAM_CREATED', '{"team":"Nhóm thử nghiệm cũ"}', NOW(6) - INTERVAL 60 DAY);
 
 -- ---------------------------------------------------------------------------------------------------- team của SUPER_ADMIN
 -- seed-team-6 "Nhóm biên soạn kho mẫu" do admin@music.com làm chủ (SUPER_ADMIN không cần gói team). Không có team đã xóa và
@@ -100,18 +100,18 @@ INSERT IGNORE INTO teams (id, name, description, avatar_url, created_by, created
 VALUES
     ('seed-team-6', 'Nhóm biên soạn kho mẫu', 'Soạn, phối lại và rà soát các bản trước khi đưa vào kho bản nhạc mẫu.', NULL, (SELECT id FROM members WHERE email = 'admin@music.com'), NOW(6) - INTERVAL 30 DAY, NOW(6) - INTERVAL 1 DAY, NULL, NULL, 0, NULL);
 
-INSERT IGNORE INTO team_members (id, team_id, kind, member_id, role, joined_at, created_at)
+INSERT IGNORE INTO team_members (id, team_id, member_id, role, joined_at, created_at)
 VALUES
-    ('seed-tm-6-1', 'seed-team-6', 'MEMBER', (SELECT id FROM members WHERE email = 'admin@music.com'), 'OWNER', NOW(6) - INTERVAL 30 DAY, NOW(6) - INTERVAL 30 DAY),
-    ('seed-tm-6-2', 'seed-team-6', 'MEMBER', (SELECT id FROM members WHERE email = 'admin2@music.com'), 'MANAGER', NOW(6) - INTERVAL 29 DAY, NOW(6) - INTERVAL 29 DAY),
-    ('seed-tm-6-3', 'seed-team-6', 'MEMBER', (SELECT id FROM members WHERE email = 'duy.pham@music.com'), 'ARRANGER', NOW(6) - INTERVAL 27 DAY, NOW(6) - INTERVAL 27 DAY),
-    ('seed-tm-6-4', 'seed-team-6', 'MEMBER', (SELECT id FROM members WHERE email = 'an.vo@music.com'), 'ARRANGER', NOW(6) - INTERVAL 26 DAY, NOW(6) - INTERVAL 26 DAY),
-    ('seed-tm-6-5', 'seed-team-6', 'MEMBER', (SELECT id FROM members WHERE email = 'bao.hoang@music.com'), 'VIEWER', NOW(6) - INTERVAL 20 DAY, NOW(6) - INTERVAL 20 DAY);
+    ('seed-tm-6-1', 'seed-team-6', (SELECT id FROM members WHERE email = 'admin@music.com'), 'OWNER', NOW(6) - INTERVAL 30 DAY, NOW(6) - INTERVAL 30 DAY),
+    ('seed-tm-6-2', 'seed-team-6', (SELECT id FROM members WHERE email = 'admin2@music.com'), 'MANAGER', NOW(6) - INTERVAL 29 DAY, NOW(6) - INTERVAL 29 DAY),
+    ('seed-tm-6-3', 'seed-team-6', (SELECT id FROM members WHERE email = 'duy.pham@music.com'), 'ARRANGER', NOW(6) - INTERVAL 27 DAY, NOW(6) - INTERVAL 27 DAY),
+    ('seed-tm-6-4', 'seed-team-6', (SELECT id FROM members WHERE email = 'an.vo@music.com'), 'ARRANGER', NOW(6) - INTERVAL 26 DAY, NOW(6) - INTERVAL 26 DAY),
+    ('seed-tm-6-5', 'seed-team-6', (SELECT id FROM members WHERE email = 'bao.hoang@music.com'), 'VIEWER', NOW(6) - INTERVAL 20 DAY, NOW(6) - INTERVAL 20 DAY);
 
 -- Lời mời theo email đang chờ: huong.le vào nhóm với vai trò người phối
-INSERT IGNORE INTO team_members (id, team_id, kind, email, role, status, token_hash, invited_by, expires_at, created_at)
+INSERT IGNORE INTO team_invitations (id, team_id, email, role, status, token_hash, invited_by, expires_at, created_at)
 VALUES
-    ('seed-inv-3', 'seed-team-6', 'INVITATION', 'huong.le@music.com', 'ARRANGER', 'PENDING', SHA2('seed-invitation-3', 256),
+    ('seed-inv-3', 'seed-team-6', 'huong.le@music.com', 'ARRANGER', 'PENDING', SHA2('seed-invitation-3', 256),
      (SELECT id FROM members WHERE email = 'admin@music.com'), NOW(6) + INTERVAL 4 DAY, NOW(6) - INTERVAL 3 DAY);
 
 UPDATE scores SET team_id = 'seed-team-6' WHERE member_id = (SELECT id FROM members WHERE email = 'admin@music.com') AND title = 'Invention No. 1 (BWV 772)' AND team_id IS NULL;
@@ -131,13 +131,13 @@ VALUES
     ('seed-item-21', 'seed-show-7', (SELECT id FROM scores WHERE member_id = (SELECT id FROM members WHERE email = 'admin@music.com') AND title = 'Bèo dạt mây trôi' AND deleted_at IS NULL LIMIT 1), 3,
         (SELECT id FROM members WHERE email = 'admin@music.com'), (SELECT id FROM members WHERE email = 'admin2@music.com'), CURDATE() + INTERVAL 5 DAY, 'ARRANGING', 'Phối lại cho piano, giữ giai điệu dân ca.', NULL, NOW(6) - INTERVAL 10 DAY, NOW(6) - INTERVAL 2 DAY);
 
-INSERT IGNORE INTO team_members (id, team_id, kind, member_id, type, params, created_at)
+INSERT IGNORE INTO team_activities (id, team_id, member_id, type, params, created_at)
 VALUES
-    ('seed-act-19', 'seed-team-6', 'ACTIVITY', (SELECT id FROM members WHERE email = 'admin@music.com'), 'TEAM_CREATED', '{"team":"Nhóm biên soạn kho mẫu"}', NOW(6) - INTERVAL 30 DAY),
-    ('seed-act-20', 'seed-team-6', 'ACTIVITY', (SELECT id FROM members WHERE email = 'admin2@music.com'), 'MEMBER_JOINED', '{"name":"Demo Admin","role":"MANAGER"}', NOW(6) - INTERVAL 29 DAY),
-    ('seed-act-21', 'seed-team-6', 'ACTIVITY', (SELECT id FROM members WHERE email = 'admin@music.com'), 'SHOW_CREATED', '{"show":"Ra mắt bộ bài nhập môn","showId":"seed-show-7"}', NOW(6) - INTERVAL 12 DAY),
-    ('seed-act-22', 'seed-team-6', 'ACTIVITY', (SELECT id FROM members WHERE email = 'admin@music.com'), 'ITEM_ASSIGNED', '{"score":"Invention No. 1 (BWV 772)","arranger":"Phạm Khánh Duy","reviewer":"Super Admin","show":"Ra mắt bộ bài nhập môn","showId":"seed-show-7"}', NOW(6) - INTERVAL 12 DAY),
-    ('seed-act-23', 'seed-team-6', 'ACTIVITY', (SELECT id FROM members WHERE email = 'admin2@music.com'), 'ITEM_ASSIGNED', '{"score":"Bèo dạt mây trôi","arranger":"Super Admin","reviewer":"Demo Admin","show":"Ra mắt bộ bài nhập môn","showId":"seed-show-7"}', NOW(6) - INTERVAL 10 DAY);
+    ('seed-act-19', 'seed-team-6', (SELECT id FROM members WHERE email = 'admin@music.com'), 'TEAM_CREATED', '{"team":"Nhóm biên soạn kho mẫu"}', NOW(6) - INTERVAL 30 DAY),
+    ('seed-act-20', 'seed-team-6', (SELECT id FROM members WHERE email = 'admin2@music.com'), 'MEMBER_JOINED', '{"name":"Demo Admin","role":"MANAGER"}', NOW(6) - INTERVAL 29 DAY),
+    ('seed-act-21', 'seed-team-6', (SELECT id FROM members WHERE email = 'admin@music.com'), 'SHOW_CREATED', '{"show":"Ra mắt bộ bài nhập môn","showId":"seed-show-7"}', NOW(6) - INTERVAL 12 DAY),
+    ('seed-act-22', 'seed-team-6', (SELECT id FROM members WHERE email = 'admin@music.com'), 'ITEM_ASSIGNED', '{"score":"Invention No. 1 (BWV 772)","arranger":"Phạm Khánh Duy","reviewer":"Super Admin","show":"Ra mắt bộ bài nhập môn","showId":"seed-show-7"}', NOW(6) - INTERVAL 12 DAY),
+    ('seed-act-23', 'seed-team-6', (SELECT id FROM members WHERE email = 'admin2@music.com'), 'ITEM_ASSIGNED', '{"score":"Bèo dạt mây trôi","arranger":"Super Admin","reviewer":"Demo Admin","show":"Ra mắt bộ bài nhập môn","showId":"seed-show-7"}', NOW(6) - INTERVAL 10 DAY);
 
 -- Thông báo của admin@music.com: có bài gửi duyệt, được giao phối
 INSERT IGNORE INTO notifications (id, recipient_id, type, message, params, is_read, created_at)

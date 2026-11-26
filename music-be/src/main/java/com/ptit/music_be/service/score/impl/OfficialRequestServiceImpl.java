@@ -87,7 +87,6 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
                     requestRepository.save(OfficialRequest.builder()
                             .score(score)
                             .requestedBy(admin)
-                            .owner(owner)
                             .status(OfficialRequestStatus.ACCEPTED)
                             .copyScoreId(score.getId())
                             .resolvedAt(LocalDateTime.now())
@@ -105,7 +104,6 @@ public class OfficialRequestServiceImpl implements OfficialRequestService {
         OfficialRequest saved = requestRepository.save(OfficialRequest.builder()
                 .score(score)
                 .requestedBy(admin)
-                .owner(owner)
                 .status(OfficialRequestStatus.PENDING)
                 .build());
         notificationService.notify(

@@ -28,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ptit.music_be.dto.enums.notification.NotificationType;
 import com.ptit.music_be.dto.enums.team.TeamActivityType;
 import com.ptit.music_be.dto.enums.team.TeamInvitationStatus;
-import com.ptit.music_be.dto.enums.team.TeamMemberKind;
 import com.ptit.music_be.dto.enums.team.TeamPermission;
 import com.ptit.music_be.dto.enums.team.TeamRole;
 import com.ptit.music_be.dto.request.team.TeamInviteRequest;
@@ -48,6 +47,8 @@ import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.Score;
 import com.ptit.music_be.entity.ShowItem;
 import com.ptit.music_be.entity.Team;
+import com.ptit.music_be.entity.TeamActivity;
+import com.ptit.music_be.entity.TeamInvitation;
 import com.ptit.music_be.entity.TeamMember;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.code.ScoreErrorCode;
@@ -56,6 +57,8 @@ import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.repository.team.ShowItemRepository;
 import com.ptit.music_be.repository.team.ShowRepository;
+import com.ptit.music_be.repository.team.TeamActivityRepository;
+import com.ptit.music_be.repository.team.TeamInvitationRepository;
 import com.ptit.music_be.repository.team.TeamMemberRepository;
 import com.ptit.music_be.repository.team.TeamRepository;
 import com.ptit.music_be.service.auth.EmailService;
@@ -90,6 +93,8 @@ public class TeamServiceImpl implements TeamService {
 
     TeamRepository teamRepository;
     TeamMemberRepository teamMemberRepository;
+    TeamInvitationRepository teamInvitationRepository;
+    TeamActivityRepository teamActivityRepository;
     ShowRepository showRepository;
     ShowItemRepository showItemRepository;
     ScoreRepository scoreRepository;
@@ -105,6 +110,8 @@ public class TeamServiceImpl implements TeamService {
     public TeamServiceImpl(
             TeamRepository teamRepository,
             TeamMemberRepository teamMemberRepository,
+            TeamInvitationRepository teamInvitationRepository,
+            TeamActivityRepository teamActivityRepository,
             ShowRepository showRepository,
             ShowItemRepository showItemRepository,
             ScoreRepository scoreRepository,
@@ -118,6 +125,8 @@ public class TeamServiceImpl implements TeamService {
             @Value("${app.web-url:http://localhost:5173}") String webUrl) {
         this.teamRepository = teamRepository;
         this.teamMemberRepository = teamMemberRepository;
+        this.teamInvitationRepository = teamInvitationRepository;
+        this.teamActivityRepository = teamActivityRepository;
         this.showRepository = showRepository;
         this.showItemRepository = showItemRepository;
         this.scoreRepository = scoreRepository;
@@ -167,12 +176,8 @@ public class TeamServiceImpl implements TeamService {
         Team team = Team.builder().createdBy(me).build();
         apply(team, request);
         team = teamRepository.save(team);
-        teamMemberRepository.save(TeamMember.builder()
-                .kind(TeamMemberKind.MEMBER)
-                .team(team)
-                .member(me)
-                .role(TeamRole.OWNER)
-                .build());
+        teamMemberRepository.save(
+                TeamMember.builder().team(team).member(me).role(TeamRole.OWNER).build());
         activityLog.log(team.getId(), me, TeamActivityType.TEAM_CREATED, "team", team.getName());
         return toResponse(team, new RolePermissions(TeamRole.OWNER, null), 1, 0, 0);
     }
@@ -503,7 +508,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional(readOnly = true)
     public List<TeamInvitationResponse> invitations(String teamId) {
         requireInviter(teamId, access.currentMember());
-        return teamMemberRepository.findUsableInvitations(teamId, LocalDateTime.now()).stream()
+        return teamInvitationRepository.findUsableInvitations(teamId, LocalDateTime.now()).stream()
                 .map(i -> toInvitationResponse(i, null))
                 .toList();
     }
@@ -532,7 +537,8 @@ public class TeamServiceImpl implements TeamService {
         }
         Integer limit = limits.teamMembers();
         if (limit != null
-                && teamMemberRepository.countByTeamId(teamId) + teamMemberRepository.countUsableInvitations(teamId, now)
+                && teamMemberRepository.countByTeamId(teamId)
+                                + teamInvitationRepository.countUsableInvitations(teamId, now)
                         >= limit) {
             throw new AppException(TeamErrorCode.TEAM_MEMBER_LIMIT);
         }
@@ -548,7 +554,7 @@ public class TeamServiceImpl implements TeamService {
             if (invitee != null && teamMemberRepository.existsByTeamIdAndMemberId(teamId, invitee.getId())) {
                 throw new AppException(TeamErrorCode.TEAM_ALREADY_MEMBER);
             }
-            if (!teamMemberRepository
+            if (!teamInvitationRepository
                     .findUsableInvitationsByEmail(teamId, email, now)
                     .isEmpty()) {
                 throw new AppException(TeamErrorCode.TEAM_INVITATION_DUPLICATED);
@@ -556,8 +562,7 @@ public class TeamServiceImpl implements TeamService {
         }
 
         String token = newToken();
-        TeamMember invitation = teamMemberRepository.save(TeamMember.builder()
-                .kind(TeamMemberKind.INVITATION)
+        TeamInvitation invitation = teamInvitationRepository.save(TeamInvitation.builder()
                 .team(team)
                 .email(email)
                 .role(role)
@@ -587,7 +592,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional
     public void revokeInvitation(String teamId, String invitationId) {
         RolePermissions perms = requireInviter(teamId, access.currentMember());
-        TeamMember invitation = teamMemberRepository
+        TeamInvitation invitation = teamInvitationRepository
                 .findInvitationById(invitationId == null ? "" : invitationId)
                 .filter(i -> i.getTeam().getId().equals(teamId))
                 .orElseThrow(() -> new AppException(TeamErrorCode.TEAM_INVITATION_INVALID));
@@ -597,7 +602,7 @@ public class TeamServiceImpl implements TeamService {
         }
         if (invitation.getStatus() == TeamInvitationStatus.PENDING) {
             invitation.setStatus(TeamInvitationStatus.REVOKED);
-            teamMemberRepository.save(invitation);
+            teamInvitationRepository.save(invitation);
         }
     }
 
@@ -605,7 +610,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional(readOnly = true)
     public TeamInvitationPreviewResponse preview(String token) {
         Member me = access.currentMember();
-        TeamMember i = teamMemberRepository
+        TeamInvitation i = teamInvitationRepository
                 .findInvitationByTokenHash(sha256(token == null ? "" : token))
                 .orElseThrow(() -> new AppException(TeamErrorCode.TEAM_INVITATION_INVALID));
         LocalDateTime now = LocalDateTime.now();
@@ -633,7 +638,7 @@ public class TeamServiceImpl implements TeamService {
     @Override
     @Transactional
     public TeamResponse accept(String token) {
-        TeamMember invitation = teamMemberRepository
+        TeamInvitation invitation = teamInvitationRepository
                 .findInvitationByTokenHashForUpdate(sha256(token == null ? "" : token))
                 .orElseThrow(() -> new AppException(TeamErrorCode.TEAM_INVITATION_INVALID));
         return join(invitation, access.currentMember());
@@ -643,7 +648,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional(readOnly = true)
     public List<TeamInvitationResponse> myInvitations() {
         Member me = access.currentMember();
-        return teamMemberRepository.findUsableInvitationsForEmail(me.getEmail(), LocalDateTime.now()).stream()
+        return teamInvitationRepository.findUsableInvitationsForEmail(me.getEmail(), LocalDateTime.now()).stream()
                 .filter(i -> !teamMemberRepository.existsByTeamIdAndMemberId(
                         i.getTeam().getId(), me.getId()))
                 .map(i -> toInvitationResponse(i, null))
@@ -654,8 +659,8 @@ public class TeamServiceImpl implements TeamService {
     @Transactional
     public TeamResponse acceptMine(String invitationId) {
         Member me = access.currentMember();
-        TeamMember invitation = myInvitation(invitationId, me);
-        TeamMember locked = teamMemberRepository
+        TeamInvitation invitation = myInvitation(invitationId, me);
+        TeamInvitation locked = teamInvitationRepository
                 .findInvitationByTokenHashForUpdate(invitation.getTokenHash())
                 .orElseThrow(() -> new AppException(TeamErrorCode.TEAM_INVITATION_INVALID));
         return join(locked, me);
@@ -664,23 +669,23 @@ public class TeamServiceImpl implements TeamService {
     @Override
     @Transactional
     public void declineMine(String invitationId) {
-        TeamMember invitation = myInvitation(invitationId, access.currentMember());
+        TeamInvitation invitation = myInvitation(invitationId, access.currentMember());
         invitation.setStatus(TeamInvitationStatus.DECLINED);
-        teamMemberRepository.save(invitation);
+        teamInvitationRepository.save(invitation);
     }
 
-    private TeamMember myInvitation(String invitationId, Member me) {
-        return teamMemberRepository
+    private TeamInvitation myInvitation(String invitationId, Member me) {
+        return teamInvitationRepository
                 .findInvitationById(invitationId == null ? "" : invitationId)
                 .filter(i -> i.getEmail() != null && i.getEmail().equalsIgnoreCase(me.getEmail()))
-                .filter(i -> i.isUsableInvitation(LocalDateTime.now()))
+                .filter(i -> i.isUsable(LocalDateTime.now()))
                 .orElseThrow(() -> new AppException(TeamErrorCode.TEAM_INVITATION_INVALID));
     }
 
     /** Dùng lời mời (đã khóa dòng): kiểm tra còn hạn, đúng email, còn chỗ theo gói, rồi thêm thành viên. */
-    private TeamResponse join(TeamMember invitation, Member me) {
+    private TeamResponse join(TeamInvitation invitation, Member me) {
         LocalDateTime now = LocalDateTime.now();
-        if (!invitation.isUsableInvitation(now)) {
+        if (!invitation.isUsable(now)) {
             throw new AppException(TeamErrorCode.TEAM_INVITATION_INVALID);
         }
         if (invitation.getEmail() != null && !invitation.getEmail().equalsIgnoreCase(me.getEmail())) {
@@ -702,16 +707,15 @@ public class TeamServiceImpl implements TeamService {
             throw new AppException(TeamErrorCode.TEAM_MEMBER_LIMIT);
         }
         teamMemberRepository.save(TeamMember.builder()
-                .kind(TeamMemberKind.MEMBER)
                 .team(team)
                 .member(me)
                 .role(invitation.getRole())
                 .joinedAt(now)
                 .build());
         invitation.setStatus(TeamInvitationStatus.ACCEPTED);
-        invitation.setMember(me);
-        invitation.setJoinedAt(now);
-        teamMemberRepository.save(invitation);
+        invitation.setAcceptedBy(me);
+        invitation.setAcceptedAt(now);
+        teamInvitationRepository.save(invitation);
 
         String name = TeamAccess.displayName(me);
         activityLog.log(
@@ -811,8 +815,8 @@ public class TeamServiceImpl implements TeamService {
     public PageResponse<TeamActivityResponse> activities(String teamId, int page, int size) {
         access.membership(teamId, access.currentMember());
         int safeSize = size <= 0 ? 20 : Math.min(size, MAX_ACTIVITY_PAGE);
-        Page<TeamMember> result =
-                teamMemberRepository.findActivities(teamId, PageRequest.of(Math.max(page, 0), safeSize));
+        Page<TeamActivity> result =
+                teamActivityRepository.findActivities(teamId, PageRequest.of(Math.max(page, 0), safeSize));
         return PageResponse.<TeamActivityResponse>builder()
                 .content(result.getContent().stream()
                         .map(a -> TeamActivityResponse.builder()
@@ -921,7 +925,7 @@ public class TeamServiceImpl implements TeamService {
                 .build();
     }
 
-    private TeamInvitationResponse toInvitationResponse(TeamMember i, String token) {
+    private TeamInvitationResponse toInvitationResponse(TeamInvitation i, String token) {
         return TeamInvitationResponse.builder()
                 .id(i.getId())
                 .teamId(i.getTeam().getId())

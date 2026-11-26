@@ -1,9 +1,8 @@
 -- V5: nhạc sĩ. Chưa có ảnh: quản trị viên thêm ảnh thuộc phạm vi công cộng (ví dụ tranh trên Wikimedia Commons) kèm
 -- nguồn và giấy phép ở trang Quản lý nhạc sĩ. INSERT IGNORE nên chạy lại không bị trùng (slug UNIQUE).
-INSERT IGNORE INTO composers
-    (id, name, slug, aliases, birth_year, death_year, country, period, bio, created_at, updated_at)
-SELECT UUID(), t.name, t.slug, t.aliases, t.birth_year, t.death_year, t.country, t.period, t.bio, NOW(6), NOW(6)
-FROM (
+-- Tên khác nằm ở bảng composer_aliases (mỗi dòng một tên, 1NF); bảng tạm giữ danh sách gõ gọn cách nhau bằng dấu phẩy.
+CREATE TEMPORARY TABLE seed_composers AS
+SELECT * FROM (
     SELECT 'Antonio Vivaldi' AS name, 'antonio-vivaldi' AS slug, 'Vivaldi' AS aliases, 1678 AS birth_year, 1741 AS death_year, 'Ý' AS country, 'BAROQUE' AS period, 'Nhà soạn nhạc và nghệ sĩ violin người Ý, tác giả bộ bốn concerto Bốn mùa.' AS bio
     UNION ALL SELECT 'Johann Sebastian Bach', 'johann-sebastian-bach', 'Bach, J.S. Bach, J. S. Bach', 1685, 1750, 'Đức', 'BAROQUE', 'Nhà soạn nhạc và nghệ sĩ organ người Đức thời Baroque, nổi tiếng với Bình quân luật (The Well-Tempered Clavier) và các bản Concerto Brandenburg.'
     UNION ALL SELECT 'George Frideric Handel', 'george-frideric-handel', 'Handel, Händel, Georg Friedrich Händel', 1685, 1759, 'Đức, Anh', 'BAROQUE', 'Nhà soạn nhạc gốc Đức sống phần lớn cuộc đời ở Anh, nổi tiếng với oratorio Messiah và tổ khúc Nhạc nước.'
@@ -24,3 +23,18 @@ FROM (
     UNION ALL SELECT 'Trịnh Công Sơn', 'trinh-cong-son', NULL, 1939, 2001, 'Việt Nam', 'VIETNAM', 'Nhạc sĩ với hàng trăm ca khúc như Diễm xưa, Hạ trắng, Cát bụi.'
     UNION ALL SELECT 'Phạm Tuyên', 'pham-tuyen', NULL, 1930, NULL, 'Việt Nam', 'VIETNAM', 'Nhạc sĩ, tác giả Như có Bác Hồ trong ngày vui đại thắng và nhiều ca khúc thiếu nhi.'
 ) t;
+
+INSERT IGNORE INTO composers
+    (id, name, slug, birth_year, death_year, country, period, bio, created_at, updated_at)
+SELECT UUID(), t.name, t.slug, t.birth_year, t.death_year, t.country, t.period, t.bio, NOW(6), NOW(6)
+FROM seed_composers t;
+
+INSERT IGNORE INTO composer_aliases (composer_id, position, alias)
+SELECT c.id, j.pos - 1, TRIM(j.alias)
+FROM seed_composers t
+JOIN composers c ON c.slug = t.slug
+JOIN JSON_TABLE(CONCAT('["', REPLACE(t.aliases, ',', '","'), '"]'), '$[*]'
+                COLUMNS (pos FOR ORDINALITY, alias VARCHAR(120) PATH '$')) j
+WHERE t.aliases IS NOT NULL AND TRIM(j.alias) <> '';
+
+DROP TEMPORARY TABLE seed_composers;

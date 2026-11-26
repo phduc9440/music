@@ -69,11 +69,12 @@ UPDATE scores s JOIN members m ON m.email = 'admin@music.com' SET s.deleted_by =
 UPDATE scores c JOIN scores o ON o.title = 'Ode to Joy' SET c.original_score_id = o.id WHERE c.title = 'Ode to Joy (bản giản lược)';
 UPDATE scores c JOIN scores o ON o.title = 'Für Elise' SET c.original_score_id = o.id WHERE c.title = 'Für Elise (giản lược)';
 
--- Gắn bản nhạc với nhạc sĩ theo chữ tác giả khớp tên hoặc tên khác (backend cũng tự làm việc này mỗi lần lưu bản nhạc)
+-- Gắn bản nhạc với nhạc sĩ theo chữ tác giả khớp tên hoặc tên khác (backend cũng tự làm việc này mỗi lần lưu bản nhạc).
+-- Đã gắn thì bỏ chữ gõ tay (3NF, CHECK chk_scores_composer_one): tên hiển thị lấy từ composers.name.
 UPDATE scores s
     JOIN composers c ON LOWER(s.composer) = LOWER(c.name)
-        OR FIND_IN_SET(LOWER(s.composer), REPLACE(LOWER(COALESCE(c.aliases, '')), ', ', ',')) > 0
-SET s.composer_id = c.id
+        OR EXISTS (SELECT 1 FROM composer_aliases a WHERE a.composer_id = c.id AND LOWER(a.alias) = LOWER(s.composer))
+SET s.composer_id = c.id, s.composer = NULL
 WHERE s.composer IS NOT NULL;
 
 -- Thể loại của từng bản nhạc

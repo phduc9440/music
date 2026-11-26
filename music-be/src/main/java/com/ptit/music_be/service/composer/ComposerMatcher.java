@@ -46,19 +46,18 @@ public class ComposerMatcher {
             return current;
         }
         Map<String, String> built = new HashMap<>();
-        List<String[]> rows =
-                jdbcTemplate.query("select id, name, aliases from composers order by created_at, id", (rs, i) ->
-                        new String[] {rs.getString(1), rs.getString(2), rs.getString(3)});
+        List<String[]> rows = jdbcTemplate.query(
+                "select c.id, c.name, a.alias from composers c"
+                        + " left join composer_aliases a on a.composer_id = c.id"
+                        + " order by c.created_at, c.id, a.position",
+                (rs, i) -> new String[] {rs.getString(1), rs.getString(2), rs.getString(3)});
         for (String[] row : rows) {
             // Tên trùng nhau giữa hai nhạc sĩ: giữ người tạo trước
             built.putIfAbsent(normalize(row[1]), row[0]);
-            if (row[2] != null) {
-                for (String alias : row[2].split(",")) {
-                    String k = normalize(alias);
-                    if (!k.isEmpty()) {
-                        built.putIfAbsent(k, row[0]);
-                    }
-                }
+            // Một dòng cho mỗi tên khác (composer_aliases), nhạc sĩ không có tên khác thì alias null
+            String k = normalize(row[2]);
+            if (!k.isEmpty()) {
+                built.putIfAbsent(k, row[0]);
             }
         }
         built.remove("");

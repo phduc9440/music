@@ -1,6 +1,9 @@
 package com.ptit.music_be.entity;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import jakarta.persistence.*;
 
@@ -31,9 +34,16 @@ public class Composer {
     @Column(nullable = false, unique = true, length = 120)
     String slug;
 
-    /** Tên khác, cách nhau bằng dấu phẩy (ví dụ "Bach, J.S. Bach"), dùng để gắn bản nhạc. */
-    @Column(length = 500)
-    String aliases;
+    /**
+     * Tên khác (ví dụ "Bach", "J.S. Bach"), dùng để gắn bản nhạc. Bảng riêng {@code composer_aliases}, mỗi dòng một tên
+     * (1NF). API vẫn nhận/trả một chuỗi cách nhau bằng dấu phẩy: xem {@link #getAliases()}, {@link #setAliases(String)}.
+     */
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "composer_aliases", joinColumns = @JoinColumn(name = "composer_id"))
+    @OrderColumn(name = "position")
+    @Column(name = "alias", nullable = false, length = 120)
+    @Builder.Default
+    List<String> aliasList = new ArrayList<>();
 
     @Column(name = "birth_year")
     Integer birthYear;
@@ -69,4 +79,24 @@ public class Composer {
     @UpdateTimestamp
     @Column(name = "updated_at")
     LocalDateTime updatedAt;
+
+    /** Các tên khác nối bằng ", " (null nếu không có), như API và form quản trị dùng. */
+    public String getAliases() {
+        return aliasList == null || aliasList.isEmpty() ? null : String.join(", ", aliasList);
+    }
+
+    /** Thay toàn bộ tên khác bằng chuỗi cách nhau bằng dấu phẩy (đã chuẩn hóa ở service). */
+    public void setAliases(String aliases) {
+        if (aliasList == null) {
+            aliasList = new ArrayList<>();
+        }
+        aliasList.clear();
+        if (aliases != null) {
+            Arrays.stream(aliases.split(","))
+                    .map(String::trim)
+                    .filter(a -> !a.isEmpty())
+                    .distinct()
+                    .forEach(aliasList::add);
+        }
+    }
 }
