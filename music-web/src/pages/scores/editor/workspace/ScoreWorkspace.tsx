@@ -20,6 +20,7 @@ import { useScoreEditor } from '../../../../components/editor/core/useScoreEdito
 import { useOmrCheck } from '../../../../components/scores/omr/useOmrCheck';
 import { useLiveCollab } from '../../../../components/editor/live/useLiveCollab';
 import type { LiveSelection, ScoreDetail } from '../../../../types';
+import { toast } from 'react-toastify';
 import { t } from '../../../../i18n/core';
 import { useScoreBase } from '../../../../utils/score';
 import { performanceWarning } from '../../../../utils/viewer';
@@ -314,6 +315,7 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
             selected={editor.selection}
             issueMeasures={issueMeasures}
             lockBoxes={lockBoxes}
+            onMeasureHeld={(name) => toast.info(t('live.notice.heldBy', { name }), { toastId: 'live-held' })}
             focusMeasure={focusMeasure}
             playing={player.activeIds}
             mutedStaves={player.mutedStaves}

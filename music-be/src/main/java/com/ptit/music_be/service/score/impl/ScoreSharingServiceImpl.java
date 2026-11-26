@@ -3,6 +3,7 @@ package com.ptit.music_be.service.score.impl;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,7 @@ import com.ptit.music_be.dto.response.score.ShareMemberResponse;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.MemberScore;
 import com.ptit.music_be.entity.Score;
+import com.ptit.music_be.event.ScoreAccessChangedEvent;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.exception.code.CollabErrorCode;
@@ -42,6 +44,7 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
     MemberScoreRepository memberScoreRepository;
     ScoreFileService scoreFileService;
     NotificationService notificationService;
+    ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -92,6 +95,7 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
         markGranted(share);
         clearRequestIfSatisfied(share);
         memberScoreRepository.save(share);
+        eventPublisher.publishEvent(new ScoreAccessChangedEvent(scoreId, memberId));
         return toResponse(score);
     }
 
@@ -104,6 +108,7 @@ public class ScoreSharingServiceImpl implements ScoreSharingService {
                 .filter(ms -> ms.getPermission() != null)
                 .orElseThrow(() -> new AppException(CollabErrorCode.SHARE_MEMBER_NOT_EXISTED));
         memberScoreRepository.delete(share);
+        eventPublisher.publishEvent(new ScoreAccessChangedEvent(scoreId, memberId));
         return toResponse(score);
     }
 

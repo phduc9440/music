@@ -212,5 +212,6 @@
   "4111": "Chủ đề đã bị khóa, không trả lời thêm được",
   "4112": "Chuyên mục còn chủ đề nên không xóa được, hãy chuyển hoặc ẩn các chủ đề trước",
   "4113": "Tên chuyên mục từ 2 đến 100 ký tự, mô tả tối đa 300 ký tự",
-  "4114": "Đã có chuyên mục trùng đường dẫn, hãy đổi tên khác"
+  "4114": "Đã có chuyên mục trùng đường dẫn, hãy đổi tên khác",
+  "3128": "Quyền của bạn với bản nhạc này vừa thay đổi; trang sẽ tải lại để cập nhật"
 }

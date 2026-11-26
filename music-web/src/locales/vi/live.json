@@ -29,6 +29,7 @@
     "atMeasures": "đang ở ô {from}–{to}",
     "idle": "chưa chọn ô nào",
     "jump": "bấm để tới chỗ này",
-    "anonymous": "Người cùng sửa"
+    "anonymous": "Người cùng sửa",
+    "tabs": "{n} tab"
   }
 }

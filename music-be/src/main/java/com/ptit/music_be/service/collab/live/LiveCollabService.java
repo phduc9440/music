@@ -19,6 +19,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -27,6 +29,7 @@ import com.ptit.music_be.dto.enums.score.SuggestionSource;
 import com.ptit.music_be.dto.response.score.ScoreContent;
 import com.ptit.music_be.dto.response.score.ScoreSaveResponse;
 import com.ptit.music_be.entity.ScoreLiveOp;
+import com.ptit.music_be.event.ScoreAccessChangedEvent;
 import com.ptit.music_be.exception.AppException;
 import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.exception.code.CollabErrorCode;
@@ -238,6 +241,28 @@ public class LiveCollabService {
         LiveParticipant participant = registry.remove(scoreId, sessionId);
         if (participant != null) {
             afterRemoved(scoreId, participant);
+        }
+    }
+
+    /**
+     * Quyền chia sẻ của một người vừa đổi (C-05): đưa họ ra khỏi phiên, nhả khóa và báo qua live-errors để web tải lại
+     * trang với quyền mới (hạ xuống Xem thì thành chỉ xem, được nâng quyền thì vào lại phiên). Chạy sau khi giao dịch đổi
+     * quyền đã ghi xong.
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onAccessChanged(ScoreAccessChangedEvent event) {
+        List<LiveParticipant> affected = registry.participants(event.scoreId()).stream()
+                .filter(p -> event.memberId().equals(p.memberId()))
+                .toList();
+        for (LiveParticipant participant : affected) {
+            LiveParticipant removed = registry.remove(event.scoreId(), participant.sessionId());
+            if (removed != null) {
+                afterRemoved(event.scoreId(), removed);
+            }
+        }
+        if (!affected.isEmpty()) {
+            CollabErrorCode code = CollabErrorCode.LIVE_ACCESS_CHANGED;
+            replyToUser(affected.getFirst().email(), "/queue/live-errors", new LiveError(code.getCode(), code.getMessage()));
         }
     }
 

@@ -73,6 +73,8 @@ public enum CollabErrorCode implements ErrorCode {
             3127,
             "Bản nhạc vừa có phiên bản mới ngoài phiên cùng sửa; thay đổi chưa lưu của phiên đã được giữ lại thành một đề xuất",
             HttpStatus.CONFLICT),
+    LIVE_ACCESS_CHANGED(
+            3128, "Quyền của bạn với bản nhạc này vừa thay đổi; trang sẽ tải lại để cập nhật", HttpStatus.FORBIDDEN),
     ;
 
     int code;

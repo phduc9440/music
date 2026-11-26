@@ -212,5 +212,6 @@
   "4111": "This thread is locked and takes no new replies",
   "4112": "The category still has threads; move or hide them first",
   "4113": "The category name is 2 to 100 characters and the description at most 300",
-  "4114": "A category with the same path already exists; choose another name"
+  "4114": "A category with the same path already exists; choose another name",
+  "3128": "Your access to this score just changed; the page will reload to apply it"
 }
