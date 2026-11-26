@@ -47,9 +47,6 @@ public class AiTaskNotifier {
         if (!completed && task.getStatus() != AiTaskStatus.FAILED) {
             return;
         }
-        if (completed && VARIANT_CHORDS.equals(variant)) {
-            return; // gợi ý hợp âm xong đã gửi SUGGESTION_NEW
-        }
         Score score = task.getScore();
         // Bản nhạc đã vào thùng rác trong lúc chạy: không báo. Kiểm tra bằng truy vấn (lọc deleted_at) trước khi đọc
         // score.getTitle(), vì proxy của bản nhạc đã xóa mềm ném EntityNotFoundException và làm hỏng giao dịch callback
@@ -66,10 +63,30 @@ public class AiTaskNotifier {
                     score.getId(),
                     fallbackMessage(variant, completed, title),
                     NotificationService.params(
-                            "variant", variant, "title", title, "taskId", task.getId(), "code", code));
+                            "variant",
+                            variant,
+                            "title",
+                            title,
+                            "taskId",
+                            task.getId(),
+                            "code",
+                            code,
+                            // gợi ý hợp âm xong: web mở thẳng bản nháp trong trình soạn (?aiChords=)
+                            "suggestionId",
+                            completed ? suggestionIdOf(task.getResultData()) : null));
         } catch (RuntimeException e) {
             log.warn("Không tạo được thông báo cho task {}: {}", task.getId(), e.getMessage());
         }
+    }
+
+    /** suggestionId trong resultData của task gợi ý hợp âm (JSON nhỏ do worker ghi); không đọc được thì null. */
+    static String suggestionIdOf(String resultData) {
+        if (!StringUtils.hasText(resultData)) {
+            return null;
+        }
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\"suggestionId\"\\s*:\\s*\"([^\"]+)\"")
+                .matcher(resultData);
+        return matcher.find() ? matcher.group(1) : null;
     }
 
     private static String variantOf(AiTaskType type) {
@@ -98,6 +115,8 @@ public class AiTaskNotifier {
                     ? "Đã số hóa xong bản nhạc “" + title + "”, mở để kiểm tra kết quả"
                     : "Số hóa bản nhạc “" + title + "” thất bại";
         }
-        return "Gợi ý hợp âm cho bản nhạc “" + title + "” thất bại";
+        return completed
+                ? "Đã gợi ý hợp âm xong cho bản nhạc “" + title + "”, mở để xem bản nháp"
+                : "Gợi ý hợp âm cho bản nhạc “" + title + "” thất bại";
     }
 }

@@ -101,7 +101,8 @@
     "optionsHint": "Mỗi phương án là một cách đệm khác. Đổi phương án sẽ thay các hợp âm AI trên bản nhạc (Ctrl+Z để quay lại).",
     "optionBest": "Phương án A: AI thấy hợp nhất",
     "optionOther": "Phương án {option}",
-    "switching": "Đang đổi phương án…"
+    "switching": "Đang đổi phương án…",
+    "pending": "Bạn còn một gợi ý hợp âm AI chưa xem. Bấm vào đây để nạp lại bản nháp."
   },
   "clear": {
     "title": "Xóa hết hợp âm?",

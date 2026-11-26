@@ -317,6 +317,10 @@ public class ChordGenerationWorker {
                     task.setResultData(data.toString());
                     task.setFinishedAt(LocalDateTime.now());
                     aiTaskRepository.save(task);
+                    // báo người bấm (CH-02); đề xuất hệ thống không còn gửi SUGGESTION_NEW cho mọi người
+                    if (aiTaskNotifier != null) {
+                        aiTaskNotifier.finished(task);
+                    }
                 }));
     }
 

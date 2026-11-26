@@ -101,7 +101,8 @@
     "optionsHint": "Each option is a different accompaniment. Switching replaces the AI chords on the score (Ctrl+Z to go back).",
     "optionBest": "Option A: the AI's best fit",
     "optionOther": "Option {option}",
-    "switching": "Switching option…"
+    "switching": "Switching option…",
+    "pending": "You have an AI chord suggestion you have not reviewed. Click here to load the draft again."
   },
   "clear": {
     "title": "Delete all chords?",
