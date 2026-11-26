@@ -731,6 +731,9 @@ export default function ScoreCanvas({
           drawPartNames: false,
         });
         osmd.TransposeCalculator = new TransposeCalculator(); // cần có thì `Sheet.Transpose` mới có tác dụng
+        // Không gộp các ô nghỉ liền nhau thành một ô "nghỉ nhiều ô" (T47): mỗi ô phải bấm chọn được, khung khóa của người
+        // cùng sửa và ô nghi ngờ của OMR phải hiện đúng chỗ (bản trống 8 ô trước hiện thành "ô 1 + 7")
+        osmd.EngravingRules.RenderMultipleRestMeasures = false;
         const source = latest.current.doc;
         loadedRevision.current = latest.current.revision;
         const text = source ? source.serialize() : xml;
