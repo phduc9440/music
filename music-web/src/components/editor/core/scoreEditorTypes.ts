@@ -148,7 +148,10 @@ export interface ScoreEditor {
    */
   applyEdit: (result: EditResult) => boolean;
   save: (force?: boolean) => Promise<void>;
-  /** Chế độ `suggest`: đề xuất đã gửi xong, coi như đã lưu và xóa nháp. */
+  /**
+   * Coi bản hiện tại như đã lưu và xóa nháp: đề xuất đã gửi xong (chế độ `suggest`), hoặc bỏ gợi ý hợp âm AI làm bản
+   * nhạc trở lại đúng bản đã lưu.
+   */
   finishSuggestion: () => void;
   restoreDraft: () => void;
   discardDraft: () => void;
