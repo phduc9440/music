@@ -2,7 +2,7 @@ export type StudioMode = 'WAIT' | 'FREE_RUN';
 export type StudioEventResult = 'PERFECT' | 'EARLY' | 'LATE' | 'WRONG_PITCH' | 'MISSED';
 export type StudioHand = 'LEFT' | 'RIGHT';
 export type StudioHandMode = 'BOTH' | 'RIGHT_ONLY' | 'LEFT_ONLY';
-export type StudioInputSource = 'KEYBOARD' | 'TOUCH' | 'MIC';
+export type StudioInputSource = 'MIDI' | 'KEYBOARD' | 'TOUCH' | 'MIC';
 
 export interface StudioSessionCreateRequest {
   scoreId: string;

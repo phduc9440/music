@@ -20,6 +20,8 @@ import { DEFAULT_TOLERANCE_WINDOW_MS, FreeRunScorer } from '../../../components/
 import type { PracticeNoteEvent } from '../../../components/player/engine/FreeRunScorer';
 import { WaitModeScorer } from '../../../components/player/engine/WaitModeScorer';
 import { StudioMicError, StudioMicInput } from '../../../components/player/engine/StudioMicInput';
+import { connectMidi } from '../../../components/player/engine/webMidiInput';
+import type { MidiStatus } from '../../../components/player/engine/webMidiInput';
 import { buildStudioSchedule, countInOf } from '../../../components/player/engine/studioSchedule';
 import type { StudioSchedule } from '../../../components/player/engine/studioSchedule';
 import {
@@ -130,6 +132,8 @@ export default function StudioPlayer() {
   const [micLatencyMs, setMicLatencyMs] = useState<number | null>(null);
   // ST-14: mô hình nhận âm tải ngay khi chọn Micro (không đợi bấm Bắt đầu); ST-04: biết backend để báo máy chậm
   const [micModel, setMicModel] = useState<{ status: 'ready' | 'error'; backend?: string } | null>(null);
+  // ST-07: đàn MIDI nối qua Web MIDI API (BE đã nhận nguồn MIDI)
+  const [midiStatus, setMidiStatus] = useState<MidiStatus | null>(null);
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
   const previewTimeoutRef = useRef<number[]>([]);
   useEffect(() => {
@@ -504,6 +508,24 @@ export default function StudioPlayer() {
     },
     [queueEvents],
   );
+
+  // Đàn MIDI: nối ngay khi chọn (chưa có phiên thì chỉ phát tiếng để thử đàn), mỗi note-on đi đường như phím bấm
+  useEffect(() => {
+    if (inputSource !== 'MIDI') return;
+    let disconnect: (() => void) | null = null;
+    let alive = true;
+    void connectMidi(
+      (midi, velocity) => onPlayNote(midi, velocity),
+      (status) => alive && setMidiStatus(status),
+    ).then((stop) => {
+      if (alive) disconnect = stop;
+      else stop();
+    });
+    return () => {
+      alive = false;
+      disconnect?.();
+    };
+  }, [inputSource, onPlayNote]);
 
   useEffect(() => {
     if (!session || inputSource !== 'KEYBOARD' || inputLockedRef.current) return;
@@ -982,9 +1004,10 @@ export default function StudioPlayer() {
                 </fieldset>
                 <fieldset className="studio-player__field">
                   <legend>{t('studioPlayer.setup.input')}</legend>
-                  <div className="studio-player__segmented">
+                  <div className="studio-player__segmented studio-player__inputs">
                     {(
                       [
+                        ['MIDI', 'sliders', 'studioPlayer.setup.midiKeyboard'],
                         ['KEYBOARD', 'type', 'studioPlayer.setup.computerKeyboard'],
                         ['TOUCH', 'select', 'studioPlayer.setup.touchKeyboard'],
                         ['MIC', 'activity', 'studioPlayer.setup.microphone'],
@@ -1006,6 +1029,19 @@ export default function StudioPlayer() {
                       </label>
                     ))}
                   </div>
+                  {inputSource === 'MIDI' && (
+                    <p className="studio-player__field-hint" role="status">
+                      {midiStatus === null
+                        ? t('studioPlayer.setup.midi.connecting')
+                        : midiStatus.state === 'unsupported'
+                          ? t('studioPlayer.setup.midi.unsupported')
+                          : midiStatus.state === 'denied'
+                            ? t('studioPlayer.setup.midi.denied')
+                            : midiStatus.devices.length === 0
+                              ? t('studioPlayer.setup.midi.none')
+                              : t('studioPlayer.setup.midi.ready', { devices: midiStatus.devices.join(', ') })}
+                    </p>
+                  )}
                   {inputSource === 'MIC' && (
                     <p className="studio-player__field-hint" role="status">
                       {micModel === null

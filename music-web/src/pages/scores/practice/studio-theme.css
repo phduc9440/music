@@ -207,6 +207,11 @@
   border-radius: 16px;
   background: var(--ui-surface-muted);
 }
+/* Bốn cách nhập (MIDI, phím máy tính, phím trên màn hình, micro): lưới 2 x 2 để nhãn không bị cắt */
+.studio-player__segmented.studio-player__inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 .studio-player .studio-player__controls .studio-player__segmented label {
   position: relative;
   display: inline-flex;

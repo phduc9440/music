@@ -32,6 +32,14 @@
       "ready": "Listening is ready. The microphone is experimental: play a piano close to the device and avoid noise.",
       "slow": "The browser could not enable graphics acceleration, so listening may lag or stop; a MIDI keyboard or the computer keyboard is safer.",
       "error": "Could not load the listening model. Reload the page or choose another input."
+    },
+    "midiKeyboard": "MIDI keyboard",
+    "midi": {
+      "connecting": "Looking for a MIDI keyboard… The browser may ask for permission to use MIDI devices.",
+      "ready": "Keyboard found: {devices}. Press a few keys to test.",
+      "none": "No MIDI keyboard yet. Plug it in over USB (or a MIDI adapter) and press a key.",
+      "unsupported": "This browser does not support MIDI keyboards (Web MIDI). Use Chrome or Edge, or choose another input.",
+      "denied": "The browser blocked access to MIDI devices. Allow it in the site settings and reload."
     }
   },
   "session": {

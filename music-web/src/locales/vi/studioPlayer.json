@@ -32,6 +32,14 @@
       "ready": "Nhận âm sẵn sàng. Micro đang thử nghiệm, chơi đàn piano gần máy và tránh tiếng ồn.",
       "slow": "Trình duyệt không bật được tăng tốc đồ họa nên nhận âm có thể trễ hoặc dừng giữa chừng; nên dùng đàn MIDI hoặc bàn phím.",
       "error": "Không tải được mô hình nhận âm. Thử tải lại trang hoặc chọn cách nhập khác."
+    },
+    "midiKeyboard": "Đàn MIDI",
+    "midi": {
+      "connecting": "Đang tìm đàn MIDI… Trình duyệt có thể hỏi quyền dùng thiết bị MIDI.",
+      "ready": "Đã nhận đàn: {devices}. Bấm thử vài phím để nghe.",
+      "none": "Chưa thấy đàn MIDI. Cắm đàn qua cáp USB (hoặc bộ chuyển MIDI) rồi bấm thử một phím.",
+      "unsupported": "Trình duyệt này chưa hỗ trợ đàn MIDI (Web MIDI). Dùng Chrome hoặc Edge, hoặc chọn cách nhập khác.",
+      "denied": "Trình duyệt đã chặn quyền dùng thiết bị MIDI. Cho phép trong phần cài đặt trang rồi tải lại."
     }
   },
   "session": {

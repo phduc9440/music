@@ -9,7 +9,7 @@ export interface StudioSettings {
 }
 
 const KEY = 'scorewise.studio.settings';
-const INPUTS: StudioInputSource[] = ['KEYBOARD', 'TOUCH', 'MIC'];
+const INPUTS: StudioInputSource[] = ['MIDI', 'KEYBOARD', 'TOUCH', 'MIC'];
 const HANDS: StudioHandMode[] = ['BOTH', 'RIGHT_ONLY', 'LEFT_ONLY'];
 
 /** Mặc định theo thiết bị: màn cảm ứng không có bàn phím thì bấm phím trên màn hình, còn lại dùng phím máy tính. */
