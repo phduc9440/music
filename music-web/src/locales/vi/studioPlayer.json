@@ -64,12 +64,19 @@
     "statusQuiet": "Đang yên tĩnh (hãy thử gõ 1 nốt đàn)",
     "statusGood": "Tín hiệu âm thanh tốt",
     "statusLoud": "Âm lượng lớn / nhiều tiếng ồn",
-    "detectedNote": "Nốt nhận diện được",
-    "playPrompt": "Hãy thử đàn 1 nốt trên piano thật để kiểm tra độ nhạy",
+    "detectedNote": "Nốt nghe được",
+    "playPrompt": "Chơi vài nốt hoặc một hợp âm trên đàn piano; kết quả hiện sau khoảng 2 giây, giống lúc tập.",
     "unsupported": "Trình duyệt không hỗ trợ thu âm từ micro.",
     "permissionDenied": "Chưa được cấp quyền truy cập micro. Vui lòng bấm vào biểu tượng ổ khóa cạnh thanh địa chỉ để cấp quyền.",
     "noDevice": "Không tìm thấy thiết bị micro nào trên máy.",
-    "startError": "Không thể khởi động micro để kiểm tra."
+    "startError": "Không thể khởi động micro để kiểm tra.",
+    "starting": "Đang mở micro…",
+    "calibrate": "Hiệu chỉnh độ trễ",
+    "calibrateHint": "Độ trễ đang bù: {ms} ms. Bấm Hiệu chỉnh rồi chơi một nốt đúng lúc mỗi tiếng gõ.",
+    "calibrating": "Chơi một nốt đúng lúc mỗi tiếng gõ ({count} tiếng)…",
+    "calibrated": "Đã đo độ trễ {ms} ms và lưu lại; các phiên micro sau sẽ bù khoảng này.",
+    "calibrationFailed": "Không nghe đủ nốt theo tiếng gõ. Chơi to, rõ hơn rồi thử lại.",
+    "resetOffset": "Về 0"
   },
   "results": {
     "PERFECT": "Hoàn hảo",

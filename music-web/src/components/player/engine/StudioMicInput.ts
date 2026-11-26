@@ -30,6 +30,13 @@ type MicUpdateHandler = (notes: RecognizedMicNote[], coveredUntilMs: number, lat
 type MicStatusHandler = (latencyMs: number) => void;
 type MicErrorHandler = (error: StudioMicError) => void;
 
+export interface StudioMicOptions {
+  /** Độ trễ còn lại đo bằng hiệu chỉnh (ms, ST-05): trừ thêm vào thời điểm nốt sau khi đã bù độ trễ thu của máy. */
+  offsetMs?: number;
+  /** Mức âm lượng 0–1 của từng khối âm thanh (thanh đo ở hộp thử micro). */
+  onLevel?: (level: number) => void;
+}
+
 interface PendingRequest {
   resolve: (response: MicPitchResponse) => void;
   reject: (error: Error) => void;
@@ -67,6 +74,9 @@ export class StudioMicInput {
   private disposed = false;
   private failure: Error | null = null;
   private stopPromise: Promise<number> | null = null;
+  /** Độ trễ thu của thiết bị + trình duyệt và độ trễ hiệu chỉnh (ms), trừ vào thời điểm mỗi nốt (ST-05). */
+  private readonly compensationMs: number;
+  private readonly onLevel?: (level: number) => void;
 
   private constructor(
     stream: MediaStream,
@@ -77,8 +87,11 @@ export class StudioMicInput {
     onUpdate: MicUpdateHandler,
     onStatus: MicStatusHandler,
     onError: MicErrorHandler,
+    options: StudioMicOptions,
   ) {
     this.stream = stream;
+    this.onLevel = options.onLevel;
+    this.compensationMs = Math.round(inputLatencyMs(stream, audioContext) + (options.offsetMs ?? 0));
     this.audioContext = audioContext;
     this.worker = worker;
     this.source = source;
@@ -138,6 +151,7 @@ export class StudioMicInput {
     onUpdate: MicUpdateHandler,
     onStatus: MicStatusHandler,
     onError: MicErrorHandler,
+    options: StudioMicOptions = {},
   ): Promise<StudioMicInput> {
     if (!window.isSecureContext && !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
       throw new StudioMicError('insecure-context', 'Microphone access requires HTTPS or localhost');
@@ -191,7 +205,17 @@ export class StudioMicInput {
       });
       const resumeError = await resumePromise;
       if (resumeError) throw resumeError;
-      return new StudioMicInput(stream, audioContext, worker, source, captureNode, onUpdate, onStatus, onError);
+      return new StudioMicInput(
+        stream,
+        audioContext,
+        worker,
+        source,
+        captureNode,
+        onUpdate,
+        onStatus,
+        onError,
+        options,
+      );
     } catch (error) {
       stream?.getTracks().forEach((track) => track.stop());
       worker?.terminate();
@@ -199,6 +223,11 @@ export class StudioMicInput {
       if (error instanceof StudioMicError) throw error;
       throw new StudioMicError('model-load', error instanceof Error ? error.message : 'Could not load Basic Pitch');
     }
+  }
+
+  /** Mốc performance.now() lúc bắt đầu thu; thời điểm nốt báo về tính từ mốc này. */
+  get startTime(): number {
+    return this.startedAt;
   }
 
   async start(): Promise<number> {
@@ -267,6 +296,11 @@ export class StudioMicInput {
 
   private acceptAudio(samples: Float32Array): void {
     if (this.stopped) return;
+    if (this.onLevel && samples.length > 0) {
+      let sum = 0;
+      for (const value of samples) sum += value * value;
+      this.onLevel(Math.sqrt(sum / samples.length));
+    }
     for (const window of this.buffer.append(samples)) this.queueWindow(window);
   }
 
@@ -293,7 +327,7 @@ export class StudioMicInput {
         const notes = (response.notes ?? [])
           .map((note) => ({
             midi: note.pitchMidi,
-            playedMs: Math.max(0, Math.round(windowStartMs + note.startTimeSeconds * 1000)),
+            playedMs: Math.max(0, Math.round(windowStartMs + note.startTimeSeconds * 1000 - this.compensationMs)),
           }))
           .filter((note) => {
             if (note.playedMs <= this.lastCommittedMs || note.playedMs > coveredUntilMs) return false;
@@ -356,6 +390,17 @@ export class StudioMicInput {
       worker.postMessage(request);
     });
   }
+}
+
+/**
+ * Độ trễ từ lúc âm thanh tới micro đến lúc tới bộ thu (ms): độ trễ của track (Chrome báo trong getSettings) cộng
+ * baseLatency của AudioContext. Trình duyệt không báo thì 0, phần còn lại do hiệu chỉnh bù.
+ */
+function inputLatencyMs(stream: MediaStream, audioContext: AudioContext): number {
+  const settings = stream.getAudioTracks()[0]?.getSettings() as (MediaTrackSettings & { latency?: number }) | undefined;
+  const track = typeof settings?.latency === 'number' ? settings.latency : 0;
+  const base = typeof audioContext.baseLatency === 'number' ? audioContext.baseLatency : 0;
+  return Math.max(0, Math.min(0.5, track + base)) * 1000;
 }
 
 function asMicError(error: unknown, fallbackCode: StudioMicErrorCode): StudioMicError {

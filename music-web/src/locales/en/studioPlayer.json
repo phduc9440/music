@@ -64,12 +64,19 @@
     "statusQuiet": "Quiet (try playing a piano key)",
     "statusGood": "Good audio signal",
     "statusLoud": "High volume / noise detected",
-    "detectedNote": "Detected note",
-    "playPrompt": "Play a note on your real piano to test pitch sensitivity",
+    "detectedNote": "Notes heard",
+    "playPrompt": "Play a few notes or a chord on the piano; results appear after about 2 seconds, as in practice.",
     "unsupported": "Browser does not support microphone input.",
     "permissionDenied": "Microphone permission denied. Please allow microphone access in site settings.",
     "noDevice": "No microphone device detected.",
-    "startError": "Could not start microphone test."
+    "startError": "Could not start microphone test.",
+    "starting": "Opening the microphone…",
+    "calibrate": "Calibrate latency",
+    "calibrateHint": "Latency being compensated: {ms} ms. Press Calibrate and play one note on each click.",
+    "calibrating": "Play one note on each click ({count} clicks)…",
+    "calibrated": "Measured {ms} ms of latency and saved it; later microphone sessions will compensate for it.",
+    "calibrationFailed": "Not enough notes were heard on the clicks. Play louder and clearer, then try again.",
+    "resetOffset": "Reset to 0"
   },
   "results": {
     "PERFECT": "Perfect",

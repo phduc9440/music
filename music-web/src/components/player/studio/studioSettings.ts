@@ -6,6 +6,8 @@ export interface StudioSettings {
   inputSource: StudioInputSource;
   handMode: StudioHandMode;
   tempoPercent: number;
+  /** Độ trễ micro đo bằng hiệu chỉnh ở hộp thử micro (ms, ST-05); chưa hiệu chỉnh là 0. */
+  micOffsetMs: number;
 }
 
 const KEY = 'scorewise.studio.settings';
@@ -29,6 +31,7 @@ export function loadStudioSettings(): StudioSettings {
     inputSource: defaultInputSource(),
     handMode: 'BOTH',
     tempoPercent: 100,
+    micOffsetMs: 0,
   };
   try {
     const raw = window.localStorage.getItem(KEY);
@@ -44,15 +47,21 @@ export function loadStudioSettings(): StudioSettings {
       inputSource,
       handMode: HANDS.includes(saved.handMode as StudioHandMode) ? (saved.handMode as StudioHandMode) : 'BOTH',
       tempoPercent: Number.isInteger(tempo) && tempo >= 20 && tempo <= 200 ? tempo : 100,
+      micOffsetMs: clampOffset(Number(saved.micOffsetMs)),
     };
   } catch {
     return fallback;
   }
 }
 
-export function saveStudioSettings(settings: StudioSettings): void {
+/** Độ trễ hiệu chỉnh hợp lệ: 0–500 ms, số lạ thì 0. */
+export const clampOffset = (value: number): number =>
+  Number.isFinite(value) ? Math.max(0, Math.min(500, Math.round(value))) : 0;
+
+/** Ghi thiết lập; trường không truyền thì giữ giá trị đã lưu (ví dụ độ trễ micro chỉ đổi ở hộp thử micro). */
+export function saveStudioSettings(settings: Partial<StudioSettings>): void {
   try {
-    window.localStorage.setItem(KEY, JSON.stringify(settings));
+    window.localStorage.setItem(KEY, JSON.stringify({ ...loadStudioSettings(), ...settings }));
   } catch {
     // trình duyệt chặn lưu: lần sau dùng mặc định
   }

@@ -1,226 +1,156 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon } from '../../ui';
 import { t } from '../../../i18n/core';
+import { StudioMicInput } from '../engine/StudioMicInput';
+import type { RecognizedMicNote, StudioMicError } from '../engine/StudioMicInput';
+import { playClick } from '../../../utils/pianoSynth';
+import { clampOffset, loadStudioSettings, saveStudioSettings } from './studioSettings';
 
 const SEMITONE_NAMES = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
+const noteName = (midi: number) => `${SEMITONE_NAMES[midi % 12]}${Math.floor(midi / 12) - 1}`;
 
-function noteFromMidi(midi: number): string {
-  return `${SEMITONE_NAMES[midi % 12]}${Math.floor(midi / 12) - 1}`;
-}
+/** Hiệu chỉnh (ST-05): 4 tiếng gõ cách nhau 1 giây, bắt đầu sau 1 giây kể từ lúc bấm. */
+const CALIBRATION_CLICKS = 4;
+const CALIBRATION_GAP_MS = 1000;
+/** Nốt cách tiếng gõ quá khoảng này thì không tính là chơi theo tiếng gõ đó. */
+const CALIBRATION_MATCH_MS = 450;
 
-/**
- * Thuật toán tự tương quan (Autocorrelation) đơn giản để ước tính tần số cơ bản (F0)
- * từ đệm mẫu âm thanh PCM float 32-bit.
- */
-function detectPitch(buffer: Float32Array, sampleRate: number): { freq: number; midi: number } | null {
-  const size = buffer.length;
-  let rms = 0;
-  for (let i = 0; i < size; i++) {
-    const val = buffer[i];
-    rms += val * val;
-  }
-  rms = Math.sqrt(rms / size);
-  // Ngưỡng năng lượng tối thiểu để coi là có âm thanh
-  if (rms < 0.02) return null;
-
-  let r1 = 0;
-  let r2 = size - 1;
-  const thres = 0.2;
-  for (let i = 0; i < size / 2; i++) {
-    if (Math.abs(buffer[i]) < thres) {
-      r1 = i;
-      break;
-    }
-  }
-  for (let i = 1; i < size / 2; i++) {
-    if (Math.abs(buffer[size - i]) < thres) {
-      r2 = size - i;
-      break;
-    }
-  }
-
-  const trimmed = buffer.slice(r1, r2);
-  const trimmedLen = trimmed.length;
-  if (trimmedLen < 32) return null;
-
-  const corr = new Float32Array(trimmedLen);
-  for (let i = 0; i < trimmedLen; i++) {
-    let sum = 0;
-    for (let j = 0; j < trimmedLen - i; j++) {
-      sum += trimmed[j] * trimmed[j + i];
-    }
-    corr[i] = sum;
-  }
-
-  let d = 0;
-  while (d < trimmedLen - 1 && corr[d] > corr[d + 1]) {
-    d++;
-  }
-
-  let maxval = -1;
-  let maxpos = -1;
-  for (let i = d; i < trimmedLen; i++) {
-    if (corr[i] > maxval) {
-      maxval = corr[i];
-      maxpos = i;
-    }
-  }
-
-  if (maxpos < 1 || maxpos >= trimmedLen - 1) return null;
-
-  // Nội suy parabol đỉnh cực đại
-  const x0 = corr[maxpos - 1];
-  const x1 = corr[maxpos];
-  const x2 = corr[maxpos + 1];
-  const a = (x0 + x2 - 2 * x1) / 2;
-  const b = (x2 - x0) / 2;
-  const delta = a !== 0 ? -b / (2 * a) : 0;
-  const period = maxpos + delta;
-
-  if (period <= 0) return null;
-  const freq = sampleRate / period;
-
-  // Dải phím đàn piano thông dụng (A0 ~ 27.5 Hz đến C8 ~ 4186 Hz)
-  if (freq < 27 || freq > 4200) return null;
-
-  const midi = Math.round(69 + 12 * Math.log2(freq / 440));
-  if (midi < 21 || midi > 108) return null;
-
-  return { freq: Math.round(freq), midi };
-}
+const median = (values: number[]) => {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+};
 
 interface StudioMicTesterProps {
   onTestingChange?: (testing: boolean) => void;
 }
 
+type Calibration =
+  | { phase: 'idle' }
+  | { phase: 'running'; clicksMs: number[]; offsets: number[] }
+  | { phase: 'done'; offsetMs: number }
+  | { phase: 'failed' };
+
+/**
+ * Hộp thử micro dùng đúng bộ nhận nốt của phiên tập (Basic Pitch, ST-06), nên nốt hiện ở đây là nốt phiên tập sẽ
+ * nghe được, cả hợp âm. Kèm hiệu chỉnh độ trễ (ST-05): chơi theo 4 tiếng gõ, lấy độ lệch trung vị lưu lại để phiên
+ * tập trừ đi.
+ */
 export function StudioMicTester({ onTestingChange }: StudioMicTesterProps) {
   const [testing, setTesting] = useState(false);
-  const [level, setLevel] = useState(0); // 0 đến 100
-  const [detectedNote, setDetectedNote] = useState<{ note: string; freq: number } | null>(null);
+  const [starting, setStarting] = useState(false);
+  const [level, setLevel] = useState(0);
+  const [heard, setHeard] = useState<string[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [calibration, setCalibration] = useState<Calibration>({ phase: 'idle' });
+  const [savedOffset, setSavedOffset] = useState(() => loadStudioSettings().micOffsetMs);
 
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const rafRef = useRef<number | null>(null);
-  const lastNoteTimeRef = useRef(0);
+  const micRef = useRef<StudioMicInput | null>(null);
+  const calibrationRef = useRef<Calibration>({ phase: 'idle' });
+  const timersRef = useRef<number[]>([]);
+
+  const clearTimers = () => {
+    timersRef.current.forEach((id) => window.clearTimeout(id));
+    timersRef.current = [];
+  };
+
+  const setCal = (next: Calibration) => {
+    calibrationRef.current = next;
+    setCalibration(next);
+  };
 
   const stopTesting = useCallback(() => {
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-      void audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-    analyserRef.current = null;
+    clearTimers();
+    const mic = micRef.current;
+    micRef.current = null;
+    if (mic) void mic.dispose();
     setTesting(false);
     setLevel(0);
-    setDetectedNote(null);
+    setHeard([]);
+    if (calibrationRef.current.phase === 'running') setCal({ phase: 'idle' });
     onTestingChange?.(false);
   }, [onTestingChange]);
 
+  const onNotes = useCallback((notes: RecognizedMicNote[]) => {
+    if (notes.length === 0) return;
+    setHeard(notes.slice(-6).map((n) => noteName(n.midi)));
+    const cal = calibrationRef.current;
+    if (cal.phase !== 'running') return;
+    const offsets = [...cal.offsets];
+    for (const note of notes) {
+      const nearest = cal.clicksMs.reduce((best, click) =>
+        Math.abs(note.playedMs - click) < Math.abs(note.playedMs - best) ? click : best,
+      );
+      const diff = note.playedMs - nearest;
+      if (Math.abs(diff) <= CALIBRATION_MATCH_MS) offsets.push(diff);
+    }
+    calibrationRef.current = { ...cal, offsets };
+  }, []);
+
   const startTesting = async () => {
     setErrorMsg(null);
-    setDetectedNote(null);
-    setLevel(0);
-
+    setHeard([]);
+    setStarting(true);
     try {
-      if (!navigator.mediaDevices?.getUserMedia || typeof AudioContext === 'undefined') {
-        setErrorMsg(t('studioPlayer.micTest.unsupported'));
-        return;
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          channelCount: 1,
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false,
+      // Thử với độ trễ hiệu chỉnh = 0 để đo được độ trễ thật của máy
+      const mic = await StudioMicInput.create(
+        onNotes,
+        () => undefined,
+        (error: StudioMicError) => {
+          setErrorMsg(t(`studioPlayer.errors.mic.${error.code}`));
+          stopTesting();
         },
-      });
-
-      const audioCtx = new AudioContext();
-      await audioCtx.resume();
-
-      const source = audioCtx.createMediaStreamSource(stream);
-      const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 1024;
-      analyser.smoothingTimeConstant = 0.4;
-      source.connect(analyser);
-      // Không kết nối analyser tới audioCtx.destination để tránh rú loa
-
-      audioContextRef.current = audioCtx;
-      streamRef.current = stream;
-      analyserRef.current = analyser;
+        { offsetMs: 0, onLevel: (rms) => setLevel((prev) => Math.round(prev * 0.7 + Math.min(100, rms * 280) * 0.3)) },
+      );
+      await mic.start();
+      micRef.current = mic;
       setTesting(true);
       onTestingChange?.(true);
-
-      const buffer = new Float32Array(analyser.fftSize);
-
-      const tick = () => {
-        if (!analyserRef.current) return;
-        analyserRef.current.getFloatTimeDomainData(buffer);
-
-        // Tính RMS cho mức âm lượng
-        let sumSquares = 0;
-        for (let i = 0; i < buffer.length; i++) {
-          sumSquares += buffer[i] * buffer[i];
-        }
-        const rms = Math.sqrt(sumSquares / buffer.length);
-        // Chuyển sang thang điểm 0 - 100 mượt mà
-        const currentLevel = Math.min(100, Math.round(rms * 280));
-        setLevel((prev) => Math.round(prev * 0.7 + currentLevel * 0.3));
-
-        // Nhận diện cao độ nốt khi âm lượng đủ lớn
-        if (rms > 0.025) {
-          const pitch = detectPitch(buffer, audioCtx.sampleRate);
-          if (pitch) {
-            setDetectedNote({
-              note: noteFromMidi(pitch.midi),
-              freq: pitch.freq,
-            });
-            lastNoteTimeRef.current = performance.now();
-          }
-        } else if (performance.now() - lastNoteTimeRef.current > 2000) {
-          setDetectedNote(null);
-        }
-
-        rafRef.current = requestAnimationFrame(tick);
-      };
-
-      rafRef.current = requestAnimationFrame(tick);
-    } catch (err) {
-      stopTesting();
-      const name = err instanceof DOMException ? err.name : '';
-      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-        setErrorMsg(t('studioPlayer.micTest.permissionDenied'));
-      } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
-        setErrorMsg(t('studioPlayer.micTest.noDevice'));
-      } else {
-        setErrorMsg(t('studioPlayer.micTest.startError'));
-      }
+    } catch (error) {
+      const code = (error as StudioMicError | null)?.code;
+      setErrorMsg(code ? t(`studioPlayer.errors.mic.${code}`) : t('studioPlayer.micTest.startError'));
+    } finally {
+      setStarting(false);
     }
   };
 
-  useEffect(() => {
-    return () => {
-      stopTesting();
-    };
-  }, [stopTesting]);
+  const calibrate = () => {
+    const mic = micRef.current;
+    if (!mic) return;
+    clearTimers();
+    const sinceStart = performance.now() - mic.startTime;
+    const clicksMs = Array.from({ length: CALIBRATION_CLICKS }, (_, i) => sinceStart + (i + 1) * CALIBRATION_GAP_MS);
+    clicksMs.forEach((_, i) => playClick(i === 0, ((i + 1) * CALIBRATION_GAP_MS) / 1000));
+    setCal({ phase: 'running', clicksMs, offsets: [] });
+    // Basic Pitch trả kết quả theo cửa sổ 2 giây: đợi thêm cho cửa sổ chứa tiếng gõ cuối
+    timersRef.current.push(
+      window.setTimeout(
+        () => {
+          const cal = calibrationRef.current;
+          if (cal.phase !== 'running') return;
+          if (cal.offsets.length < 2) {
+            setCal({ phase: 'failed' });
+            return;
+          }
+          const offsetMs = clampOffset(median(cal.offsets));
+          saveStudioSettings({ micOffsetMs: offsetMs });
+          setSavedOffset(offsetMs);
+          setCal({ phase: 'done', offsetMs });
+        },
+        (CALIBRATION_CLICKS + 1) * CALIBRATION_GAP_MS + 3000,
+      ),
+    );
+  };
 
-  const levelColor =
-    level < 5
-      ? 'var(--ui-text-3)'
-      : level < 70
-        ? 'var(--ui-success)'
-        : 'var(--ui-warning)';
+  const resetOffset = () => {
+    saveStudioSettings({ micOffsetMs: 0 });
+    setSavedOffset(0);
+    setCal({ phase: 'idle' });
+  };
 
+  useEffect(() => () => stopTesting(), [stopTesting]);
+
+  const levelColor = level < 5 ? 'var(--ui-text-3)' : level < 70 ? 'var(--ui-success)' : 'var(--ui-warning)';
   const levelStatusText =
     level < 5
       ? t('studioPlayer.micTest.statusQuiet')
@@ -238,10 +168,17 @@ export function StudioMicTester({ onTestingChange }: StudioMicTesterProps) {
         <button
           type="button"
           className={`sc-btn sc-btn--sm ${testing ? 'sc-btn--danger' : 'sc-btn--secondary'}`}
-          onClick={testing ? stopTesting : startTesting}
+          onClick={testing ? stopTesting : () => void startTesting()}
+          disabled={starting}
         >
           <Icon name={testing ? 'x' : 'activity'} size={14} />
-          {t(testing ? 'studioPlayer.micTest.stop' : 'studioPlayer.micTest.start')}
+          {t(
+            testing
+              ? 'studioPlayer.micTest.stop'
+              : starting
+                ? 'studioPlayer.micTest.starting'
+                : 'studioPlayer.micTest.start',
+          )}
         </button>
       </div>
 
@@ -255,13 +192,14 @@ export function StudioMicTester({ onTestingChange }: StudioMicTesterProps) {
       {testing && (
         <div className="studio-mic-tester__body">
           <div className="studio-mic-tester__meter">
-            <div className="studio-mic-tester__meter-bar" role="progressbar" aria-valuenow={level} aria-valuemin={0} aria-valuemax={100}>
-              <span
-                style={{
-                  width: `${level}%`,
-                  backgroundColor: levelColor,
-                }}
-              />
+            <div
+              className="studio-mic-tester__meter-bar"
+              role="progressbar"
+              aria-valuenow={level}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <span style={{ width: `${level}%`, backgroundColor: levelColor }} />
             </div>
             <div className="studio-mic-tester__meter-info">
               <span className="studio-mic-tester__status" style={{ color: levelColor }}>
@@ -272,18 +210,43 @@ export function StudioMicTester({ onTestingChange }: StudioMicTesterProps) {
           </div>
 
           <div className="studio-mic-tester__note-feedback">
-            {detectedNote ? (
+            {heard.length > 0 ? (
               <div className="studio-mic-tester__detected">
                 <Icon name="music" size={16} />
                 <span>
-                  {t('studioPlayer.micTest.detectedNote')}: <strong>{detectedNote.note}</strong> ({detectedNote.freq} Hz)
+                  {t('studioPlayer.micTest.detectedNote')}: <strong>{heard.join(' ')}</strong>
                 </span>
               </div>
             ) : (
               <div className="studio-mic-tester__hint">
-                <Icon name="helpCircle" size={14} />
+                <Icon name="music" size={14} />
                 <span>{t('studioPlayer.micTest.playPrompt')}</span>
               </div>
+            )}
+          </div>
+
+          <div className="studio-mic-tester__calibrate">
+            <button
+              type="button"
+              className="sc-btn sc-btn--sm"
+              onClick={calibrate}
+              disabled={calibration.phase === 'running'}
+            >
+              {t('studioPlayer.micTest.calibrate')}
+            </button>
+            <span role="status">
+              {calibration.phase === 'running'
+                ? t('studioPlayer.micTest.calibrating', { count: CALIBRATION_CLICKS })
+                : calibration.phase === 'done'
+                  ? t('studioPlayer.micTest.calibrated', { ms: calibration.offsetMs })
+                  : calibration.phase === 'failed'
+                    ? t('studioPlayer.micTest.calibrationFailed')
+                    : t('studioPlayer.micTest.calibrateHint', { ms: savedOffset })}
+            </span>
+            {savedOffset > 0 && calibration.phase !== 'running' && (
+              <button type="button" className="sc-btn sc-btn--sm sc-btn--ghost" onClick={resetOffset}>
+                {t('studioPlayer.micTest.resetOffset')}
+              </button>
             )}
           </div>
         </div>

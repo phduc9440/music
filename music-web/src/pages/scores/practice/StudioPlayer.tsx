@@ -580,9 +580,15 @@ export default function StudioPlayer() {
         mode === 'WAIT' ? new WaitModeScorer(schedule.waitSteps, schedule.durationMs, repeatSection) : null;
 
       if (inputSource === 'MIC') {
-        micInput = await StudioMicInput.create(handleMicUpdate, setMicLatencyMs, (error) => {
-          toast.error(t(`studioPlayer.errors.mic.${error.code}`));
-        });
+        micInput = await StudioMicInput.create(
+          handleMicUpdate,
+          setMicLatencyMs,
+          (error) => {
+            toast.error(t(`studioPlayer.errors.mic.${error.code}`));
+          },
+          // ST-05: độ trễ đo ở hộp thử micro (đọc lại lúc bắt đầu, vì có thể vừa hiệu chỉnh)
+          { offsetMs: loadStudioSettings().micOffsetMs },
+        );
       }
       const created = await studioApi.create({
         scoreId,
