@@ -27,7 +27,9 @@
     "lockedSr": "(cần nâng cấp gói)",
     "lockedHint": "Tùy chọn có biểu tượng khóa cần gói cao hơn. Bấm vào để xem gói phù hợp.",
     "quota": "Còn {left}/{limit} lượt gợi ý hợp âm tháng này · {options} phương án mỗi lần",
-    "quotaUnlimited": "Không giới hạn lượt gợi ý hợp âm · {options} phương án mỗi lần"
+    "quotaUnlimited": "Không giới hạn lượt gợi ý hợp âm · {options} phương án mỗi lần",
+    "melodyLabel": "Bè giai điệu",
+    "melodyHint": "AI đọc giai điệu ở bè này và ghi hợp âm lên trên bè đó."
   },
   "styles": {
     "NATURAL": {
@@ -121,5 +123,9 @@
     "SPARSE": "Thưa",
     "NORMAL": "Vừa",
     "DENSE": "Dày"
+  },
+  "melody": {
+    "part": "Bè {n}",
+    "partStaff": "{name} · khuông {staff}"
   }
 }

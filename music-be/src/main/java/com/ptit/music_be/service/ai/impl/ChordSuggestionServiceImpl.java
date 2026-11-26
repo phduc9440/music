@@ -44,6 +44,10 @@ import com.ptit.music_be.utils.SecurityUtils;
 public class ChordSuggestionServiceImpl implements ChordSuggestionService {
 
     static final List<AiTaskStatus> ACTIVE = List.of(AiTaskStatus.PENDING, AiTaskStatus.PROCESSING);
+    /** Giới hạn bè và khuông giai điệu được chọn (khớp music-ai). */
+    static final int MAX_PART_INDEX = 63;
+
+    static final int MAX_STAFF = 4;
 
     private final ScoreRepository scoreRepository;
     private final ScoreSuggestionRepository suggestionRepository;
@@ -92,6 +96,12 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
                 .orElseThrow(() -> new AppException(AiErrorCode.CHORD_STYLE_INVALID));
         ChordDensity density = ChordDensity.parse(request == null ? null : request.getDensity())
                 .orElseThrow(() -> new AppException(AiErrorCode.CHORD_STYLE_INVALID));
+        Integer partIndex = request == null ? null : request.getPartIndex();
+        Integer staff = request == null ? null : request.getStaff();
+        if ((partIndex != null && (partIndex < 0 || partIndex > MAX_PART_INDEX))
+                || (staff != null && (staff < 1 || staff > MAX_STAFF))) {
+            throw new AppException(AiErrorCode.CHORD_STYLE_INVALID);
+        }
         Integer baseVersion = score.getCurrentVersion();
         if (baseVersion == null || baseVersion < 1) {
             throw new AppException(ScoreErrorCode.MUSICXML_NOT_READY);
@@ -132,6 +142,12 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
         input.put("options", options);
         input.put("baseVersion", baseVersion);
         input.put("replaceExisting", request != null && Boolean.TRUE.equals(request.getReplaceExisting()));
+        if (partIndex != null) {
+            input.put("partIndex", partIndex);
+        }
+        if (staff != null) {
+            input.put("staff", staff);
+        }
         AiTask task = aiTaskRepository.save(AiTask.builder()
                 .member(member)
                 .score(score)

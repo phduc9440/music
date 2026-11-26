@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.ptit.music_be.client.AiServiceClient;
 import com.ptit.music_be.client.ChordGenerationResult;
+import com.ptit.music_be.client.ChordMelody;
 import com.ptit.music_be.dto.enums.ai.AiTaskError;
 import com.ptit.music_be.dto.enums.ai.AiTaskStatus;
 import com.ptit.music_be.dto.enums.ai.ChordCreativity;
@@ -137,7 +138,9 @@ public class ChordGenerationWorker {
             boolean replaceExisting,
             ChordCreativity creativity,
             ChordDensity density,
-            int options) {}
+            int options,
+            Integer partIndex,
+            Integer staff) {}
 
     void process(String taskId) {
         Job job;
@@ -166,7 +169,8 @@ public class ChordGenerationWorker {
                     job.replaceExisting(),
                     job.creativity().name(),
                     job.density().name(),
-                    job.options());
+                    job.options(),
+                    ChordMelody.of(job.partIndex(), job.staff()));
             byte[] proposed = Files.readAllBytes(fileStorageService.resolve(outPath));
             List<byte[]> others = new ArrayList<>();
             for (ChordGenerationResult.Option option : result.optionsOrDefault()) {
@@ -276,7 +280,9 @@ public class ChordGenerationWorker {
                     ChordCreativity.parse(input.path("creativity").asText(null)).orElse(ChordCreativity.BALANCED),
                     ChordDensity.parse(input.path("density").asText(null)).orElse(ChordDensity.NORMAL),
                     // Tác vụ cũ chưa ghi options thì giữ như trước (tối đa)
-                    input.path("options").asInt(PlanLimits.MAX_CHORD_OPTIONS));
+                    input.path("options").asInt(PlanLimits.MAX_CHORD_OPTIONS),
+                    input.hasNonNull("partIndex") ? input.get("partIndex").asInt() : null,
+                    input.hasNonNull("staff") ? input.get("staff").asInt() : null);
         });
     }
 

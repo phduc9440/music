@@ -27,7 +27,9 @@
     "lockedSr": "(requires a plan upgrade)",
     "lockedHint": "Options with a lock need a higher plan. Select one to see which plan includes it.",
     "quota": "{left}/{limit} chord suggestions left this month · {options} options each",
-    "quotaUnlimited": "Unlimited chord suggestions · {options} options each"
+    "quotaUnlimited": "Unlimited chord suggestions · {options} options each",
+    "melodyLabel": "Melody part",
+    "melodyHint": "The AI reads the melody of this part and writes the chords above it."
   },
   "styles": {
     "NATURAL": {
@@ -121,5 +123,9 @@
     "SPARSE": "Sparse",
     "NORMAL": "Normal",
     "DENSE": "Dense"
+  },
+  "melody": {
+    "part": "Part {n}",
+    "partStaff": "{name} · staff {staff}"
   }
 }

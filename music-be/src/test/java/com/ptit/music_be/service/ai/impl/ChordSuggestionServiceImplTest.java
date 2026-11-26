@@ -271,6 +271,23 @@ class ChordSuggestionServiceImplTest {
                 .isEqualTo(AiErrorCode.CHORD_STYLE_INVALID);
     }
 
+    @Test
+    void chosenMelodyPartAndStaffAreStoredAndValidated() throws Exception {
+        ChordSuggestionRequest request = style("NATURAL");
+        request.setPartIndex(1);
+        request.setStaff(2);
+        service.request(SCORE_ID, request);
+        JsonNode input = savedInput();
+        assertThat(input.path("partIndex").asInt()).isEqualTo(1);
+        assertThat(input.path("staff").asInt()).isEqualTo(2);
+
+        ChordSuggestionRequest bad = style("NATURAL");
+        bad.setStaff(0);
+        assertThat(catchThrowableOfType(AppException.class, () -> service.request(SCORE_ID, bad))
+                        .getErrorCode())
+                .isEqualTo(AiErrorCode.CHORD_STYLE_INVALID);
+    }
+
     private JsonNode savedInput() throws Exception {
         ArgumentCaptor<AiTask> saved = ArgumentCaptor.forClass(AiTask.class);
         verify(aiTaskRepository).save(saved.capture());

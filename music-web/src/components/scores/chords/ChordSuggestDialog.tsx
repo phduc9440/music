@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
-import { CHORD_CREATIVITIES, CHORD_DENSITIES, CHORD_STYLES, billingApi, chordApi } from '../../../services';
+import {
+  CHORD_CREATIVITIES,
+  CHORD_DENSITIES,
+  CHORD_STYLES,
+  billingApi,
+  chordApi,
+  fetchMusicXml,
+} from '../../../services';
 import type { ChordCreativity, ChordDensity, ChordStyle } from '../../../services';
 import type { AiTaskInfo, MySubscription, PlanInfo } from '../../../types';
 import { Icon } from '../../ui';
@@ -10,6 +17,8 @@ import { reportPlanLimit, showPlanLimit } from '../../../utils/planLimit';
 import { useExportTask } from '../../export/useExportTask';
 import { suggestionPath } from '../suggestions/suggestionUtils';
 import Modal from '../common/Modal';
+import { melodyChoicesOf } from './melodyChoices';
+import type { MelodyChoice } from './melodyChoices';
 import './chordSuggest.css';
 
 /** Mã lỗi BE: đã có một gợi ý hợp âm đang chờ duyệt (kèm result.suggestionId). */
@@ -70,6 +79,21 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
   const [harmonized, setHarmonized] = useState(!!allHarmonized);
   // Gói của người bấm: khóa tùy chọn nâng cao và hiện số lượt còn lại. Chưa tải được thì không khóa gì (BE vẫn kiểm).
   const [sub, setSub] = useState<MySubscription | null>(null);
+  // Bè giai điệu (CH-04): đọc từ bản đã lưu, vì AI gợi ý trên version hiện hành; chỉ hiện khi có từ hai lựa chọn
+  const [melodies, setMelodies] = useState<MelodyChoice[]>([]);
+  const [melody, setMelody] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+    fetchMusicXml(scoreId)
+      .then((xml) => {
+        if (alive) setMelodies(melodyChoicesOf(new DOMParser().parseFromString(xml, 'application/xml')));
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [scoreId]);
 
   useEffect(() => {
     let alive = true;
@@ -126,7 +150,14 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
     setPendingId(null);
     reset();
     try {
-      const res = await chordApi.request(scoreId, style, { replaceExisting: harmonized, creativity, density });
+      const chosen = melodies.length > 1 ? melodies[melody] : undefined;
+      const res = await chordApi.request(scoreId, style, {
+        replaceExisting: harmonized,
+        creativity,
+        density,
+        partIndex: chosen?.partIndex,
+        staff: chosen?.staff,
+      });
       track(res.data.result);
     } catch (err) {
       if (reportPlanLimit(err)) {
@@ -146,6 +177,25 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
   return (
     <Modal title={t('chords.dialog.title')} onClose={onClose} className="cs-modal">
       <p className="cs-hint">{t('chords.dialog.hint')}</p>
+
+      {melodies.length > 1 && (
+        <label className="cs-melody">
+          <span className="sc-label">{t('chords.dialog.melodyLabel')}</span>
+          <select
+            className="sc-input"
+            value={melody}
+            disabled={busy}
+            onChange={(e) => setMelody(Number(e.target.value))}
+          >
+            {melodies.map((choice, index) => (
+              <option key={`${choice.partIndex}-${choice.staff}`} value={index}>
+                {choice.label}
+              </option>
+            ))}
+          </select>
+          <span className="cs-hint">{t('chords.dialog.melodyHint')}</span>
+        </label>
+      )}
 
       <fieldset className="cs-styles" disabled={busy}>
         <legend className="sc-label">{t('chords.dialog.styleLabel')}</legend>
