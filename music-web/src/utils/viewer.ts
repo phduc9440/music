@@ -71,6 +71,8 @@ export interface MusicXmlInfo {
   measureCount: number;
   /** Số khuông của phần nhạc đầu tiên (giá trị <staves>, mặc định 1). */
   staves: number;
+  /** Số phần nhạc (bè, <part>). */
+  parts: number;
 }
 
 /** Đọc số ô nhịp và số khuông từ MusicXML bằng DOMParser. */
@@ -78,12 +80,13 @@ export const inspectMusicXml = (xml: string): MusicXmlInfo => {
   const bytes = new Blob([xml]).size;
   const doc = new DOMParser().parseFromString(xml, 'application/xml');
   if (doc.getElementsByTagName('parsererror').length > 0 || doc.documentElement.nodeName !== 'score-partwise') {
-    return { valid: false, bytes, measureCount: 0, staves: 0 };
+    return { valid: false, bytes, measureCount: 0, staves: 0, parts: 0 };
   }
-  const part = doc.getElementsByTagName('part')[0];
+  const parts = doc.getElementsByTagName('part');
+  const part = parts[0];
   const measureCount = part ? part.getElementsByTagName('measure').length : 0;
-  const staves = Number(doc.getElementsByTagName('staves')[0]?.textContent) || 1;
-  return { valid: measureCount > 0, bytes, measureCount, staves };
+  const staves = Number(part?.getElementsByTagName('staves')[0]?.textContent) || 1;
+  return { valid: measureCount > 0, bytes, measureCount, staves, parts: parts.length };
 };
 
 /** Cảnh báo hiệu năng nếu MusicXML quá lớn; chuỗi rỗng nếu ổn. */

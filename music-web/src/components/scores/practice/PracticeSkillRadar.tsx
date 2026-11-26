@@ -7,7 +7,7 @@ import { t } from '../../../i18n/core';
 
 const RANGES = [7, 30, 90];
 
-/** Biểu đồ radar 4 kỹ năng: Pitch Accuracy / Timing / Tốc độ ngón / Chăm chỉ (mục 3.14). */
+/** Biểu đồ radar 4 kỹ năng: Đúng cao độ / Đúng nhịp / Tốc độ ngón / Chăm chỉ (mục 3.14). */
 export default function PracticeSkillRadar() {
   const [days, setDays] = useState(30);
   const [skills, setSkills] = useState<PracticeSkills | null>(null);
@@ -27,8 +27,8 @@ export default function PracticeSkillRadar() {
     () =>
       skills
         ? [
-            { skill: 'Pitch Accuracy', value: skills.pitchAccuracy },
-            { skill: 'Timing', value: skills.timing },
+            { skill: t('practice.radar.pitch'), value: skills.pitchAccuracy },
+            { skill: t('practice.radar.timing'), value: skills.timing },
             { skill: t('practice.radar.speed'), value: skills.speed },
             { skill: t('practice.radar.diligence'), value: skills.diligence },
           ]
@@ -79,10 +79,10 @@ export default function PracticeSkillRadar() {
 
       <ul className="ps-skill-notes">
         <li>
-          <strong>Pitch Accuracy:</strong> {t('practice.radar.notePitch')}
+          <strong>{t('practice.radar.pitch')}:</strong> {t('practice.radar.notePitch')}
         </li>
         <li>
-          <strong>Timing:</strong> {t('practice.radar.noteTiming')}
+          <strong>{t('practice.radar.timing')}:</strong> {t('practice.radar.noteTiming')}
         </li>
         <li>
           <strong>{t('practice.radar.speed')}:</strong> {t('practice.radar.noteSpeed')}

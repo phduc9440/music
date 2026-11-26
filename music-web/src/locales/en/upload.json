@@ -84,7 +84,7 @@
   },
   "dropzone": {
     "title": "Drop your score here",
-    "hint": "One PDF (up to 20 pages) or 1–20 PNG/JPG images in page order, up to 50MB each"
+    "hint": "One PDF (up to {max} pages) or 1–{max} PNG/JPG images in page order, up to 50MB each"
   },
   "chooseFile": "Choose file",
   "pageStrip": {
@@ -314,7 +314,8 @@
       "saving": "Saving...",
       "saved": "Tempo set to {bpm} BPM",
       "invalid": "Tempo must be between {min} and {max}"
-    }
+    },
+    "autoFixedNote": "Fixed automatically"
   },
   "failed": "Upload failed, please try again",
   "saveFailed": "Couldn't save, please try again",

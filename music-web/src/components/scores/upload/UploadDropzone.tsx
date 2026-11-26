@@ -5,10 +5,12 @@ import { t } from '../../../i18n/core';
 interface Props {
   disabled?: boolean;
   onFiles: (files: File[]) => void;
+  /** Số trang tối đa một lần theo gói của người dùng (N-08), để dòng gợi ý không ghi 20 khi gói chỉ cho 5. */
+  maxPages?: number;
 }
 
 /** Vùng kéo-thả lớn kèm nút "Chọn file" và dòng gợi ý định dạng. */
-export default function UploadDropzone({ disabled, onFiles }: Props) {
+export default function UploadDropzone({ disabled, onFiles, maxPages = 20 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -36,7 +38,7 @@ export default function UploadDropzone({ disabled, onFiles }: Props) {
         />
       </svg>
       <h3>{t('upload.dropzone.title')}</h3>
-      <p>{t('upload.dropzone.hint')}</p>
+      <p>{t('upload.dropzone.hint', { max: maxPages })}</p>
       <button
         type="button"
         className="sc-btn sc-btn--primary"

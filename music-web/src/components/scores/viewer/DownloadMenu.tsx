@@ -114,6 +114,8 @@ export default function DownloadMenu({
         {open && (
           <ul className="sc-menu__list" role="menu">
             {DOWNLOAD_FORMATS.map(({ fileType, label }) => {
+              // N-11: Kern là file trung gian của số hóa, chỉ người sửa được mới nhận (BE lọc); không có thì không hiện
+              if (fileType === 'KERN' && !files.some((f) => f.fileType === 'KERN')) return null;
               if ((DIALOG_FORMATS as readonly string[]).includes(fileType)) {
                 const made = exports.filter((f) => f.fileType === fileType);
                 const hint =

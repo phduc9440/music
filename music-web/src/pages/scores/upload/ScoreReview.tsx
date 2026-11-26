@@ -18,7 +18,7 @@ import {
 import type { OmrMeasure, OmrResult, ScoreDetail as ScoreDetailData, ScoreFileInfo } from '../../../types';
 import {
   boxToPercent,
-  confidencePercent,
+  confidenceText,
   fixMeasures,
   fixText,
   flaggedMeasures,
@@ -502,10 +502,8 @@ export default function ScoreReview() {
                     {t('upload.review.deselect')}
                   </button>
                 </div>
-                {selectedMeasure.flags.length > 0 && confidencePercent(selectedMeasure) !== null && (
-                  <p className="sr-selected__confidence">
-                    {t('upload.review.confidence', { value: confidencePercent(selectedMeasure) ?? 0 })}
-                  </p>
+                {selectedMeasure.flags.length > 0 && confidenceText(selectedMeasure) !== null && (
+                  <p className="sr-selected__confidence">{confidenceText(selectedMeasure)}</p>
                 )}
                 {(selectedMeasure.reasons?.length
                   ? selectedMeasure.reasons
@@ -565,8 +563,7 @@ export default function ScoreReview() {
                             {t('upload.review.selected', { measure: m.measure, page: m.page })}
                           </span>
                           {m.flags.map((f) => MEASURE_FLAG_LABELS[f] ?? f).join('; ')}
-                          {confidencePercent(m) !== null &&
-                            ` · ${t('upload.review.confidence', { value: confidencePercent(m) ?? 0 })}`}
+                          {confidenceText(m) !== null && ` · ${confidenceText(m)}`}
                         </button>
                       </li>
                     ))}

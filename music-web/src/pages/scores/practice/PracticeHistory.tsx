@@ -502,6 +502,7 @@ export default function PracticeHistory() {
             totalPages={result.totalPages}
             totalElements={result.totalElements}
             onChange={setPage}
+            countLabel={(count) => t('practice.history.count', { count })}
           />
         )}
       </main>

@@ -84,7 +84,7 @@
   },
   "dropzone": {
     "title": "Kéo thả bản nhạc vào đây",
-    "hint": "1 file PDF (tối đa 20 trang) hoặc 1–20 ảnh PNG/JPG theo thứ tự trang, mỗi file ≤ 50MB"
+    "hint": "1 file PDF (tối đa {max} trang) hoặc 1–{max} ảnh PNG/JPG theo thứ tự trang, mỗi file ≤ 50MB"
   },
   "chooseFile": "Chọn file",
   "pageStrip": {
@@ -310,7 +310,8 @@
       "saving": "Đang lưu...",
       "saved": "Đã đặt nhịp độ {bpm} BPM",
       "invalid": "Nhịp độ phải từ {min} đến {max}"
-    }
+    },
+    "autoFixedNote": "Máy đã tự sửa"
   },
   "failed": "Tải lên thất bại, vui lòng thử lại",
   "saveFailed": "Lưu thất bại, vui lòng thử lại",

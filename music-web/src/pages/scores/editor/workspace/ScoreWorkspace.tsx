@@ -189,7 +189,8 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
   };
 
   const warning = useMemo(() => performanceWarning(info), [info]);
-  const notTwoStaves = info.valid && info.staves !== 2;
+  // N-12: chỉ cảnh báo bản một bè (kiểu piano); bản nhiều bè luyện theo bè, không tách tay trái/phải
+  const notTwoStaves = info.valid && info.parts === 1 && info.staves !== 2;
   const goBack = () => {
     void editor.confirmLeave().then((ok) => ok && navigate(`${base}/${score.id}`));
   };

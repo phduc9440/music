@@ -99,7 +99,9 @@
     "notePitch": "% nốt chơi đúng cao độ.",
     "noteTiming": "% nốt chơi đúng giờ.",
     "noteSpeed": "tốc độ tập trung bình so với bản gốc (100% tốc độ gốc là 100 điểm).",
-    "noteDiligence": "% số ngày có tập trong kỳ."
+    "noteDiligence": "% số ngày có tập trong kỳ.",
+    "pitch": "Đúng cao độ",
+    "timing": "Đúng nhịp"
   },
   "time": {
     "DAY": {

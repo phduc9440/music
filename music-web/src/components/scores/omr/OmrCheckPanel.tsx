@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { OmrMeasure } from '../../../types';
-import { MEASURE_FLAG_LABELS, confidencePercent } from '../../../utils/omr';
+import { MEASURE_FLAG_LABELS, confidenceText } from '../../../utils/omr';
 import { t } from '../../../i18n/core';
 import MeasureCrop from './MeasureCrop';
 import type { OmrCheckState } from './useOmrCheck';
@@ -63,7 +63,7 @@ export default function OmrCheckPanel({ check, onFocusMeasure, onClose }: Props)
             const isActive = active === m.measure;
             const isChecked = checked.has(m.measure);
             const reasons = reasonsOf(m);
-            const confidence = confidencePercent(m);
+            const confidence = confidenceText(m);
             return (
               <li key={m.measure} className={`om-item${isActive ? ' is-active' : ''}${isChecked ? ' is-checked' : ''}`}>
                 <button type="button" className="om-item__head" aria-expanded={isActive} onClick={() => open(m)}>
@@ -74,9 +74,7 @@ export default function OmrCheckPanel({ check, onFocusMeasure, onClose }: Props)
                     </span>
                     <span className="om-item__reason">{reasons[0] ?? ''}</span>
                   </span>
-                  {confidence !== null && (
-                    <span className="om-item__reason">{t('upload.review.confidence', { value: confidence })}</span>
-                  )}
+                  {confidence !== null && <span className="om-item__reason">{confidence}</span>}
                 </button>
                 {isActive && (
                   <div className="om-item__body">

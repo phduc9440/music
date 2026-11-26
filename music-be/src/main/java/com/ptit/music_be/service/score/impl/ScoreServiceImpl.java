@@ -994,6 +994,8 @@ public class ScoreServiceImpl implements ScoreService {
                 .forkCount(scoreRepository.countByForkedFromId(score.getId()))
                 .forkedFrom(forkSource(score))
                 .coverUrl(score.getCoverUrl())
+                // N-13: ảnh trang 1 như ở thư viện, để trang chi tiết không hiện hình giữ chỗ
+                .thumbnailUrl(thumbnailUrlOf(score))
                 // Team đã xóa mềm coi như không còn: bản nhạc hiện như bản cá nhân
                 .teamId(activeTeam == null ? null : activeTeam.getId())
                 .teamName(activeTeam == null ? null : activeTeam.getName())
@@ -1008,6 +1010,11 @@ public class ScoreServiceImpl implements ScoreService {
      * Ảnh đại diện của mỗi bản nhạc = ảnh trang 1. Ưu tiên ảnh đã tiền xử lý (PNG), không có thì dùng ảnh gốc
      * (ORIGINAL_IMAGE). Bản nhạc tải lên bằng PDF chưa có ảnh trang nào thì không có ảnh đại diện (null).
      */
+    private String thumbnailUrlOf(Score score) {
+        ScoreFile thumbnail = loadThumbnails(List.of(score)).get(score.getId());
+        return thumbnail == null ? null : "/api/files/" + thumbnail.getId() + "/download?inline=true";
+    }
+
     private Map<String, ScoreFile> loadThumbnails(Collection<Score> scores) {
         Map<String, ScoreFile> result = new HashMap<>();
         if (scores.isEmpty()) {

@@ -234,7 +234,7 @@ export default function ScoreUpload() {
 
         <form className="sc-upload" onSubmit={handleSubmit}>
           <section>
-            <UploadDropzone disabled={busy} onFiles={handleAdd} />
+            <UploadDropzone disabled={busy} onFiles={handleAdd} maxPages={perJob} />
             {batchError && <div className="sc-error">{batchError}</div>}
             {items.length > 0 && (
               <>

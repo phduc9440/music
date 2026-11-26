@@ -85,6 +85,8 @@ public class ScoreDetailResponse {
     ForkSource forkedFrom;
     /** Ảnh bìa người dùng tải lên; null nếu chưa có. */
     String coverUrl;
+    /** Ảnh trang 1 (PNG đã xử lý, thiếu thì ảnh gốc) như ở thư viện; null nếu bản nhạc không có ảnh trang (N-13). */
+    String thumbnailUrl;
     /** Team chứa bản nhạc (mục 4.1); null là bản cá nhân. */
     String teamId;
 
