@@ -200,7 +200,13 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
 
   return (
     <Modal title={t('chords.dialog.title')} onClose={onClose} className="cs-modal">
-      <p className="cs-hint">{t('chords.dialog.hint')}</p>
+      <p className="cs-hint">
+        {t('chords.dialog.hint')} {/* CH-13: số phương án theo gói của người bấm, không hứa 3 cho mọi gói */}
+        {sub &&
+          (options > 1
+            ? t('chords.dialog.optionsMany', { options, letters: ['A', 'B', 'C'].slice(0, options).join(', ') })
+            : t('chords.dialog.optionsOne'))}
+      </p>
 
       {melodies.length > 1 && (
         <label className="cs-melody">
@@ -386,7 +392,8 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
         <p className={`cs-quota${left === 0 ? ' is-empty' : ''}`}>
           {left == null
             ? t('chords.dialog.quotaUnlimited', { options })
-            : t('chords.dialog.quota', { left, limit: quota ?? 0, options })}
+            : t('chords.dialog.quota', { left, limit: quota ?? 0, options })}{' '}
+          {left != null && t('chords.dialog.quotaNote')}
         </p>
       )}
 

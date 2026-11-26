@@ -7,10 +7,10 @@
   "cancelled": "The chord suggestion task was cancelled",
   "dialog": {
     "title": "Suggest chords",
-    "hint": "The AI reads the melody and places chords in measures without chords. Every run the AI \"thinks\" again, so you get a different accompaniment, with up to 3 options A, B, C to choose from. The AI chords appear in the editor (highlighted) for you to adjust and save.",
+    "hint": "The AI reads the melody and places chords in measures without chords. Every run the AI \"thinks\" again, so you get a different accompaniment. The AI chords appear in the editor (highlighted) for you to adjust and save.",
     "styleLabel": "Chord colour",
     "running": "Analysing the melody…",
-    "closeHint": "You can hide this dialog; the suggestion is still created and will appear in the Suggestions tab.",
+    "closeHint": "You can hide this dialog; the suggestion keeps running and you will get a notification when it is ready.",
     "openPending": "Open pending suggestion",
     "cancel": "Cancel",
     "hide": "Hide",
@@ -34,7 +34,10 @@
     "tooLongHint": "Upgrade to harmonize the whole score, or copy a shorter section into its own score.",
     "seePlans": "See plans",
     "durationIssues_one": "{count} measure of the melody has the wrong length (measure {measures}). Chords may land off the beat; fix it in the editor first.",
-    "durationIssues_other": "{count} measures of the melody have the wrong length (measures {measures}). Chords may land off the beat; fix them in the editor first."
+    "durationIssues_other": "{count} measures of the melody have the wrong length (measures {measures}). Chords may land off the beat; fix them in the editor first.",
+    "optionsOne": "Your plan gets 1 option per suggestion.",
+    "optionsMany": "Each suggestion comes with {options} options ({letters}) to choose from.",
+    "quotaNote": "A run is counted once the suggestion is ready, even if you discard it later; failed runs are not counted."
   },
   "styles": {
     "NATURAL": {

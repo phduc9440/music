@@ -7,10 +7,10 @@
   "cancelled": "Tác vụ gợi ý hợp âm đã bị hủy",
   "dialog": {
     "title": "Gợi ý hợp âm",
-    "hint": "AI đọc giai điệu rồi đặt hợp âm cho các ô chưa có hợp âm. Mỗi lần tạo là một lần AI tự \"nghĩ\" lại nên ra cách đệm khác, kèm tới 3 phương án A, B, C để bạn chọn. Hợp âm AI hiện ngay trong trình chỉnh sửa (tô vàng) để bạn chỉnh rồi lưu.",
+    "hint": "AI đọc giai điệu rồi đặt hợp âm cho các ô chưa có hợp âm. Mỗi lần tạo là một lần AI tự \"nghĩ\" lại nên ra cách đệm khác. Hợp âm AI hiện ngay trong trình chỉnh sửa (tô vàng) để bạn chỉnh rồi lưu.",
     "styleLabel": "Màu hợp âm",
     "running": "Đang phân tích giai điệu…",
-    "closeHint": "Bạn có thể ẩn hộp này; gợi ý vẫn được tạo và sẽ có trong tab Đề xuất.",
+    "closeHint": "Bạn có thể ẩn hộp này; gợi ý vẫn được tạo và bạn sẽ nhận thông báo khi xong.",
     "openPending": "Mở gợi ý đang chờ",
     "cancel": "Hủy",
     "hide": "Ẩn",
@@ -34,7 +34,10 @@
     "tooLongHint": "Nâng cấp gói để gợi ý cho cả bài, hoặc tách đoạn ngắn hơn thành bản nhạc riêng.",
     "seePlans": "Xem gói phù hợp",
     "durationIssues_one": "Có {count} ô sai trường độ ở bè giai điệu (ô {measures}). AI có thể đặt hợp âm lệch phách; nên sửa trong trình chỉnh sửa trước.",
-    "durationIssues_other": "Có {count} ô sai trường độ ở bè giai điệu (ô {measures}). AI có thể đặt hợp âm lệch phách; nên sửa trong trình chỉnh sửa trước."
+    "durationIssues_other": "Có {count} ô sai trường độ ở bè giai điệu (ô {measures}). AI có thể đặt hợp âm lệch phách; nên sửa trong trình chỉnh sửa trước.",
+    "optionsOne": "Gói của bạn nhận 1 phương án mỗi lần gợi ý.",
+    "optionsMany": "Mỗi lần gợi ý có {options} phương án ({letters}) để bạn chọn.",
+    "quotaNote": "Lượt được tính khi gợi ý tạo xong, kể cả khi bạn bỏ gợi ý sau đó; gợi ý lỗi không tính lượt."
   },
   "styles": {
     "NATURAL": {
