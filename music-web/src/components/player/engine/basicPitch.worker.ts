@@ -13,12 +13,35 @@ workerScope.onmessage = async ({ data }) => {
     if (data.type === 'load') {
       const { BasicPitch } = await import('@spotify/basic-pitch');
       const tf = await import('@tensorflow/tfjs');
-      await tf.setBackend('cpu');
-      await tf.ready();
+      // ST-04: backend cpu mất ~3,3 s cho mỗi cửa sổ 2 s nên hàng chờ đầy và phiên bị hủy; thử WebGL (OffscreenCanvas
+      // trong worker) trước, không được mới dùng cpu
+      let backend = 'cpu';
+      for (const name of ['webgl', 'cpu']) {
+        try {
+          if (await tf.setBackend(name)) {
+            await tf.ready();
+            backend = name;
+            break;
+          }
+        } catch {
+          // backend không có trong trình duyệt này: thử cái tiếp theo
+        }
+      }
       const basicPitch = new BasicPitch(data.modelUrl);
       await basicPitch.model;
+      // Chạy thử một đoạn im lặng để biên dịch shader WebGL trước, cửa sổ đầu của phiên không bị chậm
+      tf.engine().startScope();
+      try {
+        await basicPitch.evaluateModel(
+          new Float32Array(22050),
+          () => undefined,
+          () => undefined,
+        );
+      } finally {
+        tf.engine().endScope();
+      }
       modelPromise = Promise.resolve(basicPitch);
-      workerScope.postMessage({ requestId: data.requestId });
+      workerScope.postMessage({ requestId: data.requestId, backend });
       return;
     }
 

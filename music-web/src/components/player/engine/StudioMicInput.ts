@@ -35,6 +35,17 @@ interface PendingRequest {
   reject: (error: Error) => void;
 }
 
+/** Worker đã nạp sẵn mô hình (ST-14): tải khi người dùng chọn Micro, không đợi tới lúc bấm Bắt đầu. */
+interface PreloadedModel {
+  worker: Worker;
+  ready: Promise<string>;
+}
+
+let preloaded: PreloadedModel | null = null;
+
+const modelUrl = () =>
+  new URL(`${import.meta.env.BASE_URL}models/basic-pitch/model.json`, window.location.origin).toString();
+
 export class StudioMicInput {
   private static readonly MAX_QUEUED_WINDOWS = 8;
   private readonly buffer = new MicAudioWindowBuffer();
@@ -94,6 +105,35 @@ export class StudioMicInput {
 
   private resolveStopped: (() => void) | null = null;
 
+  /**
+   * Tải mô hình Basic Pitch vào một worker trước (ST-14); gọi lại nhiều lần chỉ tải một lần. Trả về backend TF.js
+   * (webgl / cpu). Phiên Micro tạo sau đó dùng lại worker này.
+   */
+  static preload(): Promise<string> {
+    if (!preloaded) {
+      const worker = new Worker(new URL('./basicPitch.worker.ts', import.meta.url), { type: 'module' });
+      const ready = StudioMicInput.request(worker, { type: 'load', requestId: 0, modelUrl: modelUrl() }).then(
+        (response) => response.backend ?? 'cpu',
+      );
+      const entry: PreloadedModel = { worker, ready };
+      preloaded = entry;
+      ready.catch(() => {
+        worker.terminate();
+        if (preloaded === entry) preloaded = null;
+      });
+    }
+    return preloaded.ready;
+  }
+
+  /** Lấy worker đã nạp sẵn (nếu có) cho một phiên; phiên sau tải lại vì worker bị đóng khi phiên kết thúc. */
+  private static async takeWorker(): Promise<Worker> {
+    await StudioMicInput.preload();
+    const entry = preloaded;
+    preloaded = null;
+    if (!entry) throw new StudioMicError('model-load', 'Basic Pitch model is not loaded');
+    return entry.worker;
+  }
+
   static async create(
     onUpdate: MicUpdateHandler,
     onStatus: MicStatusHandler,
@@ -139,12 +179,7 @@ export class StudioMicInput {
       }
       const workletUrl = new URL(`${import.meta.env.BASE_URL}studio-mic-capture-processor.js`, window.location.origin);
       await audioContext.audioWorklet.addModule(workletUrl);
-      worker = new Worker(new URL('./basicPitch.worker.ts', import.meta.url), { type: 'module' });
-      const modelUrl = new URL(
-        `${import.meta.env.BASE_URL}models/basic-pitch/model.json`,
-        window.location.origin,
-      ).toString();
-      await StudioMicInput.request(worker, { type: 'load', requestId: 0, modelUrl });
+      worker = await StudioMicInput.takeWorker();
 
       const source = audioContext.createMediaStreamSource(stream);
       const captureNode = new AudioWorkletNode(audioContext, 'studio-mic-capture', {

@@ -22,4 +22,6 @@ export interface MicPitchResponse {
   requestId: number;
   notes?: MicPitchNote[];
   error?: string;
+  /** Trả lời lệnh load: backend TF.js đang dùng (webgl nhanh, cpu chậm), ST-04. */
+  backend?: string;
 }

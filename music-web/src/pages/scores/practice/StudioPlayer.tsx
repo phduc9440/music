@@ -128,8 +128,20 @@ export default function StudioPlayer() {
   const [showKeyboardGuide, setShowKeyboardGuide] = useState(false);
   const [showActiveSessionDialog, setShowActiveSessionDialog] = useState(false);
   const [micLatencyMs, setMicLatencyMs] = useState<number | null>(null);
+  // ST-14: mô hình nhận âm tải ngay khi chọn Micro (không đợi bấm Bắt đầu); ST-04: biết backend để báo máy chậm
+  const [micModel, setMicModel] = useState<{ status: 'ready' | 'error'; backend?: string } | null>(null);
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
   const previewTimeoutRef = useRef<number[]>([]);
+  useEffect(() => {
+    if (inputSource !== 'MIC' || session) return;
+    let alive = true;
+    StudioMicInput.preload()
+      .then((backend) => alive && setMicModel({ status: 'ready', backend }))
+      .catch(() => alive && setMicModel({ status: 'error' }));
+    return () => {
+      alive = false;
+    };
+  }, [inputSource, session]);
 
   const sessionRef = useRef<StudioSessionResponse | null>(null);
   const micInputRef = useRef<StudioMicInput | null>(null);
@@ -994,6 +1006,17 @@ export default function StudioPlayer() {
                       </label>
                     ))}
                   </div>
+                  {inputSource === 'MIC' && (
+                    <p className="studio-player__field-hint" role="status">
+                      {micModel === null
+                        ? t('studioPlayer.setup.micModel.loading')
+                        : micModel.status === 'error'
+                          ? t('studioPlayer.setup.micModel.error')
+                          : micModel.backend === 'cpu'
+                            ? t('studioPlayer.setup.micModel.slow')
+                            : t('studioPlayer.setup.micModel.ready')}
+                    </p>
+                  )}
                 </fieldset>
                 {hasHands && (
                   <fieldset className="studio-player__field">

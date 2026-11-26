@@ -11,7 +11,7 @@
     "input": "Cách nhập nốt",
     "computerKeyboard": "Bàn phím máy tính",
     "touchKeyboard": "Phím đàn trên màn hình",
-    "microphone": "Micro (đàn piano thật)",
+    "microphone": "Micro (thử nghiệm)",
     "microphoneHint": "Micro nhận diện nhiều nốt cùng lúc. Chỉ dùng với Chạy tự do; kết quả sẽ trễ khoảng 1–2 giây. Âm thanh được phân tích trên trình duyệt, không gửi lên máy chủ. Đặt micro gần đàn và giảm tiếng ồn nền.",
     "hands": "Tay luyện tập",
     "bothHands": "Cả hai tay",
@@ -26,7 +26,13 @@
     "freeRunHint": "Nốt chạy đều theo tốc độ đã chọn; chơi đúng lúc nốt chạm vạch để được chấm hoàn hảo.",
     "playPreview": "Nghe thử bài",
     "stopPreview": "Dừng nghe thử",
-    "tempoBpm": "≈ {bpm} BPM"
+    "tempoBpm": "≈ {bpm} BPM",
+    "micModel": {
+      "loading": "Đang tải mô hình nhận âm (khoảng 1 MB)…",
+      "ready": "Nhận âm sẵn sàng. Micro đang thử nghiệm, chơi đàn piano gần máy và tránh tiếng ồn.",
+      "slow": "Trình duyệt không bật được tăng tốc đồ họa nên nhận âm có thể trễ hoặc dừng giữa chừng; nên dùng đàn MIDI hoặc bàn phím.",
+      "error": "Không tải được mô hình nhận âm. Thử tải lại trang hoặc chọn cách nhập khác."
+    }
   },
   "session": {
     "live": "Đang luyện",

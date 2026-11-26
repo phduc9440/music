@@ -11,7 +11,7 @@
     "input": "Note input",
     "computerKeyboard": "Computer keyboard",
     "touchKeyboard": "Tap the on-screen piano",
-    "microphone": "Microphone (real piano)",
+    "microphone": "Microphone (experimental)",
     "microphoneHint": "The microphone recognizes multiple notes at once. Use Free Run only; feedback is delayed by about 1–2 seconds. Audio is analyzed in your browser and is not uploaded. Place the mic near the piano and reduce background noise.",
     "hands": "Practice hands",
     "bothHands": "Both hands",
@@ -26,7 +26,13 @@
     "freeRunHint": "Notes keep moving at the chosen tempo; play as each note reaches the line to score Perfect.",
     "playPreview": "Preview",
     "stopPreview": "Stop preview",
-    "tempoBpm": "≈ {bpm} BPM"
+    "tempoBpm": "≈ {bpm} BPM",
+    "micModel": {
+      "loading": "Loading the listening model (about 1 MB)…",
+      "ready": "Listening is ready. The microphone is experimental: play a piano close to the device and avoid noise.",
+      "slow": "The browser could not enable graphics acceleration, so listening may lag or stop; a MIDI keyboard or the computer keyboard is safer.",
+      "error": "Could not load the listening model. Reload the page or choose another input."
+    }
   },
   "session": {
     "live": "Practice in progress",
