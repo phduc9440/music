@@ -842,6 +842,22 @@ public class ScoreServiceImpl implements ScoreService {
     }
 
     /** Ghi công bản gốc: chỉ khi bản gốc còn công khai, tên người chia sẻ tính khi trả (không lộ email). */
+    /** Tên hiển thị của thành viên: họ tên, thiếu thì phần trước @ của email; null nếu không có chủ. */
+    static String displayNameOf(Member member) {
+        if (member == null) {
+            return null;
+        }
+        if (member.getFullName() != null && !member.getFullName().isBlank()) {
+            return member.getFullName().trim();
+        }
+        String email = member.getEmail();
+        if (email == null) {
+            return null;
+        }
+        int at = email.indexOf('@');
+        return at < 0 ? email : email.substring(0, at);
+    }
+
     private ScoreDetailResponse.ForkSource forkSource(Score score) {
         Score source = score.getForkedFrom();
         if (source == null || !Visibility.PUBLIC.name().equals(source.getVisibility())) {
@@ -955,7 +971,12 @@ public class ScoreServiceImpl implements ScoreService {
                 .viewCount(score.getViewCount())
                 .averageRating(rating.getAverage() == null ? null : Math.round(rating.getAverage() * 10) / 10.0)
                 .ratingCount(rating.getRatingCount() == null ? 0 : rating.getRatingCount())
-                .ownerEmail(score.getMember() == null ? null : score.getMember().getEmail())
+                // N-05: email chủ bản nhạc chỉ cho chính chủ và quản trị viên; người khác thấy tên
+                .ownerEmail(
+                        score.getMember() == null || !(isOwner || SecurityUtils.isAdmin())
+                                ? null
+                                : score.getMember().getEmail())
+                .ownerName(displayNameOf(score.getMember()))
                 .canEdit(canEdit)
                 .canDelete(scorePermissionService.canDelete(score, decision))
                 .canReview(decision.can(ScoreAccess.VIEW))

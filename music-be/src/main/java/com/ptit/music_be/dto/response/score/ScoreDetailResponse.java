@@ -53,8 +53,10 @@ public class ScoreDetailResponse {
     /** Số lượt chấm sao. */
     long ratingCount;
 
-    /** Email chủ sở hữu (null với bản nhạc chính thức không có chủ). */
+    /** Email chủ sở hữu: chỉ trả cho chính chủ và quản trị viên (N-05); null với người khác hoặc bản không có chủ. */
     String ownerEmail;
+    /** Tên hiển thị của chủ sở hữu (họ tên, thiếu thì phần trước @ của email); null với bản không có chủ. */
+    String ownerName;
     /** Người đang xem có quyền sửa không (ẩn/hiện nút Sửa, Xóa, Mở Editor). */
     boolean canEdit;
     /** Người đang xem có quyền xóa không (chỉ chủ sở hữu hoặc ADMIN). */
