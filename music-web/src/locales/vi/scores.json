@@ -351,6 +351,7 @@
     "revoke": "Thu hồi"
   },
   "reviews": {
+    "anonymous": "Thành viên",
     "loadFailed": "Không tải được nhận xét",
     "needContent": "Hãy chấm sao hoặc viết bình luận",
     "commentMax": "Bình luận tối đa {max} ký tự",

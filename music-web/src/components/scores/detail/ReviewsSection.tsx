@@ -150,7 +150,7 @@ export default function ReviewsSection({ scoreId, canReview, onChanged }: Props)
         {data.reviews.map((r) => (
           <li key={r.id} className="sc-review">
             <div className="sc-review__head">
-              <strong>{r.fullName || r.email}</strong>
+              <strong>{r.fullName || r.email || t('scores.reviews.anonymous')}</strong>
               {r.mine && <span className="sc-chip sc-chip--accent">{t('scores.reviews.you')}</span>}
               {r.rating != null && (
                 <span className="sc-reviews__stars" aria-label={t('scores.reviews.starCount', { count: r.rating })}>

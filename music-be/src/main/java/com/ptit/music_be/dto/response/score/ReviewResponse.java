@@ -13,7 +13,9 @@ import lombok.experimental.FieldDefaults;
 public class ReviewResponse {
     String id;
     String memberId;
+    /** Chỉ có khi người xem là người viết hoặc quản trị viên (N-05); người khác nhận null. */
     String email;
+    /** Tên hiển thị: họ tên, thiếu thì phần trước @ của email. */
     String fullName;
     /** 1..5, null nếu chỉ bình luận. */
     Integer rating;

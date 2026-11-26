@@ -361,6 +361,7 @@
     "revoke": "Revoke"
   },
   "reviews": {
+    "anonymous": "Member",
     "loadFailed": "Couldn't load the reviews",
     "needContent": "Add a star rating or write a comment",
     "commentMax": "Comments can be up to {max} characters",
