@@ -8,6 +8,8 @@ import {
   statusTone,
   staleMessage,
   SUGGESTION_NOTE_MAX,
+  suggestionDescription,
+  suggestionTitle,
 } from '../../../components/scores/suggestions/suggestionUtils';
 import { useDialog } from '../../../components/ui/dialog-context';
 import Skeleton from '../../../components/ui/Skeleton';
@@ -238,14 +240,16 @@ export default function SuggestionReview() {
               {detail.source === 'CHORD_GENERATION' && <span className="sg-badge">{t('chords.sourceLabel')}</span>}
               {detail.source === 'LIVE_RECOVERY' && <span className="sg-badge">{t('live.recoveredBadge')}</span>}
             </div>
-            <h1 className="sgr-title">{detail.title}</h1>
+            <h1 className="sgr-title">{suggestionTitle(detail)}</h1>
             <p className="sgr-meta">
               {t('suggestions.review.author')}: {detail.author?.name ?? t('suggestions.section.system')} ·{' '}
               {formatDateTime(detail.createdAt)} ·{' '}
               {t('suggestions.review.baseVersion', { version: detail.baseVersion })} ·{' '}
               {t('suggestions.review.currentVersion', { version: detail.currentVersion })}
             </p>
-            {detail.description && <p className="sgr-desc">{detail.description}</p>}
+            {detail.description && (
+              <p className="sgr-desc">{suggestionDescription(detail.source, detail.description)}</p>
+            )}
             {detail.decidedBy && (
               <p className="sgr-meta">
                 {t('suggestions.review.decidedBy', { name: detail.decidedBy.name })}

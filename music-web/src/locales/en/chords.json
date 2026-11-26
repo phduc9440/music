@@ -130,5 +130,12 @@
   "melody": {
     "part": "Part {n}",
     "partStaff": "{name} · staff {staff}"
+  },
+  "suggestion": {
+    "title": "Chord suggestion ({style})",
+    "added_one": "Key {key}, {count} chord added",
+    "added_other": "Key {key}, {count} chords added",
+    "replaced_one": "Key {key}, {count} chord replacing the old ones",
+    "replaced_other": "Key {key}, {count} chords replacing the old ones"
   }
 }

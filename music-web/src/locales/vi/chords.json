@@ -130,5 +130,12 @@
   "melody": {
     "part": "Bè {n}",
     "partStaff": "{name} · khuông {staff}"
+  },
+  "suggestion": {
+    "title": "Gợi ý hợp âm ({style})",
+    "added_one": "Giọng {key}, thêm {count} hợp âm",
+    "added_other": "Giọng {key}, thêm {count} hợp âm",
+    "replaced_one": "Giọng {key}, {count} hợp âm thay cho hợp âm cũ",
+    "replaced_other": "Giọng {key}, {count} hợp âm thay cho hợp âm cũ"
   }
 }

@@ -1,5 +1,5 @@
 import { t } from '../../../i18n/core';
-import type { SuggestionStaleReason, SuggestionStatus } from '../../../types';
+import type { SuggestionStaleReason, SuggestionStatus, SuggestionSummary } from '../../../types';
 
 /** Giới hạn khớp BE (SuggestionServiceImpl). */
 export const SUGGESTION_TITLE_MAX = 200;
@@ -20,6 +20,37 @@ export const staleMessage = (reason?: SuggestionStaleReason | null): string => {
     default:
       return t('suggestions.review.staleStructure');
   }
+};
+
+// Gợi ý hợp âm AI: BE lưu tiêu đề, mô tả tiếng Việt (ChordGenerationWorker); web dựng lại theo ngôn ngữ đang dùng (CH-07)
+const CHORD_STYLE_LABELS: Record<string, string> = {
+  'Tự nhiên': 'NATURAL', // i18n-ignore: chữ BE lưu
+  'Đơn giản': 'SIMPLE', // i18n-ignore: chữ BE lưu
+  'Có màu': 'COLORFUL', // i18n-ignore: chữ BE lưu
+  'Hợp âm 7 / Jazz': 'JAZZY', // i18n-ignore: chữ BE lưu
+};
+const CHORD_TITLE = /^Gợi ý hợp âm \((.+)\)$/; // i18n-ignore: chữ BE lưu
+const CHORD_DESCRIPTION = /^Giọng (.+), (\d+) hợp âm (thay cho hợp âm cũ|được thêm)$/; // i18n-ignore: chữ BE lưu
+
+/** Tiêu đề đề xuất theo ngôn ngữ đang dùng; đề xuất người dùng gửi giữ nguyên chữ họ viết. */
+export const suggestionTitle = (s: Pick<SuggestionSummary, 'title' | 'source'>): string => {
+  const match = s.source === 'CHORD_GENERATION' ? CHORD_TITLE.exec(s.title) : null;
+  const style = match ? CHORD_STYLE_LABELS[match[1]] : undefined;
+  return style ? t('chords.suggestion.title', { style: t(`chords.styles.${style}.name`) }) : s.title;
+};
+
+/** Mô tả đề xuất theo ngôn ngữ đang dùng (gợi ý hợp âm AI), còn lại giữ nguyên. */
+export const suggestionDescription = (source: string | null | undefined, description?: string | null): string => {
+  if (!description) return '';
+  const match = source === 'CHORD_GENERATION' ? CHORD_DESCRIPTION.exec(description) : null;
+  if (!match) return description;
+  const count = Number(match[2]);
+  return t(match[3].startsWith('\u0111') ? 'chords.suggestion.added' : 'chords.suggestion.replaced', {
+    // "được thêm" (i18n-ignore)
+    // i18n-ignore: chữ BE lưu
+    key: match[1],
+    count,
+  });
 };
 
 /** Đường dẫn trang xem xét một đề xuất. */
