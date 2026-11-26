@@ -45,6 +45,7 @@ import com.ptit.music_be.service.team.ShowItemTransitions;
 import com.ptit.music_be.service.team.ShowService;
 import com.ptit.music_be.service.team.TeamAccess;
 import com.ptit.music_be.service.team.TeamActivityLog;
+import com.ptit.music_be.utils.AppTime;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -418,7 +419,7 @@ public class ShowServiceImpl implements ShowService {
     @Override
     @Transactional
     public int remindDue() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = AppTime.today();
         int sent = remind(itemRepository.findDueOn(today.plusDays(REMIND_DAYS_BEFORE)), "soon");
         return sent + remind(itemRepository.findDueOn(today), "today");
     }

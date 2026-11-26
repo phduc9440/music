@@ -4,6 +4,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.ptit.music_be.service.collab.live.LiveCollabService;
+import com.ptit.music_be.utils.AppTime;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +29,7 @@ public class LiveSnapshotJob {
         }
     }
 
-    @Scheduled(cron = "${app.live.purge-cron:0 45 3 * * *}")
+    @Scheduled(cron = "${app.live.purge-cron:0 45 3 * * *}", zone = AppTime.ZONE_ID)
     public void purge() {
         try {
             int purged = liveCollabService.purgeOldOps();

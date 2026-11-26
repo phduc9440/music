@@ -6,6 +6,8 @@ import org.springframework.stereotype.Component;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import com.ptit.music_be.utils.AppTime;
+
 /** Mỗi ngày chuyển các gói quá hạn sang EXPIRED (thành viên tự về gói Free vì không còn dòng ACTIVE còn hạn). */
 @Slf4j
 @Component
@@ -14,7 +16,7 @@ public class SubscriptionExpiryJob {
 
     private final SubscriptionService subscriptionService;
 
-    @Scheduled(cron = "${billing.expiry-cron:0 10 0 * * *}")
+    @Scheduled(cron = "${billing.expiry-cron:0 10 0 * * *}", zone = AppTime.ZONE_ID)
     public void run() {
         int n = subscriptionService.expireDue();
         if (n > 0) {
@@ -23,7 +25,7 @@ public class SubscriptionExpiryJob {
     }
 
     /** Mỗi ngày lúc 9 giờ nhắc các gói còn 7 ngày và còn 1 ngày là hết hạn. */
-    @Scheduled(cron = "${billing.reminder-cron:0 0 9 * * *}")
+    @Scheduled(cron = "${billing.reminder-cron:0 0 9 * * *}", zone = AppTime.ZONE_ID)
     public void remind() {
         int n = subscriptionService.remindExpiring();
         if (n > 0) {

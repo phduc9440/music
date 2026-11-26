@@ -26,6 +26,7 @@ import com.ptit.music_be.exception.code.AccountErrorCode;
 import com.ptit.music_be.exception.code.LibraryErrorCode;
 import com.ptit.music_be.repository.practice.PracticeSessionRepository;
 import com.ptit.music_be.service.admin.AdminPracticeService;
+import com.ptit.music_be.utils.AppTime;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -99,11 +100,11 @@ public class AdminPracticeServiceImpl implements AdminPracticeService {
         }
         if (from != null) {
             where.append(" and p.startedAt >= :from");
-            params.put("from", from.atStartOfDay());
+            params.put("from", AppTime.startOfDayUtc(from));
         }
         if (to != null) {
             where.append(" and p.startedAt < :to");
-            params.put("to", to.plusDays(1).atStartOfDay());
+            params.put("to", AppTime.startOfDayUtc(to.plusDays(1)));
         }
         if (anomalousOnly) {
             where.append(" and ").append(ANOMALY_JPQL);
@@ -140,13 +141,13 @@ public class AdminPracticeServiceImpl implements AdminPracticeService {
     @Override
     @Transactional(readOnly = true)
     public AdminPracticeSessionResponse.Overview overview(LocalDate from, LocalDate to) {
-        LocalDate end = to == null ? LocalDate.now(ZoneOffset.UTC) : to;
+        LocalDate end = to == null ? AppTime.today() : to;
         LocalDate start = from == null ? end.minusDays(DEFAULT_DAYS - 1L) : from;
         if (start.isAfter(end) || ChronoUnit.DAYS.between(start, end) >= MAX_DAYS) {
             throw new AppException(LibraryErrorCode.PRACTICE_STATS_RANGE_INVALID);
         }
-        LocalDateTime lo = start.atStartOfDay();
-        LocalDateTime hi = end.plusDays(1).atStartOfDay();
+        LocalDateTime lo = AppTime.startOfDayUtc(start);
+        LocalDateTime hi = AppTime.startOfDayUtc(end.plusDays(1));
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
 
         Object[] totals = entityManager
@@ -180,9 +181,9 @@ public class AdminPracticeServiceImpl implements AdminPracticeService {
         Map<LocalDate, Object[]> byDay = new HashMap<>();
         for (Object[] r : entityManager
                 .createQuery(
-                        "select cast(p.startedAt as date), count(p), coalesce(sum(p.durationSeconds), 0)"
+                        "select " + AppTime.localDate("p.startedAt") + ", count(p), coalesce(sum(p.durationSeconds), 0)"
                                 + " from PracticeSession p where p.startedAt >= :from and p.startedAt < :to"
-                                + " group by cast(p.startedAt as date)",
+                                + " group by " + AppTime.localDate("p.startedAt"),
                         Object[].class)
                 .setParameter("from", lo)
                 .setParameter("to", hi)

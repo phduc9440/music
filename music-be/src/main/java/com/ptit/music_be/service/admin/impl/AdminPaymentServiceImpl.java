@@ -27,6 +27,7 @@ import com.ptit.music_be.repository.billing.PaymentOrderRepository;
 import com.ptit.music_be.service.admin.AdminPaymentService;
 import com.ptit.music_be.service.billing.SubscriptionService;
 import com.ptit.music_be.service.payment.impl.PaymentServiceImpl;
+import com.ptit.music_be.utils.AppTime;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -48,15 +49,15 @@ public class AdminPaymentServiceImpl implements AdminPaymentService {
     @Override
     @Transactional(readOnly = true)
     public RevenueResponse revenue(LocalDate from, LocalDate to) {
-        LocalDate end = to == null ? LocalDate.now() : to;
+        LocalDate end = to == null ? AppTime.today() : to;
         LocalDate start = from == null ? end.minusDays(DEFAULT_DAYS - 1L) : from;
         if (start.isAfter(end) || ChronoUnit.DAYS.between(start, end) + 1 > MAX_DAYS) {
             throw new AppException(BillingErrorCode.PAYMENT_RANGE_INVALID);
         }
         List<PaymentOrder> orders = orderRepository.findPaidBetween(
                 EnumSet.of(PaymentStatus.PAID, PaymentStatus.REFUNDED),
-                start.atStartOfDay(),
-                end.plusDays(1).atStartOfDay());
+                AppTime.startOfDayUtc(start),
+                AppTime.startOfDayUtc(end.plusDays(1)));
 
         Map<LocalDate, long[]> days = new LinkedHashMap<>();
         for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
@@ -75,7 +76,7 @@ public class AdminPaymentServiceImpl implements AdminPaymentService {
             }
             total += o.getAmount();
             count++;
-            long[] day = days.get(o.getPaidAt().toLocalDate());
+            long[] day = days.get(AppTime.localDateOf(o.getPaidAt()));
             if (day != null) {
                 day[0] += o.getAmount();
                 day[1]++;

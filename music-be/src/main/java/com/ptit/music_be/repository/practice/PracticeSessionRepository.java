@@ -21,9 +21,13 @@ import com.ptit.music_be.dto.enums.practice.PracticeMode;
 import com.ptit.music_be.entity.Member;
 import com.ptit.music_be.entity.PracticeSession;
 import com.ptit.music_be.entity.Score;
+import com.ptit.music_be.utils.AppTime;
 
 @Repository
 public interface PracticeSessionRepository extends JpaRepository<PracticeSession, String> {
+
+    /** Ngày theo giờ Việt Nam của started_at (cột lưu UTC), dùng để gom theo ngày (X-06). */
+    String LOCAL_STARTED_DATE = "cast(function('convert_tz', s.startedAt, '+00:00', '" + AppTime.SQL_OFFSET + "') as date)";
 
     List<PracticeSession> findByMember(Member member);
 
@@ -90,14 +94,14 @@ public interface PracticeSessionRepository extends JpaRepository<PracticeSession
             @Param("endedAt") LocalDateTime endedAt);
 
     /**
-     * Gom phiên tập theo ngày của started_at: [ngày, số phiên, tổng giây]. Chỉ tính phiên tập từ minSeconds giây trở
+     * Gom phiên tập theo ngày (giờ Việt Nam, X-06) của started_at: [ngày, số phiên, tổng giây]. Chỉ tính phiên tập từ minSeconds giây trở
      * lên, trong khoảng [from, to).
      */
-    @Query("select cast(s.startedAt as date), count(s), coalesce(sum(s.durationSeconds), 0)"
+    @Query("select " + LOCAL_STARTED_DATE + ", count(s), coalesce(sum(s.durationSeconds), 0)"
             + " from PracticeSession s"
             + " where s.member = :member and s.startedAt >= :from and s.startedAt < :to"
             + " and s.durationSeconds >= :minSeconds"
-            + " group by cast(s.startedAt as date) order by cast(s.startedAt as date)")
+            + " group by " + LOCAL_STARTED_DATE + " order by " + LOCAL_STARTED_DATE)
     List<Object[]> sumByDay(
             @Param("member") Member member,
             @Param("from") LocalDateTime from,

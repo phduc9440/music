@@ -18,6 +18,7 @@ import com.ptit.music_be.entity.ScoreFile;
 import com.ptit.music_be.repository.score.ScoreFileRepository;
 import com.ptit.music_be.service.export.impl.ExportServiceImpl;
 import com.ptit.music_be.service.storage.FileStorageService;
+import com.ptit.music_be.utils.AppTime;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,7 +46,7 @@ public class ExportCleanupJob {
         this.tx = new TransactionTemplate(transactionManager);
     }
 
-    @Scheduled(cron = "${export.cleanup-cron:0 0 3 * * *}")
+    @Scheduled(cron = "${export.cleanup-cron:0 0 3 * * *}", zone = AppTime.ZONE_ID)
     public void run() {
         try {
             deleteStaleFiles();

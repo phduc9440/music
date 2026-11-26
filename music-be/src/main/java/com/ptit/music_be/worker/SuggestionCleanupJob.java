@@ -4,6 +4,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.ptit.music_be.service.score.SuggestionService;
+import com.ptit.music_be.utils.AppTime;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +20,7 @@ public class SuggestionCleanupJob {
 
     private final SuggestionService suggestionService;
 
-    @Scheduled(cron = "${score.suggestion.cleanup-cron:0 30 3 * * *}")
+    @Scheduled(cron = "${score.suggestion.cleanup-cron:0 30 3 * * *}", zone = AppTime.ZONE_ID)
     public void cleanup() {
         try {
             int cleaned = suggestionService.cleanupClosedFiles();

@@ -6,6 +6,8 @@ import org.springframework.stereotype.Component;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import com.ptit.music_be.utils.AppTime;
+
 /**
  * Mỗi giờ chuyển các đơn PENDING quá hạn sang EXPIRED. Chưa hỏi lại cổng về các đơn này: nếu cổng báo muộn rằng đơn đã
  * thanh toán thì IPN vẫn được nhận và bật gói (xem PaymentServiceImpl.handleIpn).
@@ -17,7 +19,7 @@ public class BillingJobs {
 
     private final PaymentService paymentService;
 
-    @Scheduled(cron = "${billing.order-expiry-cron:0 5 * * * *}")
+    @Scheduled(cron = "${billing.order-expiry-cron:0 5 * * * *}", zone = AppTime.ZONE_ID)
     public void expireOrders() {
         int n = paymentService.expirePending();
         if (n > 0) {

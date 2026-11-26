@@ -6,6 +6,8 @@ import org.springframework.stereotype.Component;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import com.ptit.music_be.utils.AppTime;
+
 /** Mỗi sáng nhắc người phối (hoặc người duyệt nếu bài đang chờ duyệt) các bài sắp tới hạn trong show (mục 4.1). */
 @Slf4j
 @Component
@@ -14,7 +16,7 @@ public class ShowDueReminderJob {
 
     private final ShowService showService;
 
-    @Scheduled(cron = "${team.due-reminder-cron:0 0 8 * * *}")
+    @Scheduled(cron = "${team.due-reminder-cron:0 0 8 * * *}", zone = AppTime.ZONE_ID)
     public void remind() {
         int n = showService.remindDue();
         if (n > 0) {

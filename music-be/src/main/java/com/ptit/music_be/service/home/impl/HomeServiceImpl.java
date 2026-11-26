@@ -1,6 +1,5 @@
 package com.ptit.music_be.service.home.impl;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -35,6 +34,7 @@ import com.ptit.music_be.service.home.HomeService;
 import com.ptit.music_be.service.practice.PracticeStatsService;
 import com.ptit.music_be.service.score.ScoreService;
 import com.ptit.music_be.service.storage.FileStorageService;
+import com.ptit.music_be.utils.AppTime;
 import com.ptit.music_be.utils.SecurityUtils;
 
 import lombok.RequiredArgsConstructor;
@@ -174,7 +174,7 @@ public class HomeServiceImpl implements HomeService {
                 .displayName(displayName(me))
                 .streak(practiceStatsService.getStreak())
                 .todayPracticeSeconds(homeQueryRepository.sumPracticeSecondsSince(
-                        me.getId(), LocalDate.now().atStartOfDay()))
+                        me.getId(), AppTime.startOfDayUtc(AppTime.today())))
                 .recentScores(recent)
                 .pending(pending)
                 .accessRequestCount(homeQueryRepository.countPendingAccessRequestsOfOwner(me.getId()))
