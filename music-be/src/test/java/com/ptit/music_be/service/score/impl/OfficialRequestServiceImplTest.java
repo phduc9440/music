@@ -106,7 +106,6 @@ class OfficialRequestServiceImplTest {
                 .id("r1")
                 .score(score)
                 .requestedBy(admin)
-                .owner(owner)
                 .status(OfficialRequestStatus.PENDING)
                 .build();
     }

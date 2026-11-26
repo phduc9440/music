@@ -45,12 +45,25 @@ public class Score {
     @Column(nullable = false)
     String title;
 
+    /**
+     * Tên tác giả gõ tay, <b>chỉ</b> khi không khớp nhạc sĩ nào trong danh mục. Khớp thì cột này để trống và tên lấy từ
+     * {@code composers.name} (3NF: không chép tên nhạc sĩ vào bản nhạc). Đọc tên hiển thị bằng {@link #getComposer()},
+     * đọc chữ gõ tay bằng {@link #getComposerText()}.
+     */
     @Column(name = "composer")
     String composer;
 
     /** Nhạc sĩ trong bảng composers ứng với chữ tác giả (null nếu không khớp ai). Do ScoreComposerListener gắn. */
     @Column(name = "composer_id", length = 36)
     String composerId;
+
+    /** Nhạc sĩ đã gắn, chỉ để đọc tên (ghi bằng {@link #composerId}). Bảng composers nhỏ nên nạp luôn. */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "composer_id", insertable = false, updatable = false)
+    @NotFound(action = NotFoundAction.IGNORE)
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    Composer linkedComposer;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "difficulty")
@@ -184,4 +197,31 @@ public class Score {
     @OneToMany(mappedBy = "score", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     List<PracticeSession> practiceSessions = new ArrayList<>();
+
+    /** Tên tác giả để hiển thị: tên nhạc sĩ đã gắn, không gắn thì chữ gõ tay (có thể null). */
+    public String getComposer() {
+        if (composerId != null && linkedComposer != null && composerId.equals(linkedComposer.getId())) {
+            return linkedComposer.getName();
+        }
+        return composer;
+    }
+
+    /** Chữ tác giả gõ tay đang lưu (null khi đã gắn nhạc sĩ). */
+    public String getComposerText() {
+        return composer;
+    }
+
+    /** Đổi tác giả bằng chữ gõ tay; khi lưu, ScoreComposerListener gắn lại nhạc sĩ nếu khớp. */
+    public void setComposer(String composerText) {
+        this.composer = composerText;
+        this.composerId = null;
+        this.linkedComposer = null;
+    }
+
+    /** Gắn nhạc sĩ trong danh mục: bỏ chữ gõ tay vì tên đã nằm ở composers.name. */
+    public void linkComposer(Composer composer) {
+        this.composerId = composer.getId();
+        this.linkedComposer = composer;
+        this.composer = null;
+    }
 }

@@ -31,11 +31,7 @@ public class PracticeSessionRequest {
     Integer lateCount;
     Integer wrongPitchCount;
     Integer missedCount;
-    /** Không gửi thì BE tự tính. */
-    Double accuracyPct;
 
-    Double timingAccuracyPct;
-    Double scorePoints;
     Boolean isCompleted;
     /** Mảng JSON log lỗi từng nốt (tối đa 5000 phần tử). */
     JsonNode errorLog;

@@ -34,7 +34,7 @@ public interface OfficialRequestRepository extends JpaRepository<OfficialRequest
     /** Lời xin đang chờ của một chủ sở hữu, mới nhất trước, kèm bản nhạc và người xin (tránh N+1). */
     @Query("""
 			select r from OfficialRequest r join fetch r.score join fetch r.requestedBy
-			where r.owner.id = :ownerId and r.status = com.ptit.music_be.dto.enums.score.OfficialRequestStatus.PENDING
+			where r.score.member.id = :ownerId and r.status = com.ptit.music_be.dto.enums.score.OfficialRequestStatus.PENDING
 			order by r.createdAt desc, r.id
 			""")
     List<OfficialRequest> findPendingOfOwner(@Param("ownerId") String ownerId);
@@ -52,7 +52,7 @@ public interface OfficialRequestRepository extends JpaRepository<OfficialRequest
     /** ADMIN: mọi lời xin, lọc theo trạng thái ("" là không lọc), mới nhất trước. */
     @Query(
             value = """
-			select r from OfficialRequest r join fetch r.score join fetch r.owner join fetch r.requestedBy
+			select r from OfficialRequest r join fetch r.score s join fetch s.member join fetch r.requestedBy
 			where (:status = '' or cast(r.status as string) = :status)
 			order by r.createdAt desc, r.id
 			""",

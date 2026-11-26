@@ -69,6 +69,8 @@ class TeamServiceImplOwnerLockTest {
         service = new TeamServiceImpl(
                 teamRepository,
                 teamMemberRepository,
+                mock(com.ptit.music_be.repository.team.TeamInvitationRepository.class),
+                mock(com.ptit.music_be.repository.team.TeamActivityRepository.class),
                 mock(ShowRepository.class),
                 mock(ShowItemRepository.class),
                 mock(ScoreRepository.class),

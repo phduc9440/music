@@ -3037,6 +3037,7 @@ components:
           type: string
         aliases:
           type: string
+          description: 'Tên khác cách nhau bằng dấu phẩy ("Bach, J.S. Bach"); lưu mỗi tên một dòng ở bảng composer_aliases'
         birthYear:
           type: integer
           format: int32
@@ -3072,6 +3073,7 @@ components:
           type: string
         aliases:
           type: string
+          description: 'Tên khác cách nhau bằng dấu phẩy ("Bach, J.S. Bach"); lưu mỗi tên một dòng ở bảng composer_aliases'
         birthYear:
           type: integer
           format: int32

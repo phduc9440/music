@@ -154,8 +154,8 @@ JOIN scores s ON s.title = t.title;
 
 -- Lời xin đưa bản nhạc vào kho bản nhạc mẫu: admin xin phép chủ, chủ đồng ý thì có bản sao (V6). Người xin chia cho
 -- admin@music.com (SUPER_ADMIN) và admin2 để mỗi tài khoản có cả lời xin đã đồng ý và đang chờ.
-INSERT INTO official_requests (id, score_id, requested_by, owner_id, status, copy_score_id, created_at, resolved_at)
-SELECT UUID(), s.id, a.id, m.id, t.status, c.id, t.created_at, t.resolved_at
+INSERT INTO official_requests (id, score_id, requested_by, status, copy_score_id, created_at, resolved_at)
+SELECT UUID(), s.id, a.id, t.status, c.id, t.created_at, t.resolved_at
 FROM (
     SELECT 'Ode to Joy' AS title, 'user@music.com' AS owner_email, 'admin@music.com' AS requester_email, 'ACCEPTED' AS status, 'Ode to Joy (bản giản lược)' AS copy_title, NOW(6) - INTERVAL 22 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE AS created_at, NOW(6) - INTERVAL 20 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE AS resolved_at
     UNION ALL SELECT 'Für Elise', 'lan.nguyen@music.com', 'admin2@music.com', 'ACCEPTED', 'Für Elise (giản lược)', NOW(6) - INTERVAL 16 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE, NOW(6) - INTERVAL 14 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE
@@ -164,7 +164,7 @@ FROM (
     UNION ALL SELECT 'Nocturne Op. 9 No. 2', 'lan.nguyen@music.com', 'admin2@music.com', 'DECLINED', NULL, NOW(6) - INTERVAL 10 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE, NOW(6) - INTERVAL 9 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE
     UNION ALL SELECT 'Tiến quân ca', 'bao.hoang@music.com', 'admin@music.com', 'CANCELED', NULL, NOW(6) - INTERVAL 12 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE, NOW(6) - INTERVAL 11 DAY - INTERVAL 4 HOUR - INTERVAL 0 MINUTE
 ) t
-JOIN scores s ON s.title = t.title
 JOIN members m ON m.email = t.owner_email
+JOIN scores s ON s.title = t.title AND s.member_id = m.id
 JOIN members a ON a.email = t.requester_email
 LEFT JOIN scores c ON c.title = t.copy_title;

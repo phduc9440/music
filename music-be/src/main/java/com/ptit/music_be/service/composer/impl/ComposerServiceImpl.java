@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -92,7 +91,7 @@ public class ComposerServiceImpl implements ComposerService {
             throw new AppException(ScoreErrorCode.COMPOSER_DUPLICATED);
         }
         Composer saved = composerRepository.saveAndFlush(c);
-        relink(saved.getId());
+        relink();
         return toResponse(saved, countLinked(saved.getId()));
     }
 
@@ -105,7 +104,7 @@ public class ComposerServiceImpl implements ComposerService {
             throw new AppException(ScoreErrorCode.COMPOSER_DUPLICATED);
         }
         Composer saved = composerRepository.saveAndFlush(c);
-        relink(saved.getId());
+        relink();
         return toResponse(saved, countLinked(saved.getId()));
     }
 
@@ -113,23 +112,29 @@ public class ComposerServiceImpl implements ComposerService {
     @Transactional
     public void delete(String id) {
         Composer c = find(id);
-        // Khóa ngoại SET NULL bỏ liên kết của các bản nhạc; sau đó cho các bản đó cơ hội khớp nhạc sĩ khác
-        composerRepository.delete(c);
+        // Bản đang gắn nhận lại tên nhạc sĩ làm chữ gõ tay (không thì mất tên tác giả khi khóa ngoại SET NULL), rồi cho
+        // các
+        // bản đó cơ hội khớp nhạc sĩ khác
+        composerRepository.restoreComposerName(id, c.getName());
+        composerRepository.delete(composerRepository.getReferenceById(id));
         composerRepository.flush();
-        relink(id);
+        relink();
     }
 
     @Override
     @Transactional
     public int relinkAll() {
         composerMatcher.invalidate();
-        return applyLinks(composerRepository.findAllWithComposerText());
+        return applyLinks(composerRepository.findUnlinkedWithComposerText());
     }
 
-    /** Danh sách nhạc sĩ vừa đổi: tính lại liên kết cho bản chưa gắn và bản đang gắn với nhạc sĩ này. */
-    private void relink(String composerId) {
+    /**
+     * Danh sách nhạc sĩ vừa đổi: thử gắn các bản còn chữ tác giả gõ tay. Bản đã gắn giữ liên kết (đổi tên nhạc sĩ thì bản
+     * nhạc tự hiện tên mới vì tên chỉ nằm ở composers).
+     */
+    private void relink() {
         composerMatcher.invalidate();
-        applyLinks(composerRepository.findRelinkCandidates(composerId));
+        applyLinks(composerRepository.findUnlinkedWithComposerText());
     }
 
     /**
@@ -137,24 +142,15 @@ public class ComposerServiceImpl implements ComposerService {
      */
     private int applyLinks(List<Score> scores) {
         Map<String, List<String>> idsByComposer = new HashMap<>();
-        List<String> toUnlink = new ArrayList<>();
         for (Score s : scores) {
-            String target = composerMatcher.match(s.getComposer());
-            if (Objects.equals(target, s.getComposerId())) {
-                continue;
-            }
-            if (target == null) {
-                toUnlink.add(s.getId());
-            } else {
+            String target = composerMatcher.match(s.getComposerText());
+            if (target != null) {
                 idsByComposer.computeIfAbsent(target, k -> new ArrayList<>()).add(s.getId());
             }
         }
         int changed = 0;
         for (Map.Entry<String, List<String>> e : idsByComposer.entrySet()) {
             changed += composerRepository.setComposerId(e.getKey(), e.getValue());
-        }
-        if (!toUnlink.isEmpty()) {
-            changed += composerRepository.clearComposerId(toUnlink);
         }
         return changed;
     }

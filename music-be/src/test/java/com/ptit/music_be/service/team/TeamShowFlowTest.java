@@ -80,6 +80,9 @@ class TeamShowFlowTest {
     @Autowired
     com.ptit.music_be.repository.team.TeamMemberRepository teamMemberRepository;
 
+    @Autowired
+    com.ptit.music_be.repository.team.TeamActivityRepository teamActivityRepository;
+
     @PersistenceContext
     EntityManager em;
 
@@ -149,24 +152,22 @@ class TeamShowFlowTest {
         asOwner();
         assertEquals(3, teamService.members(team.getId()).size());
         assertEquals(2, notifications(OWNER, NotificationType.TEAM_MEMBER_JOINED));
-        // Thành viên, lời mời và nhật ký chung bảng team_members: truy vấn của từng loại chỉ thấy dòng của kind đó
+        // Thành viên, lời mời và nhật ký nằm ở ba bảng riêng (team_members, team_invitations, team_activities)
         em.flush();
         assertEquals(3, teamMemberRepository.countByTeamId(team.getId()));
         assertEquals(
                 3L,
-                ((Number) em.createNativeQuery(
-                                        "select count(*) from team_members where team_id = ?1 and kind = 'MEMBER'")
+                ((Number) em.createNativeQuery("select count(*) from team_members where team_id = ?1")
                                 .setParameter(1, team.getId())
                                 .getSingleResult())
                         .longValue());
         assertEquals(
                 2L,
-                ((Number) em.createNativeQuery(
-                                        "select count(*) from team_members where team_id = ?1 and kind = 'INVITATION'")
+                ((Number) em.createNativeQuery("select count(*) from team_invitations where team_id = ?1")
                                 .setParameter(1, team.getId())
                                 .getSingleResult())
                         .longValue());
-        assertTrue(teamMemberRepository
+        assertTrue(teamActivityRepository
                         .findActivities(team.getId(), org.springframework.data.domain.PageRequest.of(0, 50))
                         .getTotalElements()
                 > 0);

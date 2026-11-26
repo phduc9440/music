@@ -1033,19 +1033,11 @@ components:
         missedCount:
           type: integer
           format: int32
-        accuracyPct:
-          type: number
-          format: double
-        timingAccuracyPct:
-          type: number
-          format: double
-        scorePoints:
-          type: number
-          format: double
         isCompleted:
           type: boolean
         errorLog:
           $ref: '#/components/schemas/JsonNode'
+      description: "accuracyPct, timingAccuracyPct, scorePoints không gửi: DB tự tính từ các số đếm (cột sinh tự động, cùng công thức với báo cáo Studio)"
     PracticeSessionResponse:
       type: object
       properties:
@@ -1102,12 +1094,15 @@ components:
         accuracyPct:
           type: number
           format: double
+          description: "% đúng cao độ = (đúng giờ + sớm + trễ) / tổng nốt x 100; DB tự tính"
         timingAccuracyPct:
           type: number
           format: double
+          description: "% đúng nhịp = đúng giờ / (đúng giờ + sớm + trễ) x 100; null ở chế độ Chờ nốt; DB tự tính"
         scorePoints:
           type: number
           format: double
+          description: "Điểm 0-10000 từ các số đếm, chế độ và nguồn nhập (micro không trừ nốt sai); DB tự tính"
         isCompleted:
           type: boolean
         errorLog:

@@ -67,18 +67,6 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         }
         validate(request);
 
-        int total = orZero(request.getTotalNotes());
-        int perfect = orZero(request.getPerfectCount());
-        int early = orZero(request.getEarlyCount());
-        int late = orZero(request.getLateCount());
-        // % đúng = nốt chơi đúng cao độ (đúng giờ, sớm hoặc trễ) / tổng nốt; % đúng nhịp = nốt đúng giờ / tổng nốt
-        Double accuracy = request.getAccuracyPct() != null
-                ? request.getAccuracyPct()
-                : (total > 0 ? percent(perfect + early + late, total) : null);
-        Double timing = request.getTimingAccuracyPct() != null
-                ? request.getTimingAccuracyPct()
-                : (total > 0 ? percent(perfect, total) : null);
-
         LocalDateTime ended = request.getEndedAt() != null ? request.getEndedAt() : LocalDateTime.now();
         PracticeSession session = PracticeSession.builder()
                 .member(me)
@@ -100,9 +88,7 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
                 .lateCount(request.getLateCount())
                 .wrongPitchCount(request.getWrongPitchCount())
                 .missedCount(request.getMissedCount())
-                .accuracyPct(accuracy)
-                .timingAccuracyPct(timing)
-                .scorePoints(request.getScorePoints())
+                // % đúng, % đúng nhịp, điểm: MySQL tự tính từ các cột đếm (cột sinh tự động)
                 .isCompleted(request.getIsCompleted() != null ? request.getIsCompleted() : Boolean.FALSE)
                 .errorLog(serializeErrorLog(request.getErrorLog()))
                 .build();
@@ -184,9 +170,6 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         if (r.getTempoPercent() != null && (r.getTempoPercent() <= 0 || r.getTempoPercent() > 400)) {
             throw new AppException(LibraryErrorCode.PRACTICE_SESSION_INVALID);
         }
-        if (isBadPercent(r.getAccuracyPct()) || isBadPercent(r.getTimingAccuracyPct())) {
-            throw new AppException(LibraryErrorCode.PRACTICE_SESSION_INVALID);
-        }
         if (r.getLoopStartMeasure() != null
                 && r.getLoopEndMeasure() != null
                 && r.getLoopStartMeasure() > r.getLoopEndMeasure()) {
@@ -195,13 +178,6 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         if (r.getStartedAt() != null && r.getEndedAt() != null && r.getEndedAt().isBefore(r.getStartedAt())) {
             throw new AppException(LibraryErrorCode.PRACTICE_SESSION_INVALID);
         }
-        if (r.getScorePoints() != null && r.getScorePoints() < 0) {
-            throw new AppException(LibraryErrorCode.PRACTICE_SESSION_INVALID);
-        }
-    }
-
-    private static boolean isBadPercent(Double v) {
-        return v != null && (v.isNaN() || v < 0 || v > 100);
     }
 
     private String serializeErrorLog(JsonNode errorLog) {
@@ -231,10 +207,6 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
 
     private static int orZero(Integer v) {
         return v == null ? 0 : v;
-    }
-
-    private static double percent(int part, int whole) {
-        return Math.round(part * 10000.0 / whole) / 100.0;
     }
 
     /** Phiên của người khác cũng trả "không tồn tại" để không lộ id. */

@@ -52,10 +52,6 @@ public class OfficialRequest {
     @JoinColumn(name = "requested_by", nullable = false)
     Member requestedBy;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id", nullable = false)
-    Member owner;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 16)
     OfficialRequestStatus status;
@@ -70,4 +66,11 @@ public class OfficialRequest {
 
     @Column(name = "resolved_at")
     LocalDateTime resolvedAt;
+
+    /**
+     * Chủ bản nhạc được xin. Không lưu cột riêng (3NF): chủ là {@code score.member}, bản nhạc không bao giờ đổi chủ.
+     */
+    public Member getOwner() {
+        return score == null ? null : score.getMember();
+    }
 }

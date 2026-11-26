@@ -104,6 +104,21 @@ class ComposerQueryTest {
     }
 
     @Test
+    void linkedScoresKeepNoComposerTextAndShowTheComposersName() {
+        ComposerResponse c = composer(tag + " Johann Bach", tag + " J.S. Bach");
+
+        Score linked = reload(score("A", tag + " j s bach", "PRIVATE"));
+        Score free = reload(score("B", tag + " Không rõ", "PRIVATE"));
+
+        // 3NF: tên nhạc sĩ chỉ nằm ở composers.name, bản nhạc không chép lại
+        assertEquals(c.getId(), linked.getComposerId());
+        assertNull(linked.getComposerText());
+        assertEquals(tag + " Johann Bach", linked.getComposer());
+        assertNull(free.getComposerId());
+        assertEquals(tag + " Không rõ", free.getComposer());
+    }
+
+    @Test
     void editingTheComposerTextRelinksTheScore() {
         ComposerResponse c = composer(tag + " Vivaldi", null);
         Score s = score("Mùa xuân", "Không rõ", "PRIVATE");

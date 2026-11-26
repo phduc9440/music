@@ -15,9 +15,9 @@
 -- Cùng với bài duyệt sẵn ở V10 (seed-item-1..3, 5), user có 11 việc đang mở (và 2 bài đã duyệt) trải trên hai nhóm và ba buổi diễn.
 
 -- user@music.com vào nhóm 2 với vai trò người phối
-INSERT IGNORE INTO team_members (id, team_id, kind, member_id, role, joined_at, created_at)
+INSERT IGNORE INTO team_members (id, team_id, member_id, role, joined_at, created_at)
 VALUES
-    ('seed-tm-2-4', 'seed-team-2', 'MEMBER', (SELECT id FROM members WHERE email = 'user@music.com'), 'ARRANGER', NOW(6) - INTERVAL 12 DAY, NOW(6) - INTERVAL 12 DAY);
+    ('seed-tm-2-4', 'seed-team-2', (SELECT id FROM members WHERE email = 'user@music.com'), 'ARRANGER', NOW(6) - INTERVAL 12 DAY, NOW(6) - INTERVAL 12 DAY);
 
 -- Bản nhạc đưa vào nhóm để có bài cho buổi diễn (chủ giữ nguyên, chỉ gắn team_id)
 UPDATE scores SET team_id = 'seed-team-1' WHERE member_id = (SELECT id FROM members WHERE email = 'an.vo@music.com') AND title = 'Diễm xưa' AND team_id IS NULL;
@@ -52,16 +52,16 @@ VALUES
         (SELECT id FROM members WHERE email = 'bao.hoang@music.com'), (SELECT id FROM members WHERE email = 'user@music.com'), CURDATE() + INTERVAL 12 DAY, 'IN_REVIEW', NULL, NULL, NOW(6) - INTERVAL 5 DAY, NOW(6) - INTERVAL 1 DAY);
 
 -- Nhật ký hoạt động của hai nhóm (tab Hoạt động)
-INSERT IGNORE INTO team_members (id, team_id, kind, member_id, type, params, created_at)
+INSERT IGNORE INTO team_activities (id, team_id, member_id, type, params, created_at)
 VALUES
-    ('seed-act-11', 'seed-team-1', 'ACTIVITY', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'SHOW_CREATED', '{"show":"Tiệc cuối năm công ty","showId":"seed-show-6"}', NOW(6) - INTERVAL 8 DAY),
-    ('seed-act-12', 'seed-team-1', 'ACTIVITY', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'ITEM_ADDED', '{"score":"Canon in D","show":"Tiệc cuối năm công ty","showId":"seed-show-6"}', NOW(6) - INTERVAL 7 DAY),
-    ('seed-act-13', 'seed-team-1', 'ACTIVITY', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'ITEM_ASSIGNED', '{"score":"Canon in D","arranger":"Demo User","reviewer":"Lê Thu Hương","show":"Tiệc cuối năm công ty","showId":"seed-show-6"}', NOW(6) - INTERVAL 7 DAY),
-    ('seed-act-14', 'seed-team-1', 'ACTIVITY', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'ITEM_ASSIGNED', '{"score":"Swan Lake - Theme","arranger":"Demo User","reviewer":"Võ Hoài An","show":"Tiệc cuối năm công ty","showId":"seed-show-6"}', NOW(6) - INTERVAL 6 DAY),
-    ('seed-act-15', 'seed-team-1', 'ACTIVITY', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'ITEM_STATUS_CHANGED', '{"score":"Diễm xưa","from":"IN_REVIEW","status":"ARRANGING","show":"Tiệc cuối năm công ty","showId":"seed-show-6"}', NOW(6) - INTERVAL 2 DAY),
-    ('seed-act-16', 'seed-team-1', 'ACTIVITY', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'ITEM_STATUS_CHANGED', '{"score":"Prelude in C major (BWV 846)","from":"IN_REVIEW","status":"APPROVED","show":"Tiệc cuối năm công ty","showId":"seed-show-6"}', NOW(6) - INTERVAL 1 DAY),
-    ('seed-act-17', 'seed-team-2', 'ACTIVITY', (SELECT id FROM members WHERE email = 'user@music.com'), 'MEMBER_JOINED', '{"name":"Demo User","role":"ARRANGER"}', NOW(6) - INTERVAL 12 DAY),
-    ('seed-act-18', 'seed-team-2', 'ACTIVITY', (SELECT id FROM members WHERE email = 'trang.dang@music.com'), 'ITEM_ASSIGNED', '{"score":"Eine kleine Nachtmusik (K. 525)","arranger":"Demo User","reviewer":"Ngô Thị Mai","show":"Giáng sinh 2026","showId":"seed-show-4"}', NOW(6) - INTERVAL 6 DAY);
+    ('seed-act-11', 'seed-team-1', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'SHOW_CREATED', '{"show":"Tiệc cuối năm công ty","showId":"seed-show-6"}', NOW(6) - INTERVAL 8 DAY),
+    ('seed-act-12', 'seed-team-1', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'ITEM_ADDED', '{"score":"Canon in D","show":"Tiệc cuối năm công ty","showId":"seed-show-6"}', NOW(6) - INTERVAL 7 DAY),
+    ('seed-act-13', 'seed-team-1', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'ITEM_ASSIGNED', '{"score":"Canon in D","arranger":"Demo User","reviewer":"Lê Thu Hương","show":"Tiệc cuối năm công ty","showId":"seed-show-6"}', NOW(6) - INTERVAL 7 DAY),
+    ('seed-act-14', 'seed-team-1', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'ITEM_ASSIGNED', '{"score":"Swan Lake - Theme","arranger":"Demo User","reviewer":"Võ Hoài An","show":"Tiệc cuối năm công ty","showId":"seed-show-6"}', NOW(6) - INTERVAL 6 DAY),
+    ('seed-act-15', 'seed-team-1', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'ITEM_STATUS_CHANGED', '{"score":"Diễm xưa","from":"IN_REVIEW","status":"ARRANGING","show":"Tiệc cuối năm công ty","showId":"seed-show-6"}', NOW(6) - INTERVAL 2 DAY),
+    ('seed-act-16', 'seed-team-1', (SELECT id FROM members WHERE email = 'huong.le@music.com'), 'ITEM_STATUS_CHANGED', '{"score":"Prelude in C major (BWV 846)","from":"IN_REVIEW","status":"APPROVED","show":"Tiệc cuối năm công ty","showId":"seed-show-6"}', NOW(6) - INTERVAL 1 DAY),
+    ('seed-act-17', 'seed-team-2', (SELECT id FROM members WHERE email = 'user@music.com'), 'MEMBER_JOINED', '{"name":"Demo User","role":"ARRANGER"}', NOW(6) - INTERVAL 12 DAY),
+    ('seed-act-18', 'seed-team-2', (SELECT id FROM members WHERE email = 'trang.dang@music.com'), 'ITEM_ASSIGNED', '{"score":"Eine kleine Nachtmusik (K. 525)","arranger":"Demo User","reviewer":"Ngô Thị Mai","show":"Giáng sinh 2026","showId":"seed-show-4"}', NOW(6) - INTERVAL 6 DAY);
 
 -- Thông báo của user@music.com: giao việc (phối / duyệt), nhắc hạn, bài bị trả lại. Bấm vào mở đúng buổi diễn (teamId + showId).
 INSERT IGNORE INTO notifications (id, recipient_id, type, message, params, is_read, created_at)

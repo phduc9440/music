@@ -9,10 +9,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ptit.music_be.dto.enums.team.TeamActivityType;
-import com.ptit.music_be.dto.enums.team.TeamMemberKind;
 import com.ptit.music_be.entity.Member;
-import com.ptit.music_be.entity.TeamMember;
-import com.ptit.music_be.repository.team.TeamMemberRepository;
+import com.ptit.music_be.entity.TeamActivity;
+import com.ptit.music_be.repository.team.TeamActivityRepository;
 import com.ptit.music_be.repository.team.TeamRepository;
 import com.ptit.music_be.service.notification.NotificationService;
 
@@ -22,7 +21,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Ghi nhật ký hoạt động của team (tab Hoạt động) thành dòng kind = ACTIVITY trong team_members, chạy chung transaction với
+ * Ghi nhật ký hoạt động của team (tab Hoạt động) vào bảng team_activities, chạy chung transaction với
  * thao tác gốc.
  */
 @Slf4j
@@ -33,7 +32,7 @@ public class TeamActivityLog {
 
     static final TypeReference<Map<String, String>> MAP = new TypeReference<>() {};
 
-    TeamMemberRepository repository;
+    TeamActivityRepository repository;
     TeamRepository teamRepository;
     ObjectMapper objectMapper;
 
@@ -48,8 +47,7 @@ public class TeamActivityLog {
                 log.warn("Không ghi được params hoạt động team {}", type, e);
             }
         }
-        repository.save(TeamMember.builder()
-                .kind(TeamMemberKind.ACTIVITY)
+        repository.save(TeamActivity.builder()
                 // Chỉ cần khóa ngoại team_id, không nạp team
                 .team(teamRepository.getReferenceById(teamId))
                 .member(actor)
@@ -58,7 +56,7 @@ public class TeamActivityLog {
                 .build());
     }
 
-    public Map<String, String> paramsOf(TeamMember activity) {
+    public Map<String, String> paramsOf(TeamActivity activity) {
         if (activity.getParams() == null) {
             return Collections.emptyMap();
         }

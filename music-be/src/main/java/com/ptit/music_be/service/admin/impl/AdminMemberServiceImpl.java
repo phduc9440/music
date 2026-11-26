@@ -144,7 +144,8 @@ public class AdminMemberServiceImpl implements AdminMemberService {
         List<AdminMemberDetailResponse.RecentScore> recent = entityManager
                 .createQuery(
                         "select new com.ptit.music_be.dto.response.admin.AdminMemberDetailResponse$RecentScore("
-                                + "s.id, s.title, s.composer, s.visibility, s.isOfficial, s.updatedAt)"
+                                + "s.id, s.title, coalesce(s.composer, (select cp.name from Composer cp where cp.id = s.composerId)),"
+                                + " s.visibility, s.isOfficial, s.updatedAt)"
                                 + " from Score s where s.member.id = :id order by s.updatedAt desc, s.id",
                         AdminMemberDetailResponse.RecentScore.class)
                 .setParameter("id", id)
@@ -179,9 +180,9 @@ public class AdminMemberServiceImpl implements AdminMemberService {
                 .createQuery(
                         "select new com.ptit.music_be.dto.response.admin.AdminMemberDetailResponse$TeamRow("
                                 + "t.id, t.name, str(tm.role), tm.joinedAt,"
-                                + " (select count(m) from TeamMember m where m.team = t and m.kind = 'MEMBER'),"
+                                + " (select count(m) from TeamMember m where m.team = t),"
                                 + " t.deletedAt)"
-                                + " from TeamMember tm join tm.team t where tm.kind = 'MEMBER' and tm.member.id = :id"
+                                + " from TeamMember tm join tm.team t where tm.member.id = :id"
                                 + " order by case when t.deletedAt is null then 0 else 1 end, t.name",
                         AdminMemberDetailResponse.TeamRow.class)
                 .setParameter("id", memberId)

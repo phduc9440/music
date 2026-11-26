@@ -32,6 +32,7 @@ import com.ptit.music_be.repository.auth.MemberRepository;
 import com.ptit.music_be.repository.score.ScoreRepository;
 import com.ptit.music_be.repository.team.ShowItemRepository;
 import com.ptit.music_be.repository.team.ShowRepository;
+import com.ptit.music_be.repository.team.TeamActivityRepository;
 import com.ptit.music_be.repository.team.TeamMemberRepository;
 import com.ptit.music_be.repository.team.TeamRepository;
 import com.ptit.music_be.service.admin.AdminTeamService;
@@ -70,11 +71,11 @@ public class AdminTeamServiceImpl implements AdminTeamService {
 
     /** Cột: id, tên, mô tả, ngày tạo, id/tên/email người tạo, số thành viên, bản nhạc, show, show đang chuẩn bị, hoạt động gần nhất. */
     static final String ROW_SELECT = "select t.id, t.name, t.description, t.createdAt, c.id, c.fullName, c.email,"
-            + " (select count(tm) from TeamMember tm where tm.team = t and tm.kind = 'MEMBER'),"
+            + " (select count(tm) from TeamMember tm where tm.team = t),"
             + " (select count(s) from Score s where s.teamId = t.id),"
             + " (select count(sh) from Show sh where sh.team = t and sh.deletedAt is null),"
             + " (select count(sp) from Show sp where sp.team = t and sp.status = 'PREPARING' and sp.deletedAt is null),"
-            + " (select max(a.createdAt) from TeamMember a where a.team = t and a.kind = 'ACTIVITY'),"
+            + " (select max(a.createdAt) from TeamActivity a where a.team = t),"
             + " t.deletedAt, t.deletedByAdmin, t.deletedReason"
             + " from Team t join t.createdBy c";
 
@@ -88,6 +89,7 @@ public class AdminTeamServiceImpl implements AdminTeamService {
 
     TeamRepository teamRepository;
     TeamMemberRepository teamMemberRepository;
+    TeamActivityRepository teamActivityRepository;
     ShowRepository showRepository;
     ShowItemRepository showItemRepository;
     ScoreRepository scoreRepository;
@@ -104,13 +106,13 @@ public class AdminTeamServiceImpl implements AdminTeamService {
         return AdminTeamSummaryResponse.builder()
                 .teams(count("select count(t) from Team t where t.deletedAt is null"))
                 .activeTeams7d(em.createQuery(
-                                "select count(distinct a.team.id) from TeamMember a where a.kind = 'ACTIVITY'"
-                                        + " and a.team.deletedAt is null and a.createdAt >= :since",
+                                "select count(distinct a.team.id) from TeamActivity a"
+                                        + " where a.team.deletedAt is null and a.createdAt >= :since",
                                 Long.class)
                         .setParameter("since", now.minusDays(ACTIVE_DAYS))
                         .getSingleResult())
-                .teamMembers(count("select count(distinct tm.member) from TeamMember tm where tm.kind = 'MEMBER'"
-                        + " and tm.team.deletedAt is null"))
+                .teamMembers(count(
+                        "select count(distinct tm.member) from TeamMember tm" + " where tm.team.deletedAt is null"))
                 .preparingShows(count("select count(s) from Show s where s.status = 'PREPARING'"
                         + " and s.deletedAt is null and s.team.deletedAt is null"))
                 .openItems(count("select count(i) from ShowItem i where i.status <> 'APPROVED'"
@@ -212,7 +214,9 @@ public class AdminTeamServiceImpl implements AdminTeamService {
                                 s.getUpdatedAt()))
                         .toList())
                 .recentActivities(
-                        teamMemberRepository.findActivities(team.getId(), PageRequest.of(0, DETAIL_ACTIVITIES)).stream()
+                        teamActivityRepository
+                                .findActivities(team.getId(), PageRequest.of(0, DETAIL_ACTIVITIES))
+                                .stream()
                                 .map(a -> TeamActivityResponse.builder()
                                         .id(a.getId())
                                         .type(a.getType())
