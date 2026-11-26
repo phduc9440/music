@@ -170,6 +170,7 @@
   "1024": "The lock / unlock reason can be at most 255 characters",
   "1025": "You are not allowed to assign this role",
   "1026": "Invalid email",
+  "1027": "This address does not exist",
   "3110": "Suggestion title is 1-200 characters, description up to 2000, note up to 500",
   "3111": "The suggestion has no changes compared with the base version",
   "3112": "You already have 10 open suggestions on this score; wait for them or withdraw some",

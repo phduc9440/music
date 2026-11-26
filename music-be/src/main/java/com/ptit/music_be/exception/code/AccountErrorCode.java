@@ -15,7 +15,7 @@ import lombok.experimental.FieldDefaults;
 public enum AccountErrorCode implements ErrorCode {
     UNCATEGORIZED_EXCEPTION(9999, "Uncategorized error", HttpStatus.INTERNAL_SERVER_ERROR),
     UNAUTHENTICATED(1001, "Unauthenticated", HttpStatus.UNAUTHORIZED),
-    UNAUTHORIZED(1002, "You do not have permission", HttpStatus.FORBIDDEN),
+    UNAUTHORIZED(1002, "Bạn không có quyền thực hiện thao tác này", HttpStatus.FORBIDDEN),
     USER_EXISTED(1003, "User already existed", HttpStatus.BAD_REQUEST),
     USER_NOT_EXISTED(1004, "User not existed", HttpStatus.NOT_FOUND),
     INVALID_CREDENTIALS(1005, "Email hoặc mật khẩu không đúng", HttpStatus.UNAUTHORIZED),
@@ -27,6 +27,8 @@ public enum AccountErrorCode implements ErrorCode {
     FULL_NAME_REQUIRED(1011, "Họ tên là bắt buộc", HttpStatus.BAD_REQUEST),
     PASSWORD_SAME_AS_OLD(1012, "Mật khẩu mới phải khác mật khẩu hiện tại", HttpStatus.BAD_REQUEST),
     CANNOT_MODIFY_SELF(1013, "Quản trị viên không thể khóa hoặc hạ quyền chính mình", HttpStatus.BAD_REQUEST),
+    /** Đường dẫn API không tồn tại (N-07): trả 404 thay vì 500 và không ghi thành lỗi hệ thống. */
+    API_NOT_FOUND(1027, "Đường dẫn không tồn tại", HttpStatus.NOT_FOUND),
     ROLE_NOT_EXISTED(1015, "Vai trò không tồn tại", HttpStatus.BAD_REQUEST),
     ROLE_BUILT_IN(
             1020,
