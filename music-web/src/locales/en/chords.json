@@ -29,7 +29,10 @@
     "quota": "{left}/{limit} chord suggestions left this month · {options} options each",
     "quotaUnlimited": "Unlimited chord suggestions · {options} options each",
     "melodyLabel": "Melody part",
-    "melodyHint": "The AI reads the melody of this part and writes the chords above it."
+    "melodyHint": "The AI reads the melody of this part and writes the chords above it.",
+    "tooLongTitle": "This score has {count} measures; your plan suggests chords for up to {max}",
+    "tooLongHint": "Upgrade to harmonize the whole score, or copy a shorter section into its own score.",
+    "seePlans": "See plans"
   },
   "styles": {
     "NATURAL": {

@@ -82,12 +82,18 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
   // Bè giai điệu (CH-04): đọc từ bản đã lưu, vì AI gợi ý trên version hiện hành; chỉ hiện khi có từ hai lựa chọn
   const [melodies, setMelodies] = useState<MelodyChoice[]>([]);
   const [melody, setMelody] = useState(0);
+  // Số ô của bản đã lưu (CH-05): biết trước bài dài hơn giới hạn gói thay vì bấm xong mới báo
+  const [measureCount, setMeasureCount] = useState<number | null>(null);
 
   useEffect(() => {
     let alive = true;
     fetchMusicXml(scoreId)
       .then((xml) => {
-        if (alive) setMelodies(melodyChoicesOf(new DOMParser().parseFromString(xml, 'application/xml')));
+        if (!alive) return;
+        const doc = new DOMParser().parseFromString(xml, 'application/xml');
+        setMelodies(melodyChoicesOf(doc));
+        const firstPart = doc.getElementsByTagName('part')[0];
+        setMeasureCount(firstPart ? firstPart.getElementsByTagName('measure').length : null);
       })
       .catch(() => undefined);
     return () => {
@@ -113,6 +119,8 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
   const quota = unlimited ? null : (limits?.chordGenerationsPerMonth ?? null);
   const left = quota == null ? null : Math.max(0, quota - (sub?.chordGenerationsUsed ?? 0));
   const options = unlimited ? 3 : Math.min(3, Math.max(1, limits?.chordOptions ?? 3));
+  const maxMeasures = unlimited ? null : (limits?.chordMaxMeasures ?? null);
+  const tooLong = maxMeasures != null && measureCount != null && measureCount > maxMeasures;
 
   /** Bấm tùy chọn bị khóa: không chọn, mở hộp mời nâng cấp (nằm trên hộp này, đóng xong vẫn ở lại). */
   const openUpgrade = async () => {
@@ -279,6 +287,27 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
         </p>
       )}
 
+      {tooLong && (
+        <div className="cs-harmonized" role="status">
+          <strong>{t('chords.dialog.tooLongTitle', { count: measureCount ?? 0, max: maxMeasures ?? 0 })}</strong>
+          <p className="cs-hint">{t('chords.dialog.tooLongHint')}</p>
+          <button
+            type="button"
+            className="sc-btn sc-btn--sm"
+            onClick={() =>
+              showPlanLimit({
+                metric: 'CHORD_MEASURES',
+                limit: maxMeasures ?? 0,
+                used: measureCount ?? 0,
+                upgradeTo: null,
+              })
+            }
+          >
+            {t('chords.dialog.seePlans')}
+          </button>
+        </div>
+      )}
+
       {harmonized && (
         <div className="cs-harmonized" role="status">
           <strong>{t('chords.dialog.harmonizedTitle')}</strong>
@@ -336,7 +365,12 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
         <button type="button" className="sc-btn" onClick={onClose}>
           {running ? t('chords.dialog.hide') : t('chords.dialog.cancel')}
         </button>
-        <button type="button" className="sc-btn sc-btn--primary" onClick={() => void submit()} disabled={busy}>
+        <button
+          type="button"
+          className="sc-btn sc-btn--primary"
+          onClick={() => void submit()}
+          disabled={busy || tooLong}
+        >
           {busy ? t('chords.dialog.creating') : harmonized ? t('chords.dialog.replace') : t('chords.dialog.submit')}
         </button>
       </div>

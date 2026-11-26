@@ -29,7 +29,10 @@
     "quota": "Còn {left}/{limit} lượt gợi ý hợp âm tháng này · {options} phương án mỗi lần",
     "quotaUnlimited": "Không giới hạn lượt gợi ý hợp âm · {options} phương án mỗi lần",
     "melodyLabel": "Bè giai điệu",
-    "melodyHint": "AI đọc giai điệu ở bè này và ghi hợp âm lên trên bè đó."
+    "melodyHint": "AI đọc giai điệu ở bè này và ghi hợp âm lên trên bè đó.",
+    "tooLongTitle": "Bài có {count} ô nhịp, gói của bạn gợi ý hợp âm tối đa {max} ô",
+    "tooLongHint": "Nâng cấp gói để gợi ý cho cả bài, hoặc tách đoạn ngắn hơn thành bản nhạc riêng.",
+    "seePlans": "Xem gói phù hợp"
   },
   "styles": {
     "NATURAL": {

@@ -3,6 +3,7 @@ package com.ptit.music_be.service.ai.impl;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +38,8 @@ import com.ptit.music_be.repository.score.ScoreSuggestionRepository;
 import com.ptit.music_be.service.ai.ChordSuggestionService;
 import com.ptit.music_be.service.billing.EntitlementService;
 import com.ptit.music_be.service.permission.ScorePermissionService;
+import com.ptit.music_be.service.score.ScoreEditService;
+import com.ptit.music_be.utils.MusicXmlInspector;
 import com.ptit.music_be.utils.SecurityUtils;
 
 /** Tạo tác vụ gợi ý hợp âm (R3); việc chạy nằm ở {@code ChordGenerationWorker}. */
@@ -58,6 +61,13 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
     private final AiTaskMapper aiTaskMapper;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
+    /** Đọc nội dung để đếm ô khi bản nhạc chưa có measureCount (CH-05); tiêm bằng setter để không vòng phụ thuộc. */
+    private ScoreEditService scoreEditService;
+
+    @Autowired(required = false)
+    void setScoreEditService(ScoreEditService scoreEditService) {
+        this.scoreEditService = scoreEditService;
+    }
 
     public ChordSuggestionServiceImpl(
             ScoreRepository scoreRepository,
@@ -128,8 +138,9 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
         if (style.isAdvanced() || creativity == ChordCreativity.BOLD || density == ChordDensity.DENSE) {
             entitlementService.checkFeature(member.getId(), PlanFeature.CHORD_ADVANCED);
         }
-        if (score.getMeasureCount() != null) {
-            entitlementService.checkRequestCap(member.getId(), RequestCap.CHORD_MEASURES, score.getMeasureCount());
+        Integer measureCount = measureCountOf(score, baseVersion);
+        if (measureCount != null) {
+            entitlementService.checkRequestCap(member.getId(), RequestCap.CHORD_MEASURES, measureCount);
         }
         entitlementService.checkAvailable(member.getId(), UsageMetric.CHORD_GENERATIONS, 1);
         // Số phương án chốt theo gói lúc bấm, worker chỉ đọc lại
@@ -158,5 +169,25 @@ public class ChordSuggestionServiceImpl implements ChordSuggestionService {
                 .build());
         eventPublisher.publishEvent(new ChordTaskCreatedEvent(task.getId(), score.getId()));
         return aiTaskMapper.toResponse(task);
+    }
+
+    /**
+     * Số ô của bản nhạc để kiểm giới hạn gói (CH-05). Bản cũ (nhập file, số hóa trước khi có cột) chưa có measureCount thì
+     * đếm từ version hiện hành và ghi lại; đọc lỗi thì bỏ qua như trước (music-ai vẫn có trần TOO_LONG).
+     */
+    private Integer measureCountOf(Score score, int baseVersion) {
+        if (score.getMeasureCount() != null || scoreEditService == null) {
+            return score.getMeasureCount();
+        }
+        try {
+            int count = MusicXmlInspector.inspect(scoreEditService
+                            .getVersionContentForSystem(score.getId(), baseVersion)
+                            .bytes())
+                    .measureCount();
+            score.setMeasureCount(count);
+            return count;
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 }
