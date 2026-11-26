@@ -437,13 +437,20 @@
 
 /* màn hình vừa: bỏ icon trong menu cho đỡ chật */
 /* màn hình vừa: ô tìm kiếm gọn lại để điều hướng ở giữa không bị chen */
-@media (max-width: 1320px) {
-  .app-search {
-    width: 200px;
+/* Thu gọn thanh trên theo từng mốc để menu giữa (Khám phá, Học tập, Không gian của tôi) luôn đủ chỗ, không tràn chữ
+   đè lên nút Tạo bản nhạc (UI-01). Chữ menu không xuống dòng nên mỗi mốc phải chừa đủ chỗ cho cả ba nhóm. */
+@media (max-width: 1440px) {
+  .app-search__text,
+  .app-search__kbd,
+  .app-plan span {
+    display: none;
   }
 
-  .app-search__kbd {
-    display: none;
+  .app-plan,
+  .app-search {
+    width: 40px;
+    padding: 0;
+    justify-content: center;
   }
 }
 
@@ -460,6 +467,22 @@
     width: 40px;
     padding: 0;
     justify-content: center;
+  }
+}
+
+/* màn vừa (trước khi đổi sang menu ☰): bỏ chữ thương hiệu, thu khoảng cách để ba nhóm menu vẫn vừa một hàng */
+@media (min-width: 901px) and (max-width: 1100px) {
+  .app-header__inner:not(.app-header__inner--guest) {
+    gap: 0.5rem;
+  }
+
+  .app-header__inner:not(.app-header__inner--guest) .app-brand {
+    font-size: 0;
+    gap: 0;
+  }
+
+  .app-nav .app-navgroup__trigger {
+    padding: 0 0.6rem;
   }
 }
 

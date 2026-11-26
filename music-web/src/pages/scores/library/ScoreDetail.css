@@ -167,7 +167,8 @@
   min-height: 260px;
   object-fit: contain;
   object-position: top center;
-  background: var(--ui-surface);
+  /* Tờ nhạc luôn là giấy trắng, kể cả ở màn tối (ảnh trang thường nền trong suốt hoặc không phủ kín khung) */
+  background: var(--ui-paper);
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius);
 }
