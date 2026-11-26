@@ -20,6 +20,7 @@ import { DEFAULT_TOLERANCE_WINDOW_MS, FreeRunScorer } from '../../../components/
 import type { PracticeNoteEvent } from '../../../components/player/engine/FreeRunScorer';
 import { WaitModeScorer } from '../../../components/player/engine/WaitModeScorer';
 import { StudioMicError, StudioMicInput } from '../../../components/player/engine/StudioMicInput';
+import { STUDIO_KEYBOARD_MAP } from '../../../components/player/engine/studioKeyboardMap';
 import { connectMidi } from '../../../components/player/engine/webMidiInput';
 import type { MidiStatus } from '../../../components/player/engine/webMidiInput';
 import { buildStudioSchedule, countInOf } from '../../../components/player/engine/studioSchedule';
@@ -51,21 +52,6 @@ const LOOP_LOOKAHEAD_MS = 1200;
 const FREE_RUN_LEAD_IN_MS = STUDIO_WATERFALL_WINDOW_MS;
 
 const COMPUTER_KEYBOARD_DEFAULT_BASE_MIDI = 60;
-const KEYBOARD_MAP: Record<string, number> = {
-  a: 0,
-  w: 1,
-  s: 2,
-  e: 3,
-  d: 4,
-  f: 5,
-  t: 6,
-  g: 7,
-  y: 8,
-  h: 9,
-  u: 10,
-  j: 11,
-  k: 12,
-};
 const NOTE_NAMES = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
 
 const noteName = (midi: number): string => `${NOTE_NAMES[midi % 12]}${Math.floor(midi / 12) - 1}`;
@@ -540,7 +526,7 @@ export default function StudioPlayer() {
         setOctaveShift((shift) => Math.max(-4, Math.min(4, shift + (key === 'z' ? -1 : 1))));
         return;
       }
-      const semitone = KEYBOARD_MAP[key];
+      const semitone = STUDIO_KEYBOARD_MAP[key];
       if (semitone === undefined) return;
       event.preventDefault();
       onPlayNote(computerKeyboardBaseRef.current + semitone);
@@ -782,8 +768,7 @@ export default function StudioPlayer() {
   // Dọn preview khi rời trang (bắt đầu phiên thì startSession tự dừng preview)
   useEffect(() => () => stopPreview(), [stopPreview]);
 
-  // phím máy tính chỉ phủ 13 bán cung: đặt quãng tám theo nốt giữa của phần đang tập (tay đã chọn), rồi cộng phần người
-  // chơi tự dời bằng Z / X (T39)
+  // Bàn phím máy tính phủ hai quãng tám quanh nốt giữa phần đang tập; Z / X dời cả dải (T39).
   const autoKeyboardBase = useMemo(() => {
     const midis = ((sessionSchedule ?? previewSchedule)?.notes ?? []).map((note) => note.midi).sort((a, b) => a - b);
     if (midis.length === 0) return COMPUTER_KEYBOARD_DEFAULT_BASE_MIDI;
@@ -793,11 +778,11 @@ export default function StudioPlayer() {
   useEffect(() => {
     computerKeyboardBaseRef.current = computerKeyboardBase;
   }, [computerKeyboardBase]);
-  // nốt cần chơi nằm ngoài dải phím máy tính hiện tại (bài hai tay thường rộng hơn một quãng tám)
+  // Nốt ngoài hai quãng tám đang gán phím cần được báo để người chơi dời dải bằng Z / X.
   const keyboardMissesNotes =
     inputSource === 'KEYBOARD' &&
     (sessionSchedule?.notes ?? []).some(
-      (note) => note.midi < computerKeyboardBase || note.midi > computerKeyboardBase + 12,
+      (note) => note.midi < computerKeyboardBase - 12 || note.midi > computerKeyboardBase + 12,
     );
 
   if (loadState.phase === 'loading') {
@@ -864,11 +849,12 @@ export default function StudioPlayer() {
   const hasNotesOutsideKeyboard = activeSchedule?.visualNotes.some(
     (note) => note.midi < STUDIO_PIANO_MIN_MIDI || note.midi > STUDIO_PIANO_MAX_MIDI,
   );
-  const keyboardNotes = Object.entries(KEYBOARD_MAP)
+  const keyboardNotes = Object.entries(STUDIO_KEYBOARD_MAP)
     .sort((left, right) => left[1] - right[1])
     .map(([key, semitone]) => ({
       key: key.toUpperCase(),
       note: noteName(computerKeyboardBase + semitone),
+      hand: semitone < 0 ? 'LEFT' : 'RIGHT',
     }));
 
   // Bản nhạc xem trước: lúc thiết lập nằm chung cột trái với thẻ thiết lập (cột tự cuộn), lúc đang luyện ở dưới vùng luyện
@@ -1336,7 +1322,7 @@ export default function StudioPlayer() {
             {session && inputSource === 'KEYBOARD' && (
               <p className="studio-player__note" role="status">
                 {t('studioPlayer.keyboard.computerRange', {
-                  from: noteName(computerKeyboardBase),
+                  from: noteName(computerKeyboardBase - 12),
                   to: noteName(computerKeyboardBase + 12),
                 })}
                 {keyboardMissesNotes && ` ${t('studioPlayer.keyboard.outOfRange')}`}
@@ -1463,8 +1449,11 @@ export default function StudioPlayer() {
                 <>
                   <p>{t('studioPlayer.keyboardGuide.keyboardDesc')}</p>
                   <div className="studio-player__computer-key-map">
-                    {keyboardNotes.map(({ key, note }) => (
-                      <span className="studio-player__computer-key" key={key}>
+                    {keyboardNotes.map(({ key, note, hand }) => (
+                      <span
+                        className={`studio-player__computer-key is-${hand === 'LEFT' ? 'left' : 'right'}-hand`}
+                        key={key}
+                      >
                         <kbd>{key}</kbd>
                         <span>{note}</span>
                       </span>

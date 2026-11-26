@@ -97,8 +97,8 @@
     "title": "Phím đàn",
     "range": "88 phím · A0–C8",
     "rangeHint": "Một số nốt trong bản nhạc nằm ngoài dải 88 phím của piano (A0–C8).",
-    "computerRange": "Phím máy tính đang phát {from}–{to}; bấm Z để xuống một quãng tám, X để lên.",
-    "outOfRange": "Bài có nốt ngoài dải này: đổi quãng bằng Z/X khi tới đoạn đó, hoặc tập từng tay."
+    "computerRange": "Phím máy tính đang phát {from}–{to} (hai quãng tám); bấm Z để xuống một quãng tám, X để lên.",
+    "outOfRange": "Bài có nốt ngoài dải này: đổi quãng bằng Z/X khi tới đoạn đó."
   },
   "keyboardGuide": {
     "open": "Hướng dẫn cách chơi",
@@ -108,15 +108,15 @@
       "touch": "Phím đàn ảo / Cảm ứng",
       "mic": "Micro (Đàn piano thật)"
     },
-    "keyboardDesc": "Sử dụng các phím chữ trên bàn phím máy tính để chơi. Các phím tương ứng được gắn nhãn phím chữ trực tiếp trên phím đàn piano ảo:",
+    "keyboardDesc": "Dải phím trầm (thường dùng cho tay trái) và dải phím cao (thường dùng cho tay phải) có màu riêng. Phím tương ứng cũng được gắn nhãn trực tiếp trên đàn piano ảo:",
     "touchDesc": "Chạm trực tiếp hoặc dùng chuột bấm vào các phím đàn piano ảo (88 phím). Bấm gần mép dưới phím để đánh mạnh hơn. Bạn có thể bấm giữ và vuốt ngón tay qua nhiều phím (glissando) hoặc dùng đa chạm trên tablet.",
     "micDesc": "Đặt laptop hoặc micro gần đàn piano thật (cách khoảng 30–50cm). Đảm bảo không gian xung quanh yên tĩnh. Hệ thống AI phân tích âm thanh trực tiếp trên trình duyệt để chấm điểm các nốt bạn vừa đàn.",
     "handsDesc": "Quy ước màu tay: Nốt màu xanh là tay phải, nốt màu vàng cam là tay trái. Hãy bấm đúng lúc nốt rơi chạm vạch chơi.",
     "stepInput": "Trong phần thiết lập, chọn “Bàn phím máy tính” để chơi bằng các phím chữ, hoặc chọn “Bấm phím đàn trên màn hình” để chạm trực tiếp lên đàn.",
-    "stepRange": "Đàn ảo luôn hiển thị đủ 88 phím từ A0 đến C8. Bàn phím máy tính phát một quãng tám theo nốt giữa của phần đang tập; bấm Z / X để dời xuống / lên một quãng tám.",
+    "stepRange": "Bàn phím máy tính phủ hai quãng tám quanh nốt giữa của đoạn tập: tay trái dùng C, 1, V, 2, B, N, 3, M, 4, dấu phẩy, 5, dấu chấm; tay phải dùng A, W, S, E, D, F, T, G, Y, H, U, J, K. Bấm Z / X để dời cả dải xuống / lên một quãng tám.",
     "stepPlay": "Quan sát màu nốt để biết tay: tay phải màu xanh, tay trái màu cam. Bấm phím tương ứng khi nốt chạm vạch chơi; với đàn màn hình, chạm phím tương ứng.",
     "stepFeedback": "Xem kết quả ngay dưới đàn: xanh là đúng nhịp, vàng là sớm/trễ, đỏ là sai nốt hoặc bỏ lỡ.",
-    "keyMap": "Bàn phím máy tính phát một quãng tám theo sơ đồ này:"
+    "keyMap": "Sơ đồ phím máy tính (dải trầm màu cam, dải cao màu xanh):"
   },
   "recovery": {
     "title": "Đang có phiên luyện tập khác",
