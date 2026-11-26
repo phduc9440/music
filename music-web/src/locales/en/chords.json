@@ -32,7 +32,9 @@
     "melodyHint": "The AI reads the melody of this part and writes the chords above it.",
     "tooLongTitle": "This score has {count} measures; your plan suggests chords for up to {max}",
     "tooLongHint": "Upgrade to harmonize the whole score, or copy a shorter section into its own score.",
-    "seePlans": "See plans"
+    "seePlans": "See plans",
+    "durationIssues_one": "{count} measure of the melody has the wrong length (measure {measures}). Chords may land off the beat; fix it in the editor first.",
+    "durationIssues_other": "{count} measures of the melody have the wrong length (measures {measures}). Chords may land off the beat; fix them in the editor first."
   },
   "styles": {
     "NATURAL": {

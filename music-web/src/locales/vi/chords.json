@@ -32,7 +32,9 @@
     "melodyHint": "AI đọc giai điệu ở bè này và ghi hợp âm lên trên bè đó.",
     "tooLongTitle": "Bài có {count} ô nhịp, gói của bạn gợi ý hợp âm tối đa {max} ô",
     "tooLongHint": "Nâng cấp gói để gợi ý cho cả bài, hoặc tách đoạn ngắn hơn thành bản nhạc riêng.",
-    "seePlans": "Xem gói phù hợp"
+    "seePlans": "Xem gói phù hợp",
+    "durationIssues_one": "Có {count} ô sai trường độ ở bè giai điệu (ô {measures}). AI có thể đặt hợp âm lệch phách; nên sửa trong trình chỉnh sửa trước.",
+    "durationIssues_other": "Có {count} ô sai trường độ ở bè giai điệu (ô {measures}). AI có thể đặt hợp âm lệch phách; nên sửa trong trình chỉnh sửa trước."
   },
   "styles": {
     "NATURAL": {

@@ -18,6 +18,9 @@ import { useExportTask } from '../../export/useExportTask';
 import { suggestionPath } from '../suggestions/suggestionUtils';
 import Modal from '../common/Modal';
 import { melodyChoicesOf } from './melodyChoices';
+import { ScoreDocument } from '../../editor/core/ScoreDocument';
+import { checkMeasures } from '../../editor/structure/measureCheck';
+import type { MeasureIssue } from '../../editor/structure/measureCheck';
 import type { MelodyChoice } from './melodyChoices';
 import './chordSuggest.css';
 
@@ -86,6 +89,8 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
   const [melody, setMelody] = useState(0);
   // Số ô của bản đã lưu (CH-05): biết trước bài dài hơn giới hạn gói thay vì bấm xong mới báo
   const [measureCount, setMeasureCount] = useState<number | null>(null);
+  // CH-11: ô sai trường độ ở bè giai điệu làm AI đặt hợp âm lệch phách; nhắc trước khi gợi ý
+  const [issues, setIssues] = useState<MeasureIssue[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -96,6 +101,11 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
         setMelodies(melodyChoicesOf(doc));
         const firstPart = doc.getElementsByTagName('part')[0];
         setMeasureCount(firstPart ? firstPart.getElementsByTagName('measure').length : null);
+        try {
+          setIssues(checkMeasures(ScoreDocument.parse(xml)));
+        } catch {
+          setIssues([]);
+        }
       })
       .catch(() => undefined);
     return () => {
@@ -115,6 +125,8 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
   }, []);
 
   const chosenMelody = melodies.length > 0 ? melodies[Math.min(melody, melodies.length - 1)] : undefined;
+  const melodyPart = chosenMelody?.partIndex ?? 0;
+  const melodyIssues = issues.filter((issue) => issue.partIndex === melodyPart);
   const harmonized = !!allHarmonized || harmonizedByTask || !!chosenMelody?.harmonized;
   const unlimited = sub?.status === 'UNLIMITED';
   const limits = sub?.limits;
@@ -288,6 +300,19 @@ export default function ChordSuggestDialog({ scoreId, onClose, onCompleted, allH
         <p className="cs-hint cs-locked-hint">
           <Icon name="lock" size={14} />
           {t('chords.dialog.lockedHint')}
+        </p>
+      )}
+
+      {melodyIssues.length > 0 && (
+        <p className="cs-hint cs-locked-hint" role="status">
+          <Icon name="alert" size={14} />
+          {t('chords.dialog.durationIssues', {
+            count: melodyIssues.length,
+            measures: melodyIssues
+              .slice(0, 5)
+              .map((issue) => issue.measureIndex + 1)
+              .join(', '),
+          })}
         </p>
       )}
 
