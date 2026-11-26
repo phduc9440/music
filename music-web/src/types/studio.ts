@@ -56,7 +56,11 @@ export interface StudioTimeline {
   tempoBpm: number;
   timeSignatures: { measure: number; beats: number; beatType: number }[];
   tempoChanges: { measure: number; bpm: number }[];
-  measures: { index: number; startBeat: number; beats: number }[];
+  /**
+   * Các ô theo thứ tự phát (dấu nhắc lại đã mở, ST-08): `index` là thứ tự phát từ 1, `source` là số ô trên bản nhạc
+   * (null ở timeline cũ).
+   */
+  measures: { index: number; startBeat: number; beats: number; source?: number | null }[];
   notes: {
     id: string;
     measure: number;

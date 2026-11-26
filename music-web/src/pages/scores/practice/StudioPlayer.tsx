@@ -153,6 +153,7 @@ export default function StudioPlayer() {
         const timeline = timelineResponse.data;
         const activeSession = activeSessionResponse.status === 204 ? null : activeSessionResponse.data;
         setLoadState({ phase: 'ready', score, xml: xmlResponse, timeline });
+        if (!timeline.notes.some((note) => note.hand !== null)) setHandMode('BOTH');
         setActiveSession(activeSession);
         setEndMeasure(timeline.measureCount);
       })
@@ -760,6 +761,8 @@ export default function StudioPlayer() {
   }
 
   const { score, xml, timeline } = loadState;
+  // bản không có part 2 khuông (giai điệu, từng bè) thì không có tay trái / phải để chọn (ST-13)
+  const hasHands = timeline.notes.some((note) => note.hand !== null);
   // đồng hồ và tiến độ đứng ở 0 trong lúc đếm ngược (thời gian luyện âm)
   const elapsedSeconds = Math.floor(Math.max(0, elapsedMs) / 1000);
   const countdownSeconds = session?.mode === 'FREE_RUN' && elapsedMs < 0 ? Math.ceil(-elapsedMs / 1000) : 0;
@@ -786,7 +789,8 @@ export default function StudioPlayer() {
     const note = timeline.notes.find((item) => item.id === current.noteId);
     const measure = timeline.measures.find((item) => item.index === current.measure);
     if (!note || !measure) return null;
-    return { measure: current.measure, beatOffset: Math.max(0, note.startBeat - measure.startBeat) };
+    // nhắc lại đã mở: lượt phát thứ hai của ô 1 vẫn tô ở ô 1 trên bản nhạc
+    return { measure: measure.source ?? current.measure, beatOffset: Math.max(0, note.startBeat - measure.startBeat) };
   })();
   const progress =
     session && scoreDuration > 0 && !repeatSection
@@ -961,30 +965,32 @@ export default function StudioPlayer() {
                     ))}
                   </div>
                 </fieldset>
-                <fieldset className="studio-player__field">
-                  <legend>{t('studioPlayer.setup.hands')}</legend>
-                  <div className="studio-player__segmented studio-player__hands">
-                    {(
-                      [
-                        ['LEFT_ONLY', 'is-left', 'studioPlayer.setup.leftHand'],
-                        ['BOTH', 'is-both', 'studioPlayer.setup.bothHands'],
-                        ['RIGHT_ONLY', 'is-right', 'studioPlayer.setup.rightHand'],
-                      ] as const
-                    ).map(([value, dot, label]) => (
-                      <label key={value} className={handMode === value ? 'is-active' : undefined}>
-                        <input
-                          type="radio"
-                          name="studio-hands"
-                          value={value}
-                          checked={handMode === value}
-                          onChange={() => setHandMode(value)}
-                        />
-                        <i className={`studio-player__hand-dot ${dot}`} aria-hidden="true" />
-                        <span>{t(label)}</span>
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
+                {hasHands && (
+                  <fieldset className="studio-player__field">
+                    <legend>{t('studioPlayer.setup.hands')}</legend>
+                    <div className="studio-player__segmented studio-player__hands">
+                      {(
+                        [
+                          ['LEFT_ONLY', 'is-left', 'studioPlayer.setup.leftHand'],
+                          ['BOTH', 'is-both', 'studioPlayer.setup.bothHands'],
+                          ['RIGHT_ONLY', 'is-right', 'studioPlayer.setup.rightHand'],
+                        ] as const
+                      ).map(([value, dot, label]) => (
+                        <label key={value} className={handMode === value ? 'is-active' : undefined}>
+                          <input
+                            type="radio"
+                            name="studio-hands"
+                            value={value}
+                            checked={handMode === value}
+                            onChange={() => setHandMode(value)}
+                          />
+                          <i className={`studio-player__hand-dot ${dot}`} aria-hidden="true" />
+                          <span>{t(label)}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                )}
                 <div className="studio-player__tempo">
                   <div className="studio-player__tempo-head">
                     <label htmlFor="studio-tempo">{t('studioPlayer.setup.tempo')}</label>
