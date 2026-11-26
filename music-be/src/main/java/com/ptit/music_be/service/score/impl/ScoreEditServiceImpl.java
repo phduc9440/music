@@ -49,6 +49,7 @@ import com.ptit.music_be.service.collab.live.LiveSessionRegistry;
 import com.ptit.music_be.service.score.ScoreEditService;
 import com.ptit.music_be.service.score.ScoreFileService;
 import com.ptit.music_be.service.storage.FileStorageService;
+import com.ptit.music_be.utils.MeasureContentValidator;
 import com.ptit.music_be.utils.MusicXmlInspector;
 import com.ptit.music_be.utils.MusicXmlSummary;
 import com.ptit.music_be.utils.SecurityUtils;
@@ -167,6 +168,11 @@ public class ScoreEditServiceImpl implements ScoreEditService {
         int currentVersion = currentVersionOf(score, xmlFiles);
 
         MusicXmlSummary summary = MusicXmlInspector.inspect(body);
+        // Nội dung nhạc sai (bậc H, quãng 99, trường độ âm, loại nốt lạ) không được lưu thành phiên bản (T48)
+        if (!MeasureContentValidator.isValidScore(
+                MusicXmlInspector.parseSecure(body).getDocumentElement())) {
+            throw new AppException(ScoreErrorCode.MUSICXML_INVALID);
+        }
 
         if (force) {
             // Ghi đè bản mới hơn của người khác: chỉ chủ sở hữu (ADMIN và người được chia sẻ quyền sửa thì không)
