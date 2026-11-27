@@ -9,7 +9,10 @@ Một thành phần liên thông (sau khi bỏ dòng kẻ khuông) bị coi là 
 
 * nằm hoàn toàn ngoài dải khuông (mở rộng :data:`_BAND_MARGIN` khoảng dòng kẻ mỗi phía);
 * không chứa dòng kẻ phụ (nét ngang dài; đầu nốt đặt trên dòng kẻ phụ dính liền nó thành một thành phần);
-* không cao quá :data:`_MAX_GLYPH_H` và không rộng quá :data:`_MAX_GLYPH_W` khoảng dòng kẻ (chữ; hai dòng lời ca dính nhau qua dấu thanh vẫn là một khối; luyến dài hơn thì giữ).
+* không cao quá :data:`_MAX_GLYPH_H` và không rộng quá :data:`_MAX_GLYPH_W` khoảng dòng kẻ (chữ; hai dòng lời ca dính nhau qua dấu thanh vẫn là một khối; luyến dài hơn thì giữ);
+* không phải chấm dôi của nốt nằm ngoài khuông (:func:`_augmentation_dots`): chấm nhỏ, gần khuông, có đầu nốt được giữ
+  ngay bên trái. Trước đây chấm dôi của nốt Rê/Si giáng dưới khuông bị xóa như dấu chấm của chữ, nên model đọc nốt chấm
+  dôi thành nốt thường ("Đời Con Thuộc Về Chúa" mất 4/4 chấm dôi dưới khuông).
 
 Không đủ tin cậy (không dò được khuông) thì trả ảnh nguyên vẹn. Tắt bằng ``OMR_STRIP_TEXT=0``.
 """
@@ -36,6 +39,20 @@ thân tới khuông nên thuộc thành phần chạm khuông."""
 
 _LEDGER_MAX_H = 1.7
 """Thành phần "đầu nốt + dòng kẻ phụ" thấp hơn bấy nhiêu khoảng; cao hơn là khối chữ chứa nét ngang."""
+
+_DOT_MAX = 0.7
+_DOT_MIN_PX = 2
+"""Chấm dôi: cao và rộng không quá bấy nhiêu khoảng dòng kẻ (đầu nốt rộng ~1,3), ít nhất 2 px."""
+
+_DOT_REACH = 2.25
+"""Tâm chấm dôi cách mép khuông tối đa bấy nhiêu khoảng: nốt La3 (2 dòng kẻ phụ dưới khóa Sol) có chấm cách ~2 khoảng.
+Dấu nặng của lời ca nằm dưới chữ, cách khuông xa hơn."""
+
+_DOT_LOOK_LEFT = 1.6
+_DOT_LOOK_HALF_H = 0.6
+_DOT_HEAD_INK = 0.25
+"""Vùng tìm đầu nốt bên trái chấm: rộng 1,6 khoảng, cao ±0,6 khoảng quanh tâm chấm; cần ít nhất 0,25 khoảng² mực của
+thành phần được giữ (đầu nốt ~0,8 khoảng²). Chữ bên trái dấu chấm câu đã bị xóa nên không tính."""
 
 
 def strip_text(gray: np.ndarray, layout: PageLayout | None = None) -> tuple[np.ndarray, int]:
@@ -96,6 +113,9 @@ def text_mask(gray: np.ndarray, layout: PageLayout | None = None) -> tuple[np.nd
             continue
         erase[i] = True
 
+    for i in _augmentation_dots(labels, stats, erase, layout):
+        erase[i] = False
+
     if not erase.any():
         return empty, 0
     mask = erase[labels]
@@ -147,6 +167,35 @@ def text_above_staves(gray: np.ndarray, layout: PageLayout | None = None) -> int
 
 def has_text_above_staves(gray: np.ndarray, layout: PageLayout | None = None) -> bool:
     return text_above_staves(gray, layout) >= _ABOVE_MIN_PIECES
+
+
+def _augmentation_dots(labels: np.ndarray, stats: np.ndarray, erase: np.ndarray, layout: PageLayout) -> list[int]:
+    """Các thành phần đang định xóa nhưng thực ra là chấm dôi của nốt ngoài khuông.
+
+    Chấm dôi: nhỏ, gần tròn, tâm cách mép khuông không quá :data:`_DOT_REACH` khoảng và có mực của thành phần được giữ
+    (đầu nốt, thân, dòng kẻ phụ) ngay bên trái, cùng độ cao."""
+    il = layout.interline
+    staves = [(st.top, st.bottom) for sy in layout.systems for st in sy.staves]
+    kept = (labels > 0) & ~erase[labels]
+    height, width = labels.shape
+    found: list[int] = []
+    for i in np.flatnonzero(erase):
+        x, y, w, h, area = stats[i]
+        if not (_DOT_MIN_PX <= w <= _DOT_MAX * il and _DOT_MIN_PX <= h <= _DOT_MAX * il):
+            continue
+        if area < 0.45 * w * h or not 0.5 <= w / h <= 2.0:
+            continue  # nét mảnh (dấu huyền, dấu sắc) hoặc dẹt (gạch nối)
+        cy = y + h / 2.0
+        if min(max(top - cy, cy - bottom) for top, bottom in staves) > _DOT_REACH * il:
+            continue
+        x0 = max(0, int(round(x - _DOT_LOOK_LEFT * il)))
+        y0 = max(0, int(round(cy - _DOT_LOOK_HALF_H * il)))
+        y1 = min(height, int(round(cy + _DOT_LOOK_HALF_H * il)) + 1)
+        if x0 >= x or y0 >= y1:
+            continue
+        if int(kept[y0:y1, x0:x].sum()) >= _DOT_HEAD_INK * il * il:
+            found.append(int(i))
+    return found
 
 
 def _distance_to_bands(y0: float, y1: float, bands: list[tuple[float, float]]) -> float:
