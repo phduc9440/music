@@ -872,8 +872,13 @@ def _measure_rest_rows(body: list[str]) -> dict[int, str]:
     return rests
 
 
-def pad_page(page: PageKern, target: int, references: Optional[list[dict[str, str]]] = None) -> PageKern:
+def pad_page(
+    page: PageKern, target: int, references: Optional[list[dict[str, str]]] = None, below: bool = False
+) -> PageKern:
     """Đưa trang về ``target`` spine: thêm cột bên phải (khuông trên cùng) hoặc bỏ bớt cột bên phải.
+
+    ``below``: thêm cột bên TRÁI (khuông dưới cùng, mặc định khóa Fa) thay vì bên phải, dùng khi hệ một khuông giai điệu
+    (phần lời ca) được ghép vào bài có hệ 2 khuông: giai điệu phải nằm ở khuông trên.
 
     Cột thêm vào không để trống hoàn toàn, vì music21 bỏ ô nhịp không có nốt nào và khuông không có khóa nhạc làm MusicXML
     thiếu ``<attributes>``, khiến khuông đó lệch ô so với các khuông khác:
@@ -899,15 +904,16 @@ def pad_page(page: PageKern, target: int, references: Optional[list[dict[str, st
             kinds = {classify(token) for token in fields} - {None}
             kind = next(iter(kinds)) if len(kinds) == 1 else None
             same_row = next((token for token in fields if kind and classify(token) == kind), None)
-            fallback = "*clefG2" if kind == KIND_CLEF else (same_row or "*")
+            clef = "*clefF4" if below else "*clefG2"
+            fallback = clef if kind == KIND_CLEF else (same_row or "*")
             fillers = []
             for k in range(delta):
-                spine = page.spines + k
+                spine = k if below else page.spines + k
                 known = references[spine] if spine < len(references) else {}
                 fillers.append(known.get(kind, fallback) if kind else "*")
         else:
             fillers = [_filler(row)] * delta
-        body.append(TAB.join(fields + fillers))
+        body.append(TAB.join(fillers + fields if below else fields + fillers))
     return PageKern(number=page.number, header=_fit_row(page.header, delta), body=body)
 
 

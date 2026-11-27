@@ -613,3 +613,54 @@ def test_voice_spine_with_piano_chords_is_detected_and_reread_by_roles():
 def test_melody_only_scores_are_not_checked_for_voice_chords():
     _, layout = melody_page()
     assert routing.page_voice_columns(layout) == ()  # bản một khuông có thể có hợp âm hai nốt hợp lệ
+
+
+# ------------------------------------------------------------------ trang hỗn hợp: điệp khúc 2 khuông, phần lời 1 khuông
+
+TWO_STAVES = "**kern\t**kern\n*clefF4\t*clefG2\n*k[f#]\t*k[f#]\n*M4/4\t*M4/4\n" + "1G\t1g\n=\t=\n" * 3
+ONE_STAFF = "**kern\n*clefG2\n*k[f#]\n" + "2b\n2a\n=\n" * 3
+
+
+def mixed_page():
+    image = process_page(
+        make_vocal_page(staves=2, system_staves=[2, 2, 1, 1, 1], bars=3), PreprocessOptions(source_type="SCAN"), 1
+    ).image
+    return image, analyze_layout(image)
+
+
+def test_mixed_page_is_always_read_by_systems():
+    _, layout = mixed_page()
+    assert layout.mixed and routing.expected_staves(layout) == 2
+    whole = merge.clean_page(1, TWO_STAVES)[0]
+    assert routing.needs_fallback("fallback", layout, whole)
+    assert not routing.needs_fallback("off", layout, whole)
+
+
+def test_single_staff_systems_of_a_mixed_page_keep_the_melody_on_the_upper_staff():
+    image, layout = mixed_page()
+    contexts = []
+
+    def recognize(img, index, beams, tag=None):
+        return (TWO_STAVES if len(layout.systems[index].staves) == 2 else ONE_STAFF), False
+
+    page, results, warnings = routing.recognize_by_systems(
+        1, image, layout, recognize, 0, lambda: True, meter="*M4/4"
+    )
+    assert [r.page.spines for r in results] == [2, 2, 1, 1, 1]
+    assert page.spines == 2
+    assert not any("khuông trống" in w for w in warnings)  # độn theo bố cục, không phải đọc thiếu khuông
+    merged = merge.merge_pages([page])
+    assert merge.extract_metadata(merged).measure_count == 15
+    rows = [line.split("\t") for line in merged.lines if line[:1].isdigit()]
+    # 3 hệ cuối: giai điệu ở cột phải (khuông trên), khuông dưới là dấu lặng cả ô
+    assert ["1r", "2b"] in rows and ["1G", "1g"] in rows
+    assert not any(row[0] == "2b" for row in rows)
+    clefs = [line for line in merged.lines if line.startswith("*clef")]
+    assert clefs[0].split("\t") == ["*clefF4", "*clefG2"]
+
+
+def test_context_for_a_single_staff_system_is_the_first_single_staff_system():
+    _, layout = mixed_page()
+    assert routing.context_index(layout, 1) == 0
+    assert routing.context_index(layout, 2) is None  # không có hệ 1 khuông nào trước nó
+    assert routing.context_index(layout, 4) == 2

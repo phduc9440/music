@@ -72,3 +72,18 @@ def test_layout_json_round_trip_fields():
     assert data["staffCount"] == 3 and data["roles"] == ["SINGLE", "PIANO", "PIANO"] and data["confident"] is True
     assert len(data["systems"]) == 2 and len(data["systems"][0]["staves"]) == 3
     assert '"staffCount": 3' in layout.to_json()
+
+
+def test_refrain_on_two_staves_and_verses_on_one_staff_is_a_trusted_mixed_page():
+    layout = analyze_layout(page_image(make_vocal_page(staves=2, system_staves=[2, 2, 1, 1, 1], bars=3)))
+    assert layout.staff_counts == [2, 2, 1, 1, 1]
+    assert layout.confident and layout.mixed
+    assert layout.staff_count is None and layout.max_staves == 2
+    assert layout.measure_count == 15  # vẫn đếm ô trên ảnh để kiểm số ô đọc được
+    assert layout.to_dict()["mixed"] is True
+
+
+def test_three_kinds_of_systems_or_a_short_multi_staff_system_stay_untrusted():
+    for counts in ([3, 3, 2], [2, 3, 3, 1]):
+        layout = analyze_layout(page_image(make_vocal_page(system_staves=counts)))
+        assert not layout.confident and not layout.mixed, counts

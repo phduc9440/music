@@ -542,7 +542,7 @@ def _route_pages(
     for page_number in todo:
         budget.check()
         layout = ctx.layouts[page_number]
-        expected = layout.staff_count or 0
+        expected = routing.expected_staves(layout) or 0
         expected_bars = routing.expected_measures(layout) if settings.routing_bars else None
         before = primary[page_number]
         report = routing.PageRouting(

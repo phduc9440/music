@@ -52,8 +52,12 @@ def make_vocal_page(
     drop_line=False,
     seed=0,
     bars=0,
+    system_staves=None,
 ) -> np.ndarray:
     """Trang giọng hát + piano: mỗi hệ ``staves`` khuông, khuông trên cùng có "lời ca" bên dưới.
+
+    ``system_staves``: số khuông riêng từng hệ (trang hỗn hợp, vd. ``[2, 2, 1, 1]`` = điệp khúc 2 khuông + phần lời 1 khuông);
+    khi có thì ``systems`` lấy theo độ dài danh sách.
 
     ``brace_pair``: chỉ số khuông trên của cặp có ngoặc ở lề trái (mặc định hai khuông dưới cùng). ``connector``: vạch hệ
     nối mọi khuông ở lề trái. ``first_staves``: số khuông của hệ đầu (giấu khuông trống ở đoạn dạo đầu). ``stray_line``:
@@ -65,11 +69,15 @@ def make_vocal_page(
     spacing = 16
     left, right = int(width * 0.08), int(width * 0.94)
     top = int(height * 0.06)
+    if system_staves:
+        systems = len(system_staves)
     system_height = int((height * 0.88) / systems)
     staff_gap = int(system_height / (staves + 0.6))
     for s in range(systems):
         y0 = top + s * system_height
         count = first_staves if (s == 0 and first_staves) else staves
+        if system_staves:
+            count = system_staves[s]
         bases = [y0 + i * staff_gap for i in range(count)]
         for index, base in enumerate(bases):
             for line in range(5):
