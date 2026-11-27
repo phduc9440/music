@@ -156,3 +156,41 @@ def test_measure_map_explains_split_halves_without_flagging_them():
     review.annotate(entries, result)
     assert by_measure[4]["confidence"] == 1.0 and by_measure[4]["reasons"][0].startswith("Ô 4 và ô 5")
     assert "_notes" not in by_measure[1] and by_measure[1]["flags"] == []
+
+
+# ------------------------------------------------------------------ xuất MusicXML (cần music21)
+
+
+def _export(tmp_path, text: str):
+    import pytest
+
+    pytest.importorskip("music21")
+    import xml.etree.ElementTree as ET
+
+    from app.convert.kern import kern_file_to_musicxml_file
+    from app.convert.midi import musicxml_file_to_midi_file
+
+    source = tmp_path / "merged.krn"
+    source.write_text(_merged(text).text, encoding="utf-8")
+    out = tmp_path / "v1.musicxml"
+    kern_file_to_musicxml_file(source, out, 60)
+    midi = musicxml_file_to_midi_file(out, tmp_path / "v1.mid", 60)
+    return ET.fromstring(out.read_bytes()).find("part").findall("measure"), midi
+
+
+def _hidden_rests(measure) -> int:
+    return sum(1 for n in measure.findall("note") if n.find("rest") is not None and n.get("print-object") == "no")
+
+
+def test_export_keeps_split_halves_short_so_playback_does_not_stop(tmp_path):
+    measures, midi = _export(tmp_path, SONG)
+    implicit = [m.get("implicit") for m in measures]
+    assert implicit == ["yes", "no", "no", "yes", "yes", "no", "yes"]  # lấy đà, hai phần ô chia đôi, ô cuối
+    assert [_hidden_rests(m) for m in measures] == [0] * 7
+    # 60 BPM: 1/2 + 4 + 4 + 2 + 2 + 4 + 3.5 = 20 phách, không có khoảng lặng chèn thêm giữa hai đoạn
+    assert midi.seconds == 20
+
+
+def test_export_still_fills_a_lonely_short_measure(tmp_path):
+    measures, _midi = _export(tmp_path, SONG.replace("4G\t4g\n4F#\t4a\n", "1G\t1g\n"))
+    assert measures[3].get("implicit") == "no" and _hidden_rests(measures[3]) > 0
