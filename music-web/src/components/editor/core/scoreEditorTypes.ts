@@ -65,6 +65,9 @@ export interface ScoreEditor {
   notice: Notice | null;
   previewTone: boolean;
   setPreviewTone: (enabled: boolean) => void;
+  /** Tùy chọn "Bè phụ nốt nhỏ" (mặc định tắt): nốt bè mới thêm tự vẽ nhỏ. */
+  smallHarmony: boolean;
+  setSmallHarmony: (enabled: boolean) => void;
   /** Khác null khi BE báo lỗi 2014: phiên bản mới nhất ở máy chủ (0 nếu không rõ). */
   conflict: { latestVersion: number } | null;
   /** Bản nháp chờ người dùng quyết định khôi phục hay bỏ. */
@@ -122,6 +125,8 @@ export interface ScoreEditor {
   toggleDot: () => void;
   /** Nhập nốt tên `letter` (a–g) tại nốt đang chọn. */
   enterLetter: (letter: string) => void;
+  /** Shift + chữ cái: thêm nốt bè tên `letter` vào hợp âm của nốt đang chọn / vừa nhập (`below`: phía dưới). */
+  addChordLetterAt: (letter: string, below: boolean) => void;
   /** Thêm nốt tại vị trí trên khuông (bấm khuông hoặc kéo-thả trường độ); true nếu thêm được. */
   /** Xác nhận ô nhịp thừa/thiếu phách là đúng (ô lấy đà...), bỏ viền đỏ. */
   confirmMeasureOk: (measureIndex: number) => void;

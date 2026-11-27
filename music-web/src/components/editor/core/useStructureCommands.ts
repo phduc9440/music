@@ -17,7 +17,11 @@ import { removeAttachment as runRemoveAttachment } from '../notation/attachments
 import { t } from '../../../i18n/core';
 
 /** Lệnh sửa cấu trúc: ký hiệu sắc thái/lặp, chuyển giọng, thêm/xóa ô, khuông, khóa nhạc, bè, chùm, gỡ ký hiệu. */
-export function useStructureCommands(core: EditorCore, setInputDuration: (choice: DurationChoice) => void) {
+export function useStructureCommands(
+  core: EditorCore,
+  setInputDuration: (choice: DurationChoice) => void,
+  smallHarmony = false,
+) {
   const { doc, canEdit, selection, commit, flash } = core;
 
   const applyMark = useCallback(
@@ -90,12 +94,12 @@ export function useStructureCommands(core: EditorCore, setInputDuration: (choice
       const ids = [...selection];
       if (op === 'cue') commit(toggleCue(doc, ids), false);
       else if (op === 'remove') commit(removeVoice(doc, ids), false);
-      else if (op === 'chordBelow') commit(addChordNote(doc, ids, -2), false);
-      else if (op === 'chordAbove') commit(addChordNote(doc, ids, 2), false);
+      else if (op === 'chordBelow') commit(addChordNote(doc, ids, -1, smallHarmony), true);
+      else if (op === 'chordAbove') commit(addChordNote(doc, ids, 1, smallHarmony), true);
       else if (op === 'blank') commit(addHarmonyVoice(doc, ids, 0, true), false);
-      else commit(addHarmonyVoice(doc, ids, op === 'addBelow' ? -2 : 2), false);
+      else commit(addHarmonyVoice(doc, ids, op === 'addBelow' ? -2 : 2, false, smallHarmony), false);
     },
-    [canEdit, selection, doc, commit],
+    [canEdit, selection, doc, commit, smallHarmony],
   );
 
   const editTuplet = useCallback(

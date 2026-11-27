@@ -170,7 +170,7 @@ const RESCALE_FACTORS = [2, 4, 8, 16];
  * thử thành công thành một lệnh cấu trúc (bản chụp cả bài) để hoàn tác khôi phục luôn divisions cũ; thất bại thì
  * bản nhạc nguyên như cũ.
  */
-function withRescale(doc: ScoreDocument, partIndex: number, run: () => EditResult): EditResult {
+export function withRescale(doc: ScoreDocument, partIndex: number, run: () => EditResult): EditResult {
   const first = run();
   if (first.ok || first.reason !== 'divisions') return first;
   const before = doc.partsSnapshot();
@@ -357,6 +357,13 @@ export interface InsertTarget {
   beforeEntry: number;
   /** Chỉ số mục là dấu lặng được thay bằng nốt mới; null = chèn thêm. */
   restEntry: number | null;
+  /**
+   * Thêm nốt bè vào cột của một nốt có sẵn (id nốt đầu của hợp âm đó) thay vì chèn nốt mới: cùng thân (mặc định) hoặc
+   * bè riêng (`separate`), `small` = vẽ nốt nhỏ. Xem `notes/voices.ts`.
+   */
+  chordOf?: string;
+  separate?: boolean;
+  small?: boolean;
 }
 
 const ACCIDENTAL_ALTER: Record<Exclude<AccidentalChoice, 'auto'>, number> = { sharp: 1, flat: -1, natural: 0 };

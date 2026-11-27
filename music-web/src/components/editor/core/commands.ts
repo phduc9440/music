@@ -35,6 +35,7 @@ export type EditFailure =
   | 'range'
   | 'rest'
   | 'duplicate'
+  | 'unison'
   | 'unchanged'
   | 'empty'
   | 'restKept'

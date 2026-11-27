@@ -3,6 +3,7 @@
     "range": "Cannot change: the pitch would leave the A0–C8 range",
     "rest": "Rests have no pitch, so they cannot be changed",
     "duplicate": "Cannot change: the chord already has a note with that pitch",
+    "unison": "Two notes on the same staff position (such as F and F♯) cannot share a stem: add it to a separate voice",
     "unchanged": "The note is already in this state",
     "empty": "Select at least one note (not a rest)",
     "tuplet": "This note is already in a tuplet, or the insertion point is inside a tuplet (nested tuplets are not supported yet)",
@@ -87,7 +88,9 @@
       "writeSame": "Write voice with same stem",
       "cue": "Cue notes",
       "normal": "Back to normal notes",
-      "remove": "Remove voice"
+      "remove": "Remove voice",
+      "addNote": "Add harmony note {pitch}",
+      "addVoiceNote": "Add separate-voice note {pitch}"
     },
     "header": {
       "title": "Edit title",
@@ -231,7 +234,9 @@
     "tupletInput": "{name}: input duration {duration}, click a rest to enter notes",
     "undone": "Undone: {label}",
     "redone": "Redone: {label}",
-    "nothingToSave": "There are no changes to save"
+    "nothingToSave": "There are no changes to save",
+    "unisonVoice": "{pitch} sits on the same staff position as a chord note, so it cannot share the stem: added to a separate voice",
+    "chordNoteExists": "The chord already has {pitch}"
   },
   "toast": {
     "chordsPlaced": "Assigned {count} chords",
@@ -485,7 +490,15 @@
       "durationGroup": "Duration",
       "dotTitle": "Dot (.): press again for a double dot",
       "accidentalGroup": "Accidental",
-      "add": "Add"
+      "add": "Add",
+      "chordTitle": "Add harmony note",
+      "stemGroup": "Harmony note type",
+      "sameStem": "Same stem",
+      "sameStemTitle": "The harmony note shares the chord's stem and duration (adjacent notes are offset automatically)",
+      "ownStem": "Separate voice",
+      "ownStemTitle": "The harmony note gets its own stem (second voice of the staff) and can have another duration",
+      "small": "Small note",
+      "smallTitle": "Draw the harmony note small (it still sounds)"
     },
     "notation": {
       "title": "Clef, key signature & time",
@@ -734,11 +747,11 @@
       },
       "chordBelow": {
         "label": "Stacked voice ↓",
-        "title": "Stacked voice: add to each selected note a note of the same duration a third lower (two notes share one stem)"
+        "title": "Stacked voice: add below the lowest note of the chord a note of the same duration (a third, or a tone of the written chord symbol if any); press again to stack more"
       },
       "chordAbove": {
         "label": "Stacked voice ↑",
-        "title": "Stacked voice: add a note of the same duration a third higher"
+        "title": "Stacked voice: add above the highest note of the chord a note of the same duration (a third, or a tone of the written chord symbol if any)"
       },
       "blank": {
         "label": "Separate voice",
@@ -746,15 +759,19 @@
       },
       "addBelow": {
         "label": "Copy voice ↓",
-        "title": "Copy the whole measure to a separate voice a third lower, then edit each note's duration and pitch"
+        "title": "Copy the selected notes to a separate lower voice (a third, or following the written chord symbols); the rest of the measure gets hidden rests, upper voice stems up, lower voice stems down"
       },
       "addAbove": {
         "label": "Copy voice ↑",
-        "title": "Copy the whole measure to a separate voice a third higher"
+        "title": "Copy the selected notes to a separate higher voice (a third, or following the written chord symbols)"
       },
       "cue": {
         "label": "Cue notes",
-        "title": "Toggle small note heads for the selected notes (often used for secondary voices)"
+        "title": "Toggle small note heads for exactly the selected notes (click a note head to select a single note in a chord); small notes still sound"
+      },
+      "smallHarmony": {
+        "label": "Small harmony notes",
+        "title": "On: newly added harmony notes (stacked, separate, copied, entered) are drawn small. Off by default"
       },
       "removeVoice": {
         "label": "Delete voice",
@@ -953,7 +970,7 @@
     },
     "transposeHint": "You can undo (Ctrl+Z) and must press Save to keep it.",
     "status": {
-      "inputMode": "Enter notes · duration {duration} · click the staff to add a note, or select a rest then press A–G",
+      "inputMode": "Enter notes · duration {duration} · click the staff to add a note, click above/below an existing note to add a harmony note, or select a rest then press A–G (Shift + A–G adds a harmony note)",
       "issueTitle": "Click to scroll to the wrong measure",
       "issueAria": "Warning: {message}. Click to scroll to the measure",
       "issueMore": " (+{count} more)",
@@ -1022,6 +1039,10 @@
         "keys": "Click the staff (Enter notes mode)",
         "desc": "Open the note picker at the exact line/space you clicked, then press Add"
       },
+      "clickChord": {
+        "keys": "Click above/below an existing note (Enter notes mode)",
+        "desc": "Add a harmony note in that column: same stem (default) or separate voice, optionally small"
+      },
       "dragDuration": {
         "keys": "Drag a duration button onto the staff",
         "desc": "Add a note of that duration where you drop it"
@@ -1029,6 +1050,9 @@
       "letters": {
         "keys": "A – G (Enter notes mode)",
         "desc": "Turn the selected note/rest into that note, then move on to the next item"
+      },
+      "chordLetter": {
+        "desc": "Add a harmony note with that name to the chord of the selected (just entered) note, right above its highest note; with Alt/⌥: right below its lowest note"
       },
       "header": {
         "keys": "Click the title, composer or tempo",
@@ -1052,7 +1076,7 @@
       },
       "voices": {
         "keys": "Voices group",
-        "desc": "Stacked voice: add notes of the same duration sharing one stem. Separate voice: a new voice with its own rhythm (click a rest to enter notes). Copy voice: copy the whole measure to a new voice"
+        "desc": "Stacked voice: add notes sharing one stem (below/above the chord). Separate voice: a new voice with its own rhythm (click a rest to enter notes). Copy voice: copy the selected notes to a separate voice. Small notes: only the selected notes"
       },
       "dynamics": {
         "keys": "Dynamics group",

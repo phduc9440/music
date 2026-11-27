@@ -75,6 +75,8 @@ interface Props {
   inputMode?: boolean;
   /** Trường độ đang chọn, dùng làm mặc định cho khung thêm nốt. */
   inputDuration?: DurationChoice;
+  /** Tùy chọn "Bè phụ nốt nhỏ": khung thêm nốt bè bật sẵn "Nốt nhỏ". */
+  smallHarmony?: boolean;
   /** Sửa tiêu đề / tác giả: chữ trên đầu bản nhạc trở thành bấm để sửa. */
   onEditHeader?: (field: HeaderField, text: string, style: TextStyle) => boolean;
   /** Sửa chỉ số nhịp (tempo) hiện ở đầu bản nhạc. */
@@ -453,12 +455,12 @@ const syncTranspose = (osmd: OpenSheetMusicDisplay, semitones: number): void => 
 /** Chiều cao ước lượng của khung thêm nốt (px), để quyết định mở lên hay xuống. */
 const POPOVER_HEIGHT = 190;
 
-/** Nốt mờ ở chỗ sẽ thêm nốt: đầu nốt, dòng kẻ phụ và tên nốt. */
+/** Nốt mờ ở chỗ sẽ thêm nốt: đầu nốt, dòng kẻ phụ và tên nốt ("+" khi thêm nốt bè vào cột của nốt có sẵn). */
 function NoteGhost({ spot }: { spot: StaffSpot }) {
   const w = spot.halfStep * 2.6;
   const h = spot.halfStep * 2;
   return (
-    <div className="ed-ghost" style={{ left: spot.x, top: spot.y }}>
+    <div className={`ed-ghost${spot.chordOf ? ' ed-ghost--chord' : ''}`} style={{ left: spot.x, top: spot.y }}>
       {ledgerLines(spot.line).map((k) => (
         <span
           key={k}
@@ -468,6 +470,7 @@ function NoteGhost({ spot }: { spot: StaffSpot }) {
       ))}
       <span className="ed-ghost__head" style={{ left: -w / 2, top: -h / 2, width: w, height: h }} />
       <span className="ed-ghost__label" style={{ left: w, top: -h * 1.6 }}>
+        {spot.chordOf ? '+ ' : ''}
         {solfegeName(spot.step, spot.octave)}
       </span>
     </div>
@@ -514,6 +517,7 @@ export default function ScoreCanvas({
   onDragPitch,
   inputMode = false,
   inputDuration,
+  smallHarmony = false,
   onInsertNote,
   onConfirmMeasure,
   onEditHeader,
@@ -1281,7 +1285,7 @@ export default function ScoreCanvas({
       {shownGhost && <NoteGhost spot={shownGhost} />}
       {activePopover && (
         <NoteInsertPopover
-          key={`${activePopover.spot.measureIndex}-${activePopover.spot.beforeEntry}-${Math.round(activePopover.spot.y)}`}
+          key={`${activePopover.spot.measureIndex}-${activePopover.spot.beforeEntry}-${activePopover.spot.chordOf ?? ''}-${Math.round(activePopover.spot.y)}`}
           target={spotTarget(activePopover.spot)}
           left={Math.max(8, Math.min(activePopover.spot.x + 16, window.innerWidth - 272))}
           top={Math.max(
@@ -1291,6 +1295,7 @@ export default function ScoreCanvas({
               : activePopover.spot.y + 18,
           )}
           initialDuration={inputDuration ?? { type: 'quarter', dots: 0 }}
+          defaultSmall={smallHarmony}
           onAdd={(target, choice, accidental) => onInsertNote?.(target, choice, accidental) ?? false}
           onClose={() => setPopover(null)}
         />

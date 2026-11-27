@@ -316,6 +316,8 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
             onDot={editor.toggleDot}
             previewTone={editor.previewTone}
             onPreviewToneChange={editor.setPreviewTone}
+            smallHarmony={editor.smallHarmony}
+            onSmallHarmonyChange={editor.setSmallHarmony}
             canUndo={editor.canUndo}
             canRedo={editor.canRedo}
             canSave={editor.dirty}
@@ -353,6 +355,7 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
             onDragPitch={canEdit ? editor.dragPitch : undefined}
             inputMode={editor.inputMode}
             inputDuration={editor.inputDuration}
+            smallHarmony={editor.smallHarmony}
             onInsertNote={canEdit ? editor.insertNoteAt : undefined}
             onConfirmMeasure={canEdit ? editor.confirmMeasureOk : undefined}
             onEditHeader={canEdit ? editor.editHeader : undefined}
