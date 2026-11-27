@@ -115,6 +115,8 @@ def text_mask(gray: np.ndarray, layout: PageLayout | None = None) -> tuple[np.nd
 
     for i in _augmentation_dots(labels, stats, erase, layout):
         erase[i] = False
+    for i in _tuplet_numbers(labels, stats, erase, layout):
+        erase[i] = False
 
     if not erase.any():
         return empty, 0
@@ -196,6 +198,85 @@ def _augmentation_dots(labels: np.ndarray, stats: np.ndarray, erase: np.ndarray,
         if int(kept[y0:y1, x0:x].sum()) >= _DOT_HEAD_INK * il * il:
             found.append(int(i))
     return found
+
+
+def _tuplet_numbers(labels: np.ndarray, stats: np.ndarray, erase: np.ndarray, layout: PageLayout) -> list[int]:
+    """Các thành phần đang định xóa nhưng thực ra là số liên ba/liên sáu ("3", "6") của nhóm nốt.
+
+    Số liên ba nằm ngoài khuông nên trước đây bị xóa như chữ, và model đọc chùm liên ba thành nốt thường ("model đọc mất
+    số 3": Ave Maria Gomez gần như mất hết, Giấc Mơ Trưa ô 16, 21). Một thành phần được giữ khi:
+
+    * có dáng một chữ số: cao 0,8–2 khoảng dòng kẻ, rộng 0,35–1,4 khoảng, cao không kém rộng;
+    * đứng riêng: không có chữ nào sát bên cùng hàng (khác một từ, hay chữ kèm dấu phẩy) và không nằm trên một dòng lời ca
+      (dòng có từ 3 chữ cái thuộc các từ cùng chân chữ);
+    * nằm giữa ngoặc liên ba (nét ngang được giữ ở cả hai bên, cùng độ cao) hoặc ngay trên/dưới một dầm nốt chạy qua
+      cả hai bên nó.
+    """
+    il = layout.interline
+    staves = [(st.top, st.bottom) for sy in layout.systems for st in sy.staves]
+    kept = (labels > 0) & ~erase[labels]
+    height, width = labels.shape
+    candidates = np.flatnonzero(erase)
+    if candidates.size == 0:
+        return []
+    box = stats[candidates, :4].astype(float)
+    x0, y0 = box[:, 0], box[:, 1]
+    x1, y1 = x0 + box[:, 2], y0 + box[:, 3]
+    # Chữ có chữ khác sát bên cùng hàng (cách < 0,6 khoảng; dấu phẩy bắt đầu ngay chân chữ vẫn tính là cùng hàng)
+    gap = np.maximum(x0[None, :] - x1[:, None], x0[:, None] - x1[None, :])
+    overlap = np.minimum(y1[:, None], y1[None, :]) - np.maximum(y0[:, None], y0[None, :])
+    near = (gap < 0.6 * il) & (overlap > -0.2 * il)
+    np.fill_diagonal(near, False)
+    wordy = near.any(axis=1)
+    found: list[int] = []
+    for k, i in enumerate(candidates):
+        x, y, w, h = (int(v) for v in box[k])
+        if not (0.8 * il <= h <= 2.0 * il and 0.35 * il <= w <= 1.4 * il and h >= w):
+            continue
+        cy = y + h / 2.0
+        if min(max(top - cy, cy - bottom) for top, bottom in staves) > 4.5 * il:
+            continue
+        if wordy[k]:
+            continue
+        if int((wordy & (np.abs(y1 - y1[k]) <= 0.3 * il)).sum()) >= 3:
+            continue  # cùng chân chữ với dòng lời ca: chữ một âm tiết như "a", "y"
+        if _between_bracket(kept, x, y, w, h, il) or _over_beam(kept, x, y, w, h, il, height, width):
+            found.append(int(i))
+    return found
+
+
+def _between_bracket(kept: np.ndarray, x: int, y: int, w: int, h: int, il: float) -> bool:
+    """Nét được giữ (ngoặc liên ba) ở cả bên trái lẫn bên phải chữ số, cùng độ cao với nó."""
+    y0, y1 = max(0, int(y - 0.3 * il)), int(y + h + 0.3 * il)
+    reach = int(round(2.5 * il))
+    left = kept[y0:y1, max(0, x - reach) : x]
+    right = kept[y0:y1, x + w : x + w + reach]
+    return _longest_run(left) >= 0.8 * il and _longest_run(right) >= 0.8 * il
+
+
+def _longest_run(window: np.ndarray) -> int:
+    """Đoạn ngang liền dài nhất (số px) trong cửa sổ: nét ngoặc liên ba là nét ngang, chữ cái bên cạnh thì không."""
+    best = 0
+    for row in window:
+        run = 0
+        for value in row:
+            run = run + 1 if value else 0
+            best = max(best, run)
+    return best
+
+
+def _over_beam(kept: np.ndarray, x: int, y: int, w: int, h: int, il: float, height: int, width: int) -> bool:
+    """Dầm nốt (nét được giữ) chạy ngang qua ngay dưới hoặc ngay trên chữ số, thò ra cả hai bên nó."""
+    side = int(round(il))
+    x0, x1 = max(0, x - side), min(width, x + w + side)
+    for top, bottom in ((y + h, y + h + 1.8 * il), (y - 1.8 * il, y)):
+        band = kept[max(0, int(top)) : min(height, int(bottom)), x0:x1]
+        if band.size == 0:
+            continue
+        columns = band.any(axis=0)
+        if columns.all():
+            return True
+    return False
 
 
 def _distance_to_bands(y0: float, y1: float, bands: list[tuple[float, float]]) -> float:

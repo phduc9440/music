@@ -92,3 +92,32 @@ def test_lone_dot_without_notehead_is_still_removed():
     cv2.circle(page, (450, TOP + 4 * GAP + 8), 2, 0, -1)  # vết bẩn sát khuông, bên trái không có đầu nốt
     out, removed = strip_text(page)
     assert removed == 1 and np.array_equal(out, before)
+
+
+def _bracketed_triplet_number(page, x=420, y=TOP - 22):
+    """Ngoặc liên ba ┌─ 3 ─┐ phía trên khuông: hai nét ngang có móc, chữ số 3 ở giữa."""
+    cv2.line(page, (x - 40, y), (x - 10, y), 0, 1)
+    cv2.line(page, (x + 6, y), (x + 36, y), 0, 1)
+    cv2.line(page, (x - 40, y), (x - 40, y + 6), 0, 1)
+    cv2.line(page, (x + 36, y), (x + 36, y + 6), 0, 1)
+    cv2.putText(page, "3", (x - 6, y + 6), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 0, 2)
+    return (x - 6, y - 8, x + 12, y + 7)
+
+
+def test_keeps_bracketed_triplet_number_but_removes_lyrics_and_verse_numbers():
+    page = _page()
+    x0, y0, x1, y1 = _bracketed_triplet_number(page)
+    with_number = page.copy()
+    cv2.putText(page, "3. con ba a", (60, TOP + 4 * GAP + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.6, 0, 1)
+    out, removed = strip_text(page)
+    assert removed > 0
+    assert (out[y0:y1, x0:x1] < 128).any()  # số 3 của liên ba còn nguyên
+    assert np.array_equal(out, with_number)  # lời ca, kể cả số lời "3." và chữ "a" đứng riêng, bị xóa hết
+
+
+def test_lone_digit_without_bracket_or_beam_is_removed():
+    page = _page()
+    before = page.copy()
+    cv2.putText(page, "3", (450, TOP - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 0, 2)
+    out, removed = strip_text(page)
+    assert removed == 1 and np.array_equal(out, before)
