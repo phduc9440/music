@@ -334,6 +334,64 @@ def test_lenient_leaves_balanced_split_untouched():
     assert not any("hai giọng" in w for w in result.warnings)
 
 
+def test_lenient_moves_an_early_join_below_the_long_note():
+    # Bè dưới: 8F (bè 1) cùng 4F (bè 2); model gộp ngay sau móc đơn rồi viết tiếp nốt của bè 1 sau chỗ gộp. music21 khi
+    # đó đặt các nốt sau chỗ gộp ra sau nốt đen, khuông dưới lệch nửa phách và ô dài 9/8.
+    text = kern(
+        "**kern|**kern",
+        "*M4/4|*M4/4",
+        "=1|=1",
+        "8E-|8e-",
+        "8E-|8g",
+        "8E-|8g",
+        "8E-|8g",
+        "*^|*",
+        "8F[|4F|8f",
+        "*v|*v|*",
+        "8F]|8e-",
+        "4F 4A|8f",
+        ".|8g",
+        "==|==",
+        "*-|*-",
+    )
+    page, _ = clean(1, text)
+    result = merge.merge_pages([page], lenient=True)
+    assert any("đã dời chỗ gộp" in w for w in result.warnings)
+    body = result.lines[result.lines.index(f"*^{T}*") :]
+    assert body[:4] == [f"*^{T}*", f"8F[{T}4F{T}8f", f"8F]{T}.{T}8e-", f"*v{T}*v{T}*"]
+    assert body[4] == f"4F 4A{T}8f"
+    assert len(result.line_pages) == len(result.lines)
+
+
+def test_split_timing_counts_notes_of_other_staves():
+    # Hai giọng cùng ngân nốt đen trong khi khuông trên có hai móc đơn: dòng "." ở giữa không phải giọng hết nốt
+    lines = [f"*M2/4{T}*M2/4", f"=1{T}=1", f"*^{T}*", f"4F{T}4A{T}8c", f".{T}.{T}8d", f"4G{T}4B{T}4e", f"*v{T}*v{T}*", f"=2{T}=2"]
+    pages_ = [1] * len(lines)
+    assert merge.repair_split_segments(lines, pages_) == []
+
+
+@pytest.mark.parametrize(
+    "rows, expected",
+    [
+        (["2b-", "8b-]L", "8g"], ["2b-[", "8b-]L", "8g"]),  # thiếu đầu nối
+        (["2a[", "=2", "8a", "8d"], ["2a[", "=2", "8a]", "8d"]),  # thiếu đầu cuối, vắt qua vạch nhịp
+        (["2a[", "8b", "8d"], ["2a", "8b", "8d"]),  # "nối" tới nốt khác cao độ, nốt sau không có đầu cuối
+        (["4b[", "8.a#]", "16g"], ["4b(", "8.a#)", "16g"]),  # dấu luyến bị đọc thành dấu nối
+        (["16ff[LL", "16bb-]J"], ["16ff(LL", "16bb-)J"]),
+        (["4r", "4c]"], ["4r", "4c"]),  # không có nốt nào để nối từ
+        (["4c", "4d["], ["4c", "4d"]),  # hết bài
+        (["4c[ 4e", "4c 4e]"], ["4c[ 4e[", "4c] 4e]"]),  # hợp âm: xét từng nốt
+        (["4c[", "8qd", "4c]"], ["4c[", "8qd", "4c]"]),  # nốt hoa mỹ không cắt dấu nối
+        (["4c[", "*^", f"4c]{T}4e", f"*v{T}*v", "4d"], ["4c[", "*^", f"4c]{T}4e", f"*v{T}*v", "4d"]),  # qua chỗ tách
+        (["2c[", "4c_", "4c]"], ["2c[", "4c_", "4c]"]),  # đúng sẵn
+    ],
+)
+def test_repair_ties(rows, expected):
+    lines = list(rows)
+    merge.repair_ties(lines)
+    assert lines == expected
+
+
 # ------------------------------------------------------------------ vai trò khuông, độn cột, thống kê ô nhịp
 
 

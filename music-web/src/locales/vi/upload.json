@@ -504,7 +504,8 @@
     "OTTAVA_FIXED": "Bỏ dấu 8va máy tự thêm, đưa {count} nốt về đúng quãng tám in trên ảnh",
     "REREAD_REPLACED": "Đã thay ô này bằng cách đọc giống nhau của các lần đọc lại",
     "AI_REPLACED": "AI đối chiếu ảnh và chọn cách đọc khác cho ô này",
-    "ENGINE_REPLACED": "Đã thay ô này theo cách đọc của engine {engine} (đúng trường độ hoặc khớp ký hiệu PDF gốc hơn máy chính)"
+    "ENGINE_REPLACED": "Đã thay ô này theo cách đọc của engine {engine} (đúng trường độ hoặc khớp ký hiệu PDF gốc hơn máy chính)",
+    "SLURS_FIXED": "Đổi {count} dấu nối thành dấu luyến và sửa cao độ nốt sau theo đầu nốt trên ảnh"
   },
   "check": {
     "title": "Cần kiểm tra",

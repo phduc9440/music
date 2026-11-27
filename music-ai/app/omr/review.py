@@ -25,6 +25,7 @@ from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import Optional
 
+from app.convert import incomplete_measures
 from app.omr import merge
 from app.omr.layout import ROLE_PIANO, ROLE_SINGLE
 from app.omr.merge import TAB
@@ -227,6 +228,13 @@ class MeasureSlice:
 
     data_lines: list[int] = field(default_factory=list)
 
+    role: Optional[str] = None
+    """Vai trò nếu là ô thiếu hợp lệ (:mod:`app.convert.incomplete_measures`): ô lấy đà, ô cuối, phần của ô chia đôi."""
+
+    target: Optional[Fraction] = None
+    """Tổng trường độ mỗi khuông phải có: số chỉ nhịp, riêng ô có ô khác bù cho nó (hai phần của ô bị vạch nhịp chia đôi,
+    cặp ô bù nhau qua dấu lặp) là độ dài của chính nó (cách đọc khác làm ô này dài/ngắn đi thì hai ô không còn ghép đủ)."""
+
     def lines(self, result: merge.MergeResult) -> list[str]:
         return result.lines[self.start : self.end + 1]
 
@@ -275,12 +283,19 @@ def slice_measures(result: merge.MergeResult) -> list[MeasureSlice]:
     current.end = len(result.lines) - 1
     if current.data_lines:
         slices.append(current)
+    roles = merge.incomplete_roles(result)
+    for piece in slices:
+        piece.role = roles.get(piece.ordinal)
+        piece.target = piece.meter
+        if piece.role in incomplete_measures.COMPLEMENT_ROLES:
+            piece.target = merge.measure_length(piece.lines(result), spines)
     return slices
 
 
 def chunk_duration_ok(lines: list[str], spines: int, meter: Optional[Fraction], lenient: bool = False) -> Optional[bool]:
     """Tổng trường độ từng spine của một ô có bằng số chỉ nhịp không (None nếu không kiểm được).
-    ``lenient``: ô đầu/cuối bài được phép ngắn hơn."""
+    ``meter``: tổng cần có, thường là :attr:`MeasureSlice.target` (số chỉ nhịp, hoặc độ dài phần ô bị vạch nhịp chia
+    đôi). ``lenient``: ô đầu/cuối bài được phép ngắn hơn."""
     if meter is None:
         return None
     sums = [Fraction(0)] * spines

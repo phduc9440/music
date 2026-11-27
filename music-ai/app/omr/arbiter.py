@@ -97,8 +97,8 @@ def consult(
                 report.agreed += 1
                 continue
             lenient = ordinal == 1 or (ordinal == last and run.page == max(ranges))  # ô lấy đà, ô cuối bài
-            mine_ok = review.chunk_duration_ok(mine, result.spines, piece.meter, lenient=lenient) is True
-            other_ok = review.chunk_duration_ok(other, result.spines, piece.meter, lenient=lenient) is True
+            mine_ok = review.chunk_duration_ok(mine, result.spines, piece.target, lenient=lenient) is True
+            other_ok = review.chunk_duration_ok(other, result.spines, piece.target, lenient=lenient) is True
             mine_pdf = other_pdf = False
             evidence = entry.get("_glyph")
             if evidence is not None:

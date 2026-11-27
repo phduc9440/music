@@ -52,6 +52,22 @@ def scanned_page_message(page: int) -> str:
     return f"Trang {page}: là ảnh scan nằm trong PDF (không phải PDF xuất từ phần mềm), đã xử lý như bản scan"
 
 
+def split_measure_note(first: int, second: int) -> str:
+    """Ghi chú (không phải cờ) cho hai phần của một ô bị vạch nhịp chia đôi, ``first``/``second`` là số thứ tự hai ô."""
+    return (
+        f"Ô {first} và ô {second} là hai phần của cùng một ô nhịp bị vạch nhịp chia đôi (thường ở chỗ chuyển đoạn hoặc "
+        "xuống dòng), cộng lại vừa đủ số chỉ nhịp nên không tính là lỗi trường độ; khi phát, hai phần được nối liền"
+    )
+
+
+def repeat_measure_note(first: int, second: int) -> str:
+    """Ghi chú cho cặp ô bù nhau qua dấu lặp: ô ``first`` mở đầu đoạn lặp, ô ``second`` đứng trước dấu lặp cuối đoạn."""
+    return (
+        f"Ô {first} (đầu đoạn lặp) và ô {second} (trước dấu lặp cuối đoạn) cộng lại vừa đủ số chỉ nhịp: khi hát lặp lại, "
+        f"ô {second} nối thẳng vào ô {first}, nên không tính là lỗi trường độ"
+    )
+
+
 def tempo_default_message(bpm: int) -> str:
     """Câu cảnh báo OMR-13: không đọc được nhịp độ nên dùng mặc định."""
     return f"Không đọc được nhịp độ trên bản gốc, đang dùng {bpm} BPM; hãy sửa lại cho đúng bản gốc"
@@ -81,6 +97,7 @@ def warning_items(warnings: list[str]) -> list[dict]:
 
 _FIX_CODES: list[tuple[str, re.Pattern[str], tuple[str, ...]]] = [
     ("OCTAVE_FIXED", re.compile(r"^sửa quãng tám (\d+) nốt"), ("count",)),
+    ("SLURS_FIXED", re.compile(r"^đổi (\d+) dấu nối thành dấu luyến"), ("count",)),
     ("PDF_PITCH_FIXED", re.compile(r"^sửa cao độ (\d+) nốt theo ký hiệu nhạc của PDF"), ("count",)),
     ("OTTAVA_FIXED", re.compile(r"^model thêm dấu 8va .*đã đưa (\d+) nốt"), ("count",)),
     ("REREAD_REPLACED", re.compile(r"^đã sửa theo các lần đọc lại hệ"), ()),

@@ -18,6 +18,8 @@ from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import Optional
 
+from app.convert import incomplete_measures
+
 TAB = "\t"
 
 # Dòng diễn giải mà khi sang trang mới có thể phải kế thừa từ trang trước (đặc tả: khóa/nhịp/dấu hóa)
@@ -677,10 +679,18 @@ def repair_split_segments(lines: list[str], line_pages: list[int]) -> list[str]:
     """Sửa đoạn một spine tách đôi (``*^`` ... ``*v``) mà hai giọng dài không bằng nhau (model hay thừa/thiếu một nốt).
 
     Triệu chứng: dòng ``.`` ở một giọng khi giọng đó đã hết nốt (viewer báo "missing note in field 2"), hoặc hai giọng kết
-    thúc ở hai thời điểm khác nhau. Độ dài đúng của đoạn lấy theo số chỉ nhịp trừ phần đứng trước đoạn tách trong cùng ô
-    nhịp (nếu biết và khớp một trong hai giọng), không thì lấy giọng ngắn hơn. Giọng dài hơn bị cắt các dòng quá thời điểm
-    đó; giọng ngắn hơn được thêm dấu lặng nếu độ dài thiếu biểu diễn được là ``1/n``. Sửa trực tiếp ``lines`` và
-    ``line_pages``, trả danh sách cảnh báo.
+    thúc ở hai thời điểm khác nhau. Thời điểm từng dòng tính theo trục thời gian Humdrum của cả ô (mọi cột, kể cả nốt của
+    khuông khác chen giữa hai nốt dài của đoạn tách).
+
+    Trường hợp hay gặp nhất là model **gộp quá sớm**: viết ``*v`` ngay khi giọng ngắn hết nốt rồi viết tiếp nốt của giọng
+    đó sau chỗ gộp, trong khi nốt dài của giọng kia còn đang ngân (cách đọc Humdrum vẫn đúng, nhưng music21 dồn các nốt
+    sau chỗ gộp ra sau nốt dài, làm khuông đó lệch nhịp và ô dài quá số chỉ nhịp). Khi các nốt sau chỗ gộp nối tiếp giọng
+    ngắn tới đúng lúc nốt dài kết thúc, chỗ gộp được dời xuống đó (giọng dài nhận ``.``): không nốt nào bị đổi.
+
+    Còn lại: độ dài đúng của đoạn lấy theo số chỉ nhịp trừ phần đứng trước đoạn tách trong cùng ô nhịp (nếu biết và khớp
+    một trong hai giọng), không thì lấy giọng ngắn hơn. Giọng dài hơn bị cắt các dòng quá thời điểm đó; giọng ngắn hơn được
+    thêm dấu lặng nếu độ dài thiếu biểu diễn được là ``1/n``. Sửa trực tiếp ``lines`` và ``line_pages``, trả danh sách
+    cảnh báo.
     """
     warnings: list[str] = []
     meter: Optional[Fraction] = None
@@ -713,7 +723,8 @@ def repair_split_segments(lines: list[str], line_pages: list[int]) -> list[str]:
                             if is_data_line(row) and len(row.split(TAB)) == len(fields)
                         ]
                         budget = meter - sum((d for d in before if d is not None), Fraction(0))
-                    removed, message = _repair_one_segment(lines, line_pages, i, end, column, budget)
+                    start = measure_start if seen_barline else 0
+                    removed, message = _repair_one_segment(lines, line_pages, i, end, column, budget, start, meter)
                     if message:
                         where = f"ô nhịp {measure_number}" if measure_number is not None else "một ô nhịp"
                         warnings.append(f"Trang {line_pages[i]}, {where}: {message}")
@@ -723,18 +734,110 @@ def repair_split_segments(lines: list[str], line_pages: list[int]) -> list[str]:
     return warnings
 
 
-def _repair_one_segment(
-    lines: list[str], line_pages: list[int], start: int, end: int, column: int, budget: Optional[Fraction]
-) -> tuple[int, str]:
-    """Sửa một đoạn tách ``lines[start..end]``. Trả ``(số dòng đã xóa, thông báo)``; thông báo rỗng nếu không cần sửa."""
+def _segment_times(
+    lines: list[str], start: int, end: int, measure_start: int
+) -> tuple[list[int], list[Fraction]]:
+    """Các dòng dữ liệu của đoạn tách ``lines[start..end]`` và thời điểm của chúng, tính từ đầu đoạn tách.
+
+    Dùng trục thời gian Humdrum từ đầu ô (``measure_start``) để biết cả nốt của khuông khác bắt đầu trước đoạn tách; không
+    chạy được thì tính từ chính dòng ``*^`` (nốt vang từ trước đoạn tách không được biết tới)."""
     rows = [k for k in range(start + 1, end) if is_data_line(lines[k])]
-    following = [Fraction(0), Fraction(0)]  # thời điểm nốt kế tiếp của từng giọng (tính từ đầu đoạn tách)
+    for first in (measure_start, start):
+        width = next((len(lines[k].split(TAB)) for k in range(first, end) if not lines[k].startswith("!")), 0)
+        track = timeline(lines[first:end], width) if width else None
+        if track is None:
+            continue
+        times = [track.times[k - first] for k in rows]
+        if any(t is None for t in times):
+            continue
+        origin = times[0] if times else Fraction(0)
+        return rows, [t - origin for t in times]  # type: ignore[operator]
+    # Không chạy được trục thời gian (dòng lệch cột...): chỉ dựa vào hai giọng như trước
+    following = [Fraction(0), Fraction(0)]
+    column = lines[start].split(TAB).index("*^")
     times: list[Fraction] = []
-    dangling = False
     now = Fraction(0)
     for k in rows:
         fields = lines[k].split(TAB)
         times.append(now)
+        for voice in (0, 1):
+            duration = token_duration(fields[column + voice]) if fields[column + voice] != "." else None
+            if duration is not None:
+                following[voice] = now + duration
+        later = [t for t in following if t > now]
+        now = min(later) if later else now
+    return rows, times
+
+
+def _defer_join(
+    lines: list[str], line_pages: list[int], end: int, column: int, following: list[Fraction], meter: Optional[Fraction],
+    measure_start: int,
+) -> bool:
+    """Dời dòng ``*v`` (chỉ số ``end``) xuống sau các nốt mà model viết tiếp cho giọng ngắn sau chỗ gộp, tới đúng lúc nốt
+    dài của giọng kia kết thúc. Trả True nếu đã dời (sửa trực tiếp ``lines``/``line_pages``)."""
+    short = 0 if following[0] < following[1] else 1
+    stop_at = max(following)
+    now = min(following)
+    width = len(lines[end].split(TAB)) - 1  # số cột sau chỗ gộp
+    absorbed: list[int] = []
+    k = end + 1
+    while k < len(lines):
+        line = lines[k]
+        if is_barline(line) or line.startswith("*"):
+            break
+        fields = line.split(TAB)
+        if line.startswith("!") or len(fields) != width:
+            return False
+        token = fields[column]
+        if token != ".":
+            if now >= stop_at:
+                break
+            duration = token_duration(token)
+            if duration is None:
+                return False
+            now += duration
+            if now > stop_at:
+                return False  # nốt của giọng ngắn vắt qua lúc nốt dài kết thúc: không có chỗ gộp gọn
+        absorbed.append(k)
+        k += 1
+    if not absorbed or now != stop_at:
+        return False
+
+    rows = []
+    for index in absorbed:
+        fields = lines[index].split(TAB)
+        voices = [fields[column], "."] if short == 0 else [".", fields[column]]
+        rows.append(TAB.join(fields[:column] + voices + fields[column + 1 :]))
+    candidate = lines[:end] + rows + [lines[end]] + lines[absorbed[-1] + 1 :]
+    if meter is not None:
+        closing = next((j for j in range(end, len(candidate)) if is_barline(candidate[j])), len(candidate))
+        segment = candidate[measure_start:closing]
+        width_at_start = next((len(row.split(TAB)) for row in segment if not row.startswith("!")), 0)
+        if measure_length(segment, width_at_start) != meter:
+            return False
+    join_page = line_pages[end]
+    pages = line_pages[:end] + [line_pages[i] for i in absorbed] + [join_page] + line_pages[absorbed[-1] + 1 :]
+    lines[:] = candidate
+    line_pages[:] = pages
+    return True
+
+
+def _repair_one_segment(
+    lines: list[str],
+    line_pages: list[int],
+    start: int,
+    end: int,
+    column: int,
+    budget: Optional[Fraction],
+    measure_start: int = 0,
+    meter: Optional[Fraction] = None,
+) -> tuple[int, str]:
+    """Sửa một đoạn tách ``lines[start..end]``. Trả ``(số dòng đã xóa, thông báo)``; thông báo rỗng nếu không cần sửa."""
+    rows, times = _segment_times(lines, start, end, measure_start)
+    following = [Fraction(0), Fraction(0)]  # thời điểm nốt cuối của từng giọng kết thúc (tính từ đầu đoạn tách)
+    dangling = False
+    for k, now in zip(rows, times):
+        fields = lines[k].split(TAB)
         for voice in (0, 1):
             token = fields[column + voice]
             if token == ".":
@@ -744,10 +847,10 @@ def _repair_one_segment(
             duration = token_duration(token)
             if duration is not None:
                 following[voice] = now + duration
-        later = [t for t in following if t > now]
-        now = min(later) if later else now
     if not dangling and following[0] == following[1]:
         return 0, ""
+    if not dangling and _defer_join(lines, line_pages, end, column, following, meter, measure_start):
+        return 0, "model gộp hai giọng của đoạn tách khi nốt dài còn đang ngân, đã dời chỗ gộp xuống sau nốt đó"
 
     target = budget if budget is not None and budget in following else min(following)
     drop = [k for k, t in zip(rows, times) if t >= target]
@@ -777,6 +880,127 @@ def _repair_one_segment(
         parts.append(f"đã thêm {padded} dấu lặng")
     detail = ", ".join(parts) if parts else "không tự sửa được"
     return removed, f"hai giọng trong đoạn tách có độ dài khác nhau, {detail}"
+
+
+# ====================================================================== dấu nối (tie) thiếu đầu hoặc cuối
+
+
+_RE_TIE_PITCH = re.compile(r"([a-gA-G])\1*[#\-n]*")
+_TIE_STARTS = ("[", "_")
+_TIE_ENDS = ("]", "_")
+
+
+def _tie_pitch(sub: str) -> Optional[str]:
+    """Cao độ của một nốt kern để so dấu nối (chữ cái + dấu hóa, bỏ dấu bình ``n``); None với dấu lặng/nốt hoa mỹ."""
+    if not sub or sub == "." or "r" in sub or "q" in sub or "Q" in sub:
+        return None
+    match = _RE_TIE_PITCH.search(sub)
+    return match.group(0).replace("n", "") if match else None
+
+
+def _with_tie_mark(sub: str, mark: str) -> str:
+    """Thêm ``[`` hoặc ``]`` ngay sau cao độ (cách Transcoda viết: ``2a[``, ``8a]L``)."""
+    match = _RE_TIE_PITCH.search(sub)
+    return sub + mark if match is None else sub[: match.end()] + mark + sub[match.end() :]
+
+
+def repair_ties(lines: list[str]) -> list[int]:
+    """Sửa dấu nối (tie) lẻ, sửa trực tiếp ``lines``; trả chỉ số các dòng đã sửa.
+
+    Dấu nối chỉ nối hai nốt *cùng cao độ* liền nhau trong một spine. Model hay ghi thiếu một đầu: ``2b- 8b-]`` (thiếu
+    ``[``), ``2a[ 8a`` (thiếu ``]``); music21 khi đó ghi ``<tie type="stop">`` mồ côi hoặc dấu nối treo, trình phát và
+    trình sửa hiểu khác nhau. Với mỗi cặp nốt liền nhau trong cùng cột:
+
+    * nốt sau có ``]`` mà nốt trước cùng cao độ chưa có ``[``: thêm ``[`` cho nốt trước;
+    * nốt trước có ``[`` mà nốt sau cùng cao độ chưa có ``]``: thêm ``]`` cho nốt sau;
+    * ``[`` và ``]`` nối hai nốt khác cao độ (``4b[ 8.a#]``): đó là dấu luyến bị đọc thành dấu nối, đổi thành ``(``/``)``;
+    * còn lại, không có nốt cùng cao độ ở phía bên kia (dấu lặng, hết bài...): bỏ đầu nối lẻ đó.
+
+    Hợp âm xét từng nốt; nốt hoa mỹ bỏ qua. Không phán xét qua chỗ tách/gộp spine (thứ tự cột thay đổi): dấu nối vắt qua
+    chỗ đó được giữ nguyên.
+    """
+    changed: set[int] = set()
+    unknown = (-1, -1)  # sau chỗ đổi cấu trúc spine: không biết nốt trước là nốt nào
+    previous: list[Optional[tuple[int, int]]] = []  # (dòng, cột) của nốt/dấu lặng gần nhất trong từng cột
+    width: Optional[int] = None
+
+    def subs_at(where: tuple[int, int]) -> list[str]:
+        return lines[where[0]].split(TAB)[where[1]].split(" ")
+
+    def store(where: tuple[int, int], subs: list[str]) -> None:
+        fields = lines[where[0]].split(TAB)
+        new = " ".join(subs)
+        if fields[where[1]] != new:
+            fields[where[1]] = new
+            lines[where[0]] = TAB.join(fields)
+            changed.add(where[0])
+
+    def drop_open_ends(where: Optional[tuple[int, int]]) -> None:
+        """Bỏ đầu nối ``[`` không có nốt nối tới (``_`` thành ``]``)."""
+        if where is None or where == unknown:
+            return
+        subs = subs_at(where)
+        fixed = [sub.replace("[", "").replace("_", "]") if _tie_pitch(sub) else sub for sub in subs]
+        store(where, fixed)
+
+    for index, line in enumerate(lines):
+        if not line or line.startswith("!") or is_barline(line):
+            continue
+        fields = line.split(TAB)
+        if line.startswith("*"):
+            if width is not None and (width != len(fields) or any(t in _SPINE_CHANGES for t in fields)):
+                previous = [unknown] * len(fields)  # đổi cấu trúc spine: không phán xét qua chỗ này
+            elif width is None:
+                previous = [None] * len(fields)
+            width = len(fields)
+            continue
+        if width != len(fields):
+            previous = [unknown if width is not None else None] * len(fields)
+            width = len(fields)
+        for column, token in enumerate(fields):
+            if token == "." or all("q" in sub or "Q" in sub for sub in token.split(" ")):
+                continue
+            here = (index, column)
+            current = token.split(" ")
+            before = previous[column]
+            if before == unknown:
+                previous[column] = here
+                continue
+            prior = subs_at(before) if before is not None else []
+            prior_pitches = {_tie_pitch(sub): k for k, sub in enumerate(prior) if _tie_pitch(sub)}
+            current_pitches = {_tie_pitch(sub): k for k, sub in enumerate(current) if _tie_pitch(sub)}
+            if before is not None:
+                # Một đầu "[" và một đầu "]" nối hai nốt khác cao độ: model đọc dấu luyến thành dấu nối, đổi lại thành luyến
+                loose_start = [k for p, k in prior_pitches.items() if "[" in prior[k] and p not in current_pitches]
+                loose_end = [k for p, k in current_pitches.items() if "]" in current[k] and p not in prior_pitches]
+                if len(loose_start) == 1 and len(loose_end) == 1:
+                    k, other = loose_start[0], loose_end[0]
+                    slur = "(" not in " ".join(prior) and ")" not in " ".join(current)
+                    prior[k] = prior[k].replace("[", "(" if slur else "")
+                    current[other] = current[other].replace("]", ")" if slur else "")
+                for pitch, k in prior_pitches.items():
+                    if not any(mark in prior[k] for mark in _TIE_STARTS):
+                        continue
+                    other = current_pitches.get(pitch)
+                    if other is None:
+                        prior[k] = prior[k].replace("[", "").replace("_", "]")  # nối tới nốt khác cao độ: bỏ
+                    elif not any(mark in current[other] for mark in _TIE_ENDS):
+                        current[other] = _with_tie_mark(current[other], "]")  # thiếu đầu cuối
+            for pitch, k in current_pitches.items():
+                if not any(mark in current[k] for mark in _TIE_ENDS):
+                    continue
+                other = prior_pitches.get(pitch)
+                if other is None:
+                    current[k] = current[k].replace("]", "").replace("_", "[")  # không có nốt nào để nối từ: bỏ
+                elif not any(mark in prior[other] for mark in _TIE_STARTS):
+                    prior[other] = _with_tie_mark(prior[other], "[")  # thiếu đầu nối
+            if before is not None:
+                store(before, prior)
+            store(here, current)
+            previous[column] = here
+    for where in previous:
+        drop_open_ends(where)
+    return sorted(changed)
 
 
 # ====================================================================== ghép
@@ -1005,6 +1229,8 @@ def merge_pages(pages: list[PageKern], lenient: bool = False) -> MergeResult:
       giá trị cũ thì bỏ.
     * Vạch nhịp trùng ở chỗ nối trang bị bỏ bớt một; vạch kết thúc ``==`` giữa bài đổi thành ``=``; số ô nhịp được đánh
       lại liên tục.
+    * ``lenient=True`` còn sửa đoạn tách spine lệch nhau (:func:`repair_split_segments`) và dấu nối lẻ
+      (:func:`repair_ties`), sau khi đã ghép để sửa được cả chỗ vắt qua hai trang.
     """
     if not pages:
         raise ValueError("Không có trang nào để ghép")
@@ -1071,6 +1297,10 @@ def merge_pages(pages: list[PageKern], lenient: bool = False) -> MergeResult:
     _finalize_barlines(lines)
     if lenient:
         warnings.extend(repair_split_segments(lines, line_pages))
+        tied = repair_ties(lines)
+        for page_no in sorted({line_pages[i] for i in tied}):
+            count = sum(1 for i in tied if line_pages[i] == page_no)
+            warnings.append(f"Trang {page_no}: model ghi dấu nối thiếu đầu hoặc cuối, đã sửa ở {count} dòng")
     header = first.header
     text = "\n".join([header, *lines, TAB.join(["*-"] * base)]) + "\n"
     return MergeResult(text=text, spines=base, warnings=warnings, line_pages=line_pages, lines=lines, header=header)
@@ -1301,11 +1531,129 @@ def _meter_fraction(token: str) -> Optional[Fraction]:
     return Fraction(int(match.group(1)), int(match.group(2)))
 
 
+@dataclass
+class Timeline:
+    """Kết quả chạy trục thời gian Humdrum qua một đoạn kern (:func:`timeline`)."""
+
+    times: list[Optional[Fraction]]
+    """Thời điểm bắt đầu của từng dòng (None với dòng không phải dữ liệu)."""
+    line_groups: list[Optional[list[int]]]
+    """Spine gốc của từng cột ở mỗi dòng dữ liệu (None với dòng khác)."""
+    groups: list[int]
+    """Spine gốc của từng cột sau dòng cuối."""
+    ends: list[Fraction]
+    """Thời điểm nốt cuối của từng cột kết thúc."""
+    used: list[bool]
+    """Cột có nốt/dấu lặng nào không."""
+
+
+def timeline(lines: list[str], width: int) -> Optional[Timeline]:
+    """Chạy trục thời gian Humdrum qua ``lines`` (bắt đầu với ``width`` cột): dòng dữ liệu sau bắt đầu khi nốt sớm nhất
+    đang vang ở bất kỳ cột nào kết thúc. Theo được ``*^``/``*v``; trả None khi số cột không khớp, gặp ``*+``/``*x``/``*-``
+    hoặc ``*v`` gộp hai spine gốc khác nhau."""
+    groups = list(range(width))  # spine gốc của từng cột
+    ends = [Fraction(0)] * width  # thời điểm nốt đang vang ở từng cột kết thúc
+    used = [False] * width
+    times: list[Optional[Fraction]] = []
+    line_groups: list[Optional[list[int]]] = []
+    now = Fraction(0)
+    for line in lines:
+        if not line or line.startswith("!") or is_barline(line):
+            times.append(None)
+            line_groups.append(None)
+            continue
+        fields = line.split(TAB)
+        if len(fields) != len(groups):
+            return None
+        if line.startswith("*"):
+            times.append(None)
+            line_groups.append(None)
+            new_groups: list[int] = []
+            new_ends: list[Fraction] = []
+            new_used: list[bool] = []
+            column = 0
+            while column < len(fields):
+                token = fields[column]
+                if token == "*^":
+                    new_groups += [groups[column]] * 2
+                    new_ends += [ends[column]] * 2
+                    new_used += [used[column]] * 2
+                    column += 1
+                elif token == "*v":
+                    stop = column
+                    while stop < len(fields) and fields[stop] == "*v":
+                        stop += 1
+                    if stop - column < 2 or len(set(groups[column:stop])) != 1:
+                        return None
+                    new_groups.append(groups[column])
+                    new_ends.append(max(ends[column:stop]))
+                    new_used.append(any(used[column:stop]))
+                    column = stop
+                elif token in ("*+", "*x", "*-"):
+                    return None
+                else:
+                    new_groups.append(groups[column])
+                    new_ends.append(ends[column])
+                    new_used.append(used[column])
+                    column += 1
+            groups, ends, used = new_groups, new_ends, new_used
+            continue
+        times.append(now)
+        line_groups.append(list(groups))
+        for column, token in enumerate(fields):
+            if token == ".":
+                continue
+            duration = token_duration(token)
+            if duration is None:
+                continue  # nốt hoa mỹ: không chiếm thời gian
+            ends[column] = now + duration
+            used[column] = True
+        later = [end for end in ends if end > now]
+        if later:
+            now = min(later)
+    return Timeline(times=times, line_groups=line_groups, groups=groups, ends=ends, used=used)
+
+
+def measure_length(lines: list[str], width: int) -> Optional[Fraction]:
+    """Độ dài (nốt tròn) của một ô theo trục thời gian Humdrum, tính được cả ô có tách/gộp spine (``*^``/``*v``).
+
+    ``width``: số cột ở đầu ô. Mọi spine gốc (khuông) có nốt phải kết thúc cùng một lúc. Trả None khi không tính được
+    (xem :func:`timeline`), khi các khuông dài khác nhau hoặc ô không có nốt nào.
+    """
+    track = timeline(lines, width)
+    if track is None:
+        return None
+    totals: dict[int, Fraction] = {}
+    for column, group in enumerate(track.groups):
+        if track.used[column]:
+            totals[group] = max(totals.get(group, Fraction(0)), track.ends[column])
+    values = set(totals.values())
+    return values.pop() if len(values) == 1 else None
+
+
+def incomplete_roles(result: MergeResult) -> dict[int, str]:
+    """Ô nhịp thiếu hợp lệ (:mod:`app.convert.incomplete_measures`) theo số thứ tự ô (từ 1, cùng cách đánh số với
+    :func:`page_measure_ranges`): ô lấy đà, ô cuối bù cho ô lấy đà, hai phần của ô bị vạch nhịp chia đôi và cặp ô bù
+    nhau qua dấu lặp."""
+    return incomplete_analysis(result).roles
+
+
+def incomplete_analysis(result: MergeResult) -> incomplete_measures.Analysis:
+    """Như :func:`incomplete_roles`, kèm ô bù cho từng ô (cùng cách đánh số từ 1)."""
+    ordered = [s for s in _measure_segments(result) if s["any"]]
+    found = _classify_segments(ordered, result.spines)
+    return incomplete_measures.Analysis(
+        roles={k + 1: role for k, role in found.roles.items()},
+        partners={k + 1: other + 1 for k, other in found.partners.items()},
+    )
+
+
 def check_measures(result: MergeResult) -> list[str]:
     """Cảnh báo ô nhịp có tổng trường độ khác số chỉ nhịp (đặc tả: không làm FAILED).
 
     Chỉ kiểm tra các ô nhịp không tách/gộp spine. Ô nhịp đầu tiên (nhịp lấy đà) và ô nhịp cuối cùng được phép ngắn
-    hơn. Mỗi cảnh báo ghi số trang và số ô nhịp; chỉ nêu tối đa :data:`MAX_WARNINGS_PER_KIND` ô.
+    hơn; hai phần của một ô bị vạch nhịp chia đôi hoặc cặp ô bù nhau qua dấu lặp (cộng lại vừa đủ số chỉ nhịp,
+    :func:`incomplete_roles`) cũng không bị báo. Mỗi cảnh báo ghi số trang và số ô nhịp; chỉ nêu tối đa :data:`MAX_WARNINGS_PER_KIND` ô.
     """
     _, problems, _ = _measure_report(result)
     if len(problems) > MAX_WARNINGS_PER_KIND:
@@ -1330,16 +1678,14 @@ def bad_measures(result: MergeResult) -> list[int]:
     return positions
 
 
-def _measure_report(
-    result: MergeResult, lenient_first: bool = True, lenient_last: bool = True
-) -> tuple[int, list[str], list[int]]:
-    """Đếm ô nhịp kiểm được, liệt kê mọi ô sai trường độ (không giới hạn số cảnh báo) và số thứ tự (từ 1, trong các ô
-    có dữ liệu) của các ô đó."""
+def _measure_segments(result: MergeResult) -> list[dict]:
+    """Các đoạn giữa hai vạch nhịp của kern đã ghép, theo thứ tự. Mỗi đoạn: số ô (theo vạch nhịp), trang, tổng trường độ
+    từng spine, số chỉ nhịp, ``ok`` (không tách/gộp spine), số dòng dữ liệu đủ cột, ``any`` (có dữ liệu: ô này có số thứ
+    tự), ``lines`` (dòng diễn giải và dữ liệu của đoạn), ``open``/``close`` (vạch nhịp mở/đóng đoạn, để biết dấu lặp)."""
     base = result.spines
-    problems: list[str] = []
     meter: Optional[Fraction] = None
 
-    def open_segment(number: int, page_no: int) -> dict:
+    def open_segment(number: int, page_no: int, opening: str = "") -> dict:
         return {
             "number": number,
             "page": page_no,
@@ -1348,6 +1694,9 @@ def _measure_report(
             "ok": True,
             "data": 0,
             "any": False,
+            "lines": [],
+            "open": opening,
+            "close": "",
         }
 
     # Dữ liệu nằm trước vạch nhịp đầu tiên (nếu có) là ô nhịp lấy đà, mang số (số đầu - 1)
@@ -1359,12 +1708,15 @@ def _measure_report(
 
     for line, page_no in zip(result.lines, result.line_pages):
         if is_barline(line):
+            token = line.split(TAB)[0]
+            current["close"] = token
             segments.append(current)
-            match = _RE_BARLINE.match(line.split(TAB)[0])
+            match = _RE_BARLINE.match(token)
             number = int(match.group("num")) if match and match.group("num") else current["number"] + 1
-            current = open_segment(number, page_no)
+            current = open_segment(number, page_no, token)
             continue
         if _is_interpretation(line):
+            current["lines"].append(line)
             fields = line.split(TAB)
             if len(fields) == base:
                 for token in fields:
@@ -1376,6 +1728,7 @@ def _measure_report(
             continue
         if not is_data_line(line):
             continue
+        current["lines"].append(line)
         current["any"] = True  # có dữ liệu (kể cả dòng đang tách spine): ô này có số thứ tự
         fields = line.split(TAB)
         if len(fields) != base:
@@ -1389,15 +1742,45 @@ def _measure_report(
             if duration is not None:
                 current["sums"][index] += duration
     segments.append(current)
+    return segments
 
+
+def _segment_length(segment: dict, width: int) -> Optional[Fraction]:
+    """Độ dài chung của mọi khuông có nốt trong một đoạn (None nếu các khuông lệch nhau hoặc không tính được)."""
+    if not segment["ok"]:
+        return measure_length(segment["lines"], width)
+    values = {total for total in segment["sums"] if total > 0}
+    return values.pop() if len(values) == 1 else None
+
+
+def _classify_segments(ordered: list[dict], width: int) -> incomplete_measures.Analysis:
+    """Ô thiếu hợp lệ của các đoạn có dữ liệu ``ordered`` (theo thứ tự), khóa là vị trí trong ``ordered``."""
+    lengths = [_segment_length(segment, width) for segment in ordered]
+    meters = [segment["meter"] for segment in ordered]
+    repeats = [("|:" in segment["open"], ":|" in segment["close"]) for segment in ordered]
+    return incomplete_measures.analyze(lengths, meters, repeats)
+
+
+def _measure_report(
+    result: MergeResult, lenient_first: bool = True, lenient_last: bool = True
+) -> tuple[int, list[str], list[int]]:
+    """Đếm ô nhịp kiểm được, liệt kê mọi ô sai trường độ (không giới hạn số cảnh báo) và số thứ tự (từ 1, trong các ô
+    có dữ liệu) của các ô đó. Hai phần của ô bị vạch nhịp chia đôi là ô đúng."""
+    problems: list[str] = []
+    segments = _measure_segments(result)
+    ordered = [s for s in segments if s["any"]]
+    ordinals = {id(s): k for k, s in enumerate(ordered, start=1)}
+    roles = _classify_segments(ordered, result.spines).roles
+    split = {id(ordered[k]) for k, role in roles.items() if role in incomplete_measures.COMPLEMENT_ROLES}
     with_data = [s for s in segments if s["data"] > 0]
-    ordinals = {id(s): k for k, s in enumerate((s for s in segments if s["any"]), start=1)}
     checked = 0
     positions: list[int] = []
     for position, segment in enumerate(with_data):
         if not segment["ok"] or segment["meter"] is None:
             continue
         checked += 1
+        if id(segment) in split:
+            continue
         is_edge = (lenient_first and position == 0) or (lenient_last and position == len(with_data) - 1)
         for index, total in enumerate(segment["sums"]):
             if total == 0:

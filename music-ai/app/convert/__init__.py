@@ -4,4 +4,6 @@
 * :mod:`app.convert.musicxml`  chuẩn hóa MusicXML: 1 part "Piano" nhiều staff, tempo, số ô nhịp; rút metadata
 * :mod:`app.convert.midi`      MusicXML -> MIDI (mỗi staff một track/kênh)
 * :mod:`app.convert.score_xml` đọc nốt từ MusicXML (dùng chung cho sắp xếp staff và ghi MIDI)
+* :mod:`app.convert.incomplete_measures` ô nhịp thiếu hợp lệ (lấy đà, ô cuối, ô bị vạch nhịp chia đôi), dùng chung cho
+  bước kiểm tra trường độ của OMR và bước xuất MusicXML
 """

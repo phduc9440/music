@@ -999,6 +999,7 @@ def _check_pitch(ctx: JobContext, merged: merge.MergeResult) -> merge.MergeResul
         page_heads = {number: page.heads for number, page in ctx.glyph_pages.items()}
         merged, report = pitch_check.apply(merged, ctx.layouts, images, page_heads)
         ctx.fixes.extend(report.notes)
+        ctx.fixed_measures.update(report.measures)  # ô đổi dấu nối thành dấu luyến: người dùng cần đối chiếu
         log.info("Job %s: pitch_check %s", ctx.task_id, report.to_dict())
     except (JobCancelled, JobTimeout, TaskGone):
         raise

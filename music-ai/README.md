@@ -209,7 +209,8 @@ Transcoda chỉ được train trên nhạc piano không có lời. Với bản 
 hoặc gộp spine sai, hoặc đọc xong một hệ lại quay về đọc lại hệ trước. Các bước khắc phục:
 
 1. **Bố cục** (`layout.py`, `barlines.py`, chỉ dùng OpenCV, khoảng 10 ms/trang):
-   - dò khuông và gom thành hệ;
+   - dò khuông và gom thành hệ; dòng kẻ mảnh bị thu nhỏ rơi giữa hai hàng điểm ảnh (mỗi hàng chỉ xám nhạt) vẫn được
+     nhận bằng cách cộng độ đậm của hai hàng;
    - gán vai trò từng khuông: cặp có ngoặc nhọn là piano, khuông còn lại là giọng hát;
    - đếm vạch nhịp để biết số ô của từng hệ.
 2. **Kiểm tra**: kern của mỗi trang phải có số spine bằng số khuông, và số ô gần bằng số ô đếm được trên ảnh.
@@ -220,6 +221,8 @@ hoặc gộp spine sai, hoặc đọc xong một hệ lại quay về đọc l�
    - đọc lại bằng beam search.
 
    Kết quả mới chỉ thay kết quả cả trang khi có điểm cấu trúc cao hơn, và bước này chỉ dùng thời gian còn dư của job.
+   Ô đầu/cuối hệ ngắn hơn số chỉ nhịp mà đọc đủ đúng số đầu nốt trên ảnh được nới như ô lấy đà (thường là nửa của ô bị
+   vạch nhịp chia đôi ở chỗ xuống dòng), không tốn lượt đọc lại.
 4. **Bỏ khối lặp**: nếu kern vẫn thừa ô so với ảnh, bỏ các khối ô nhịp lặp liền nhau giống hệt, cho tới khi bằng số ô
    trên ảnh.
 5. **Gán vai trò vào kern**: `merged.krn` có thêm `*Ivox` / `*Ipiano`. Khi xuất, mỗi khuông giọng hát thành một part
@@ -252,10 +255,25 @@ Kết quả nằm trong `result_data` của job:
   - bỏ trang rỗng và cắt các dòng lặp vô hạn;
   - trang sau kế thừa khóa nhạc, hóa biểu và số chỉ nhịp từ trang trước;
   - đánh lại số ô nhịp liên tục;
-  - cảnh báo ô sai tổng trường độ (ô lấy đà và ô cuối được phép ngắn hơn);
+  - sửa đoạn tách bè lệch nhau, kể cả khi model gộp bè (`*v`) lúc nốt dài của bè kia còn ngân: chỗ gộp được dời
+    xuống sau nốt đó, không đổi nốt nào;
+  - sửa dấu nối (tie) thiếu một đầu; `[` và `]` nối hai nốt khác cao độ được đổi thành dấu luyến. Khi kern hợp lệ
+    nhưng ảnh cho thấy nốt cuối dấu nối nằm ở dòng kẻ khác (model đọc dấu luyến thành dấu nối rồi chép cao độ nốt đầu,
+    có khi thêm nốt bịa vào hợp âm), `tie_check.py` lấy cao độ theo đầu nốt trên ảnh và đổi thành dấu luyến; chỉ sửa khi
+    ô đó chỉ lệch ảnh đúng ở nốt cuối dấu nối, ô được gắn `AUTO_FIXED` (mã sửa `SLURS_FIXED`);
+  - cảnh báo ô sai tổng trường độ. Không báo các **ô thiếu hợp lệ** (`convert/incomplete_measures.py`): ô lấy đà, ô
+    cuối bài, hai phần của một ô bị vạch nhịp chia đôi (hai ô ngắn liền nhau cộng lại vừa đủ số chỉ nhịp, hai ô kề
+    bên đủ trường độ; thường ở chỗ cuối phiên khúc / đầu điệp khúc), và ô mở đầu đoạn lặp cùng ô trước dấu lặp `:|`
+    bù nhau. Bản in không có ký hiệu riêng cho ô chia đôi, chỉ nhận ra qua trường độ. Các ô này có ghi chú trong
+    `measureMap`, không bị bước sửa trường độ thêm chấm dôi;
   - cuối cùng cho music21 đọc thử `merged.krn`.
 - **kern → MusicXML** (`convert/kern.py`, `convert/musicxml.py`):
   - music21 ghi MusicXML thô, sau đó bước chuẩn hóa gộp các khuông thành một part "Piano" nhiều staff;
+  - ô thiếu hợp lệ giữ nguyên độ dài (không bị music21 lấp dấu lặng ẩn) và có `implicit="yes"`: hai phần của ô chia
+    đôi phát liền nhau, trình sửa trên web không tô đỏ các ô này;
+  - spine tách đôi giữa ô (`*^` sau vài nốt): music21 ghi nốt của hai bè lên phách 1; ở đây bè trái được gộp với nốt
+    trước/sau chỗ tách thành một voice, bè phải là voice riêng, nốt đúng phách;
+  - dấu luyến `(`/`)` của kern được đưa sang MusicXML (music21 tự nó bỏ qua dấu luyến);
   - đồng bộ `divisions`, đánh lại `<staff>` / `<voice>`, thêm tempo;
   - rút metadata (số ô, giọng, nhịp, tempo, số khuông) từ chính file MusicXML này.
 - **MusicXML → MIDI** (`convert/midi.py`):
@@ -386,7 +404,7 @@ app/
 ├── storage.py      kiểm tra và phân giải đường dẫn trong storage
 ├── schemas.py      model Pydantic của request
 ├── omr/            pipeline OMR: preprocess, layout, barlines, textstrip, transcoda, engines, routing, combine,
-│                   merge, ottava, pitch_check, rhythm_fix, review, stability, llm_check, measure_map,
+│                   merge, ottava, pitch_check, tie_check, rhythm_fix, review, stability, llm_check, measure_map,
 │                   vector_pdf, glyphs (PDF xuất từ phần mềm), arbiter, extra_engines (engine thêm)
 ├── convert/        kern / MusicXML / MIDI, normalize, prepare
 ├── analysis/       so sánh hai MusicXML

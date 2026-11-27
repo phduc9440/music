@@ -87,3 +87,23 @@ def test_three_kinds_of_systems_or_a_short_multi_staff_system_stay_untrusted():
     for counts in ([3, 3, 2], [2, 3, 3, 1]):
         layout = analyze_layout(page_image(make_vocal_page(system_staves=counts)))
         assert not layout.confident and not layout.mixed, counts
+
+
+def test_staff_lines_split_between_two_pixel_rows_are_found():
+    # Dòng kẻ mảnh sau khi thu nhỏ rơi giữa hai hàng điểm ảnh: mỗi hàng chỉ xám nhạt (212), dưới ngưỡng mực. Hai dòng liền
+    # nhau như vậy từng làm khuông bị tách vụn và mất cả hệ ("Lòng Con Ước Ao", hệ thứ ba của phiên khúc).
+    gray = np.full((1485, 1050), 255, np.uint8)
+    for top in (150, 300, 450, 600):
+        for k in range(5):
+            y = top + 8 * k
+            if top == 450 and k in (2, 3):
+                gray[y : y + 2, 40:1000] = 212
+            else:
+                gray[y, 40:1000] = 60
+    layout = analyze_layout(gray)
+    assert layout.staff_counts == [1, 1, 1, 1]
+    assert [s.staves[0].lines for s in layout.systems] == [5, 5, 5, 5]
+    # hàng xám nhạt đứng riêng (không thành cặp đủ đậm) vẫn không phải dòng kẻ
+    gray[700, 40:1000] = 230
+    gray[701, 40:1000] = 250
+    assert analyze_layout(gray).staff_counts == [1, 1, 1, 1]

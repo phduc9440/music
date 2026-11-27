@@ -215,9 +215,10 @@ def analyze_layout(gray: np.ndarray) -> PageLayout:
         return PageLayout(width=0, height=0, interline=0.0, notes=["ảnh rỗng"])
     height, width = gray.shape
     ink = _ink_mask(gray)
+    line_ink = _line_ink_mask(gray, ink)
     layout = PageLayout(width=width, height=height, interline=0.0)
 
-    lines, profile = _staff_lines(ink)
+    lines, profile = _staff_lines(line_ink)
     if len(lines) < 5:
         layout.notes.append(f"chỉ thấy {len(lines)} dòng kẻ")
         return layout
@@ -228,7 +229,7 @@ def analyze_layout(gray: np.ndarray) -> PageLayout:
         return layout
     layout.interline = interline
 
-    horizontal = _horizontal(ink)
+    horizontal = _horizontal(line_ink)
     staves = _group_staves(lines, profile, interline, horizontal)
     if not staves:
         layout.notes.append("không gom được khuông nào")
@@ -286,6 +287,31 @@ def _ink_mask(gray: np.ndarray) -> np.ndarray:
     background = float(np.percentile(gray, 90))
     threshold = min(_INK_MAX, background - 40)
     return (gray < threshold).astype(np.uint8)
+
+
+_SPLIT_LINE_MIN = 12
+"""Độ đậm tối thiểu (255 - mức xám) của mỗi hàng trong một dòng kẻ bị chia đôi giữa hai hàng điểm ảnh."""
+
+
+def _line_ink_mask(gray: np.ndarray, ink: np.ndarray) -> np.ndarray:
+    """Mặt nạ mực để dò dòng kẻ: như :func:`_ink_mask`, thêm các cặp hàng liền nhau cùng xám nhạt mà cộng lại đủ đậm.
+
+    Dòng kẻ mảnh (1 điểm ảnh ở 300 dpi) sau khi thu về trang 1050x1485 có khi rơi đúng giữa hai hàng điểm ảnh: mỗi hàng
+    chỉ còn xám nhạt (~210), dưới ngưỡng mực, nên cả dòng biến mất. Thiếu hai dòng liền nhau thì khuông bị tách vụn và
+    cả hệ bị bỏ (gặp ở "Lòng Con Ước Ao": hệ thứ ba của phiên khúc). Độ đậm của dòng kẻ được chia cho hai hàng, nên cộng
+    hai hàng lại và so với cùng ngưỡng mực như một dòng nằm gọn trong một hàng. Chỉ dùng để tìm dòng kẻ (nét ngang dài).
+    """
+    background = float(np.percentile(gray, 90))
+    need = 255 - min(_INK_MAX, background - 40)
+    dark = 255 - gray.astype(np.int32)
+    upper, lower = dark[:-1], dark[1:]
+    # Chỉ cặp hàng mà CẢ HAI đều chưa đủ đậm (dòng bị chia đôi); dòng đã đủ đậm thì giữ nguyên độ dày
+    pair = (upper < need) & (lower < need) & (upper + lower >= need)
+    pair &= (upper >= _SPLIT_LINE_MIN) & (lower >= _SPLIT_LINE_MIN)
+    out = ink.copy()
+    out[:-1][pair & (upper >= lower)] = 1  # đánh dấu hàng đậm hơn của cặp: dòng vẫn dày một hàng
+    out[1:][pair & (lower > upper)] = 1
+    return out
 
 
 def _horizontal(ink: np.ndarray) -> np.ndarray:

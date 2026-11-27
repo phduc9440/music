@@ -508,7 +508,8 @@
     "OTTAVA_FIXED": "Removed an 8va the model added, moved {count} notes back to the printed octave",
     "REREAD_REPLACED": "Replaced this measure with the reading that repeated re-reads agreed on",
     "AI_REPLACED": "AI compared the image and chose a different reading for this measure",
-    "ENGINE_REPLACED": "This measure was replaced with the reading of {engine}, which fits the meter or the original PDF better than the main engine"
+    "ENGINE_REPLACED": "This measure was replaced with the reading of {engine}, which fits the meter or the original PDF better than the main engine",
+    "SLURS_FIXED": "Turned {count} ties into slurs and fixed the pitch of the second note from the notehead positions"
   },
   "check": {
     "title": "To check",
