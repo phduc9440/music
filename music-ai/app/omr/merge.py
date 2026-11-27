@@ -679,10 +679,18 @@ def repair_split_segments(lines: list[str], line_pages: list[int]) -> list[str]:
     """Sửa đoạn một spine tách đôi (``*^`` ... ``*v``) mà hai giọng dài không bằng nhau (model hay thừa/thiếu một nốt).
 
     Triệu chứng: dòng ``.`` ở một giọng khi giọng đó đã hết nốt (viewer báo "missing note in field 2"), hoặc hai giọng kết
-    thúc ở hai thời điểm khác nhau. Độ dài đúng của đoạn lấy theo số chỉ nhịp trừ phần đứng trước đoạn tách trong cùng ô
-    nhịp (nếu biết và khớp một trong hai giọng), không thì lấy giọng ngắn hơn. Giọng dài hơn bị cắt các dòng quá thời điểm
-    đó; giọng ngắn hơn được thêm dấu lặng nếu độ dài thiếu biểu diễn được là ``1/n``. Sửa trực tiếp ``lines`` và
-    ``line_pages``, trả danh sách cảnh báo.
+    thúc ở hai thời điểm khác nhau. Thời điểm từng dòng tính theo trục thời gian Humdrum của cả ô (mọi cột, kể cả nốt của
+    khuông khác chen giữa hai nốt dài của đoạn tách).
+
+    Trường hợp hay gặp nhất là model **gộp quá sớm**: viết ``*v`` ngay khi giọng ngắn hết nốt rồi viết tiếp nốt của giọng
+    đó sau chỗ gộp, trong khi nốt dài của giọng kia còn đang ngân (cách đọc Humdrum vẫn đúng, nhưng music21 dồn các nốt
+    sau chỗ gộp ra sau nốt dài, làm khuông đó lệch nhịp và ô dài quá số chỉ nhịp). Khi các nốt sau chỗ gộp nối tiếp giọng
+    ngắn tới đúng lúc nốt dài kết thúc, chỗ gộp được dời xuống đó (giọng dài nhận ``.``): không nốt nào bị đổi.
+
+    Còn lại: độ dài đúng của đoạn lấy theo số chỉ nhịp trừ phần đứng trước đoạn tách trong cùng ô nhịp (nếu biết và khớp
+    một trong hai giọng), không thì lấy giọng ngắn hơn. Giọng dài hơn bị cắt các dòng quá thời điểm đó; giọng ngắn hơn được
+    thêm dấu lặng nếu độ dài thiếu biểu diễn được là ``1/n``. Sửa trực tiếp ``lines`` và ``line_pages``, trả danh sách
+    cảnh báo.
     """
     warnings: list[str] = []
     meter: Optional[Fraction] = None
@@ -715,7 +723,8 @@ def repair_split_segments(lines: list[str], line_pages: list[int]) -> list[str]:
                             if is_data_line(row) and len(row.split(TAB)) == len(fields)
                         ]
                         budget = meter - sum((d for d in before if d is not None), Fraction(0))
-                    removed, message = _repair_one_segment(lines, line_pages, i, end, column, budget)
+                    start = measure_start if seen_barline else 0
+                    removed, message = _repair_one_segment(lines, line_pages, i, end, column, budget, start, meter)
                     if message:
                         where = f"ô nhịp {measure_number}" if measure_number is not None else "một ô nhịp"
                         warnings.append(f"Trang {line_pages[i]}, {where}: {message}")
@@ -725,18 +734,110 @@ def repair_split_segments(lines: list[str], line_pages: list[int]) -> list[str]:
     return warnings
 
 
-def _repair_one_segment(
-    lines: list[str], line_pages: list[int], start: int, end: int, column: int, budget: Optional[Fraction]
-) -> tuple[int, str]:
-    """Sửa một đoạn tách ``lines[start..end]``. Trả ``(số dòng đã xóa, thông báo)``; thông báo rỗng nếu không cần sửa."""
+def _segment_times(
+    lines: list[str], start: int, end: int, measure_start: int
+) -> tuple[list[int], list[Fraction]]:
+    """Các dòng dữ liệu của đoạn tách ``lines[start..end]`` và thời điểm của chúng, tính từ đầu đoạn tách.
+
+    Dùng trục thời gian Humdrum từ đầu ô (``measure_start``) để biết cả nốt của khuông khác bắt đầu trước đoạn tách; không
+    chạy được thì tính từ chính dòng ``*^`` (nốt vang từ trước đoạn tách không được biết tới)."""
     rows = [k for k in range(start + 1, end) if is_data_line(lines[k])]
-    following = [Fraction(0), Fraction(0)]  # thời điểm nốt kế tiếp của từng giọng (tính từ đầu đoạn tách)
+    for first in (measure_start, start):
+        width = next((len(lines[k].split(TAB)) for k in range(first, end) if not lines[k].startswith("!")), 0)
+        timeline = _timeline(lines[first:end], width) if width else None
+        if timeline is None:
+            continue
+        times = [timeline.times[k - first] for k in rows]
+        if any(t is None for t in times):
+            continue
+        origin = times[0] if times else Fraction(0)
+        return rows, [t - origin for t in times]  # type: ignore[operator]
+    # Không chạy được trục thời gian (dòng lệch cột...): chỉ dựa vào hai giọng như trước
+    following = [Fraction(0), Fraction(0)]
+    column = lines[start].split(TAB).index("*^")
     times: list[Fraction] = []
-    dangling = False
     now = Fraction(0)
     for k in rows:
         fields = lines[k].split(TAB)
         times.append(now)
+        for voice in (0, 1):
+            duration = token_duration(fields[column + voice]) if fields[column + voice] != "." else None
+            if duration is not None:
+                following[voice] = now + duration
+        later = [t for t in following if t > now]
+        now = min(later) if later else now
+    return rows, times
+
+
+def _defer_join(
+    lines: list[str], line_pages: list[int], end: int, column: int, following: list[Fraction], meter: Optional[Fraction],
+    measure_start: int,
+) -> bool:
+    """Dời dòng ``*v`` (chỉ số ``end``) xuống sau các nốt mà model viết tiếp cho giọng ngắn sau chỗ gộp, tới đúng lúc nốt
+    dài của giọng kia kết thúc. Trả True nếu đã dời (sửa trực tiếp ``lines``/``line_pages``)."""
+    short = 0 if following[0] < following[1] else 1
+    stop_at = max(following)
+    now = min(following)
+    width = len(lines[end].split(TAB)) - 1  # số cột sau chỗ gộp
+    absorbed: list[int] = []
+    k = end + 1
+    while k < len(lines):
+        line = lines[k]
+        if is_barline(line) or line.startswith("*"):
+            break
+        fields = line.split(TAB)
+        if line.startswith("!") or len(fields) != width:
+            return False
+        token = fields[column]
+        if token != ".":
+            if now >= stop_at:
+                break
+            duration = token_duration(token)
+            if duration is None:
+                return False
+            now += duration
+            if now > stop_at:
+                return False  # nốt của giọng ngắn vắt qua lúc nốt dài kết thúc: không có chỗ gộp gọn
+        absorbed.append(k)
+        k += 1
+    if not absorbed or now != stop_at:
+        return False
+
+    rows = []
+    for index in absorbed:
+        fields = lines[index].split(TAB)
+        voices = [fields[column], "."] if short == 0 else [".", fields[column]]
+        rows.append(TAB.join(fields[:column] + voices + fields[column + 1 :]))
+    candidate = lines[:end] + rows + [lines[end]] + lines[absorbed[-1] + 1 :]
+    if meter is not None:
+        closing = next((j for j in range(end, len(candidate)) if is_barline(candidate[j])), len(candidate))
+        segment = candidate[measure_start:closing]
+        width_at_start = next((len(row.split(TAB)) for row in segment if not row.startswith("!")), 0)
+        if measure_length(segment, width_at_start) != meter:
+            return False
+    join_page = line_pages[end]
+    pages = line_pages[:end] + [line_pages[i] for i in absorbed] + [join_page] + line_pages[absorbed[-1] + 1 :]
+    lines[:] = candidate
+    line_pages[:] = pages
+    return True
+
+
+def _repair_one_segment(
+    lines: list[str],
+    line_pages: list[int],
+    start: int,
+    end: int,
+    column: int,
+    budget: Optional[Fraction],
+    measure_start: int = 0,
+    meter: Optional[Fraction] = None,
+) -> tuple[int, str]:
+    """Sửa một đoạn tách ``lines[start..end]``. Trả ``(số dòng đã xóa, thông báo)``; thông báo rỗng nếu không cần sửa."""
+    rows, times = _segment_times(lines, start, end, measure_start)
+    following = [Fraction(0), Fraction(0)]  # thời điểm nốt cuối của từng giọng kết thúc (tính từ đầu đoạn tách)
+    dangling = False
+    for k, now in zip(rows, times):
+        fields = lines[k].split(TAB)
         for voice in (0, 1):
             token = fields[column + voice]
             if token == ".":
@@ -746,10 +847,10 @@ def _repair_one_segment(
             duration = token_duration(token)
             if duration is not None:
                 following[voice] = now + duration
-        later = [t for t in following if t > now]
-        now = min(later) if later else now
     if not dangling and following[0] == following[1]:
         return 0, ""
+    if not dangling and _defer_join(lines, line_pages, end, column, following, meter, measure_start):
+        return 0, "model gộp hai giọng của đoạn tách khi nốt dài còn đang ngân, đã dời chỗ gộp xuống sau nốt đó"
 
     target = budget if budget is not None and budget in following else min(following)
     drop = [k for k, t in zip(rows, times) if t >= target]
