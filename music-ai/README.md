@@ -97,6 +97,7 @@ Mọi biến đều có giá trị mặc định. [`.env.example`](.env.example)
 | `LOAD_MODEL` | `true` | `false`: không nạp Transcoda, không cần cài `torch` |
 | `MODEL_ID` | `btrkeks/transcoda-59M-zeroshot-v1` | Repo Hugging Face, hoặc thư mục model đã tải về (ví dụ `models/transcoda`) |
 | `DEVICE` | `auto` | `auto` (có CUDA thì dùng, không thì CPU), `cpu`, `cuda`, `mps` |
+| `OMR_PROFILE` | `default` | `accurate`: mặc định cho các biến chưa đặt chuyển sang cấu hình chính xác hơn nhưng chậm (`NUM_BEAMS=3`, `OMR_ROUTING_MEASURES=1`, `OMR_TTA=3`, `OMR_TTA_MAX_SYSTEMS=12`, nới thời gian). Biến đặt riêng vẫn thắng. A/B: `omr_benchmark.py run --variant moi: --variant chinhxac:OMR_PROFILE=accurate` |
 | `NUM_BEAMS` | `1` | `1` = greedy (nhanh); `3` = beam search như bài báo (chính xác hơn, chậm hơn nhiều) |
 | `MAX_TOKENS`, `REPETITION_PENALTY` | `2048`, `1.1` | Số token sinh tối đa mỗi lần đọc; hệ số phạt lặp |
 | `INFERENCE_PAGE_TIMEOUT_S` | `90` | Thời gian tối đa cho nhận diện mỗi trang. **Chạy CPU thì nên tăng**, cùng với `TASK_TIMEOUT_S` |
