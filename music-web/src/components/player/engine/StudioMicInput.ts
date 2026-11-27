@@ -1,5 +1,5 @@
 import type { MicAudioWindow } from './micAudioWindowBuffer';
-import { MIC_SAMPLE_RATE, MicAudioWindowBuffer } from './micAudioWindowBuffer';
+import { MIC_SAMPLE_RATE, MicAudioWindowBuffer, MicNoteTracker } from './micAudioWindowBuffer';
 import type { MicPitchRequest, MicPitchResponse } from './micPitchTypes';
 import { MicResampler } from './micResampler';
 
@@ -57,6 +57,7 @@ const modelUrl = () =>
 export class StudioMicInput {
   private static readonly MAX_QUEUED_WINDOWS = 8;
   private readonly buffer = new MicAudioWindowBuffer();
+  private readonly tracker = new MicNoteTracker();
   private readonly pendingRequests = new Map<number, PendingRequest>();
   private readonly worker: Worker;
   private readonly audioContext: AudioContext;
@@ -69,7 +70,6 @@ export class StudioMicInput {
   private processing = Promise.resolve();
   private nextRequestId = 0;
   private queuedWindows = 0;
-  private lastCommittedMs = -1;
   private startedAt = 0;
   private stopped = false;
   private disposed = false;
@@ -339,18 +339,7 @@ export class StudioMicInput {
           samples: window.samples,
         });
         const coveredUntilMs = (window.coveredUntilSample / MIC_SAMPLE_RATE) * 1000;
-        const windowStartMs = (window.startSample / MIC_SAMPLE_RATE) * 1000;
-        const notes = (response.notes ?? [])
-          .map((note) => ({
-            midi: note.pitchMidi,
-            playedMs: Math.max(0, Math.round(windowStartMs + note.startTimeSeconds * 1000 - this.compensationMs)),
-          }))
-          .filter((note) => {
-            if (note.playedMs <= this.lastCommittedMs || note.playedMs > coveredUntilMs) return false;
-            return true;
-          })
-          .sort((left, right) => left.playedMs - right.playedMs || left.midi - right.midi);
-        this.lastCommittedMs = coveredUntilMs;
+        const notes = this.tracker.take(window, response.notes ?? [], this.compensationMs);
         const latencyMs = this.currentLatencyMs(window.coveredUntilSample);
         this.onUpdate(notes, coveredUntilMs, latencyMs);
         this.onStatus(latencyMs);

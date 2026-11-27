@@ -149,6 +149,7 @@ export default function StudioPlayer() {
   const scheduledCyclesRef = useRef(0);
   const finalizedEventsRef = useRef<StudioNoteEvent[] | null>(null);
   const inputLockedRef = useRef(false);
+  const [heldMidis, setHeldMidis] = useState<number[]>([]);
   const finishingRef = useRef(false);
 
   useEffect(() => {
@@ -447,7 +448,8 @@ export default function StudioPlayer() {
     (midi: number, velocity = 0.8) => {
       const currentSession = sessionRef.current;
       const scorer = currentSession?.mode === 'WAIT' ? waitScorerRef.current : scorerRef.current;
-      if (inputLockedRef.current) return;
+      // chỉ khóa khi phiên đang lưu / đang hủy; hết phiên rồi vẫn đàn thử được
+      if (currentSession && inputLockedRef.current) return;
       const playedMs = sessionRef.current ? Math.round(performance.now() - startedAtRef.current) : 0;
       try {
         // chưa có phiên, hoặc đang đếm ngược trước nốt đầu: chỉ phát tiếng, không chấm
@@ -513,12 +515,25 @@ export default function StudioPlayer() {
     };
   }, [inputSource, onPlayNote]);
 
+  // Bàn phím máy tính: chưa bắt đầu luyện cũng đàn được (chỉ phát tiếng), phím đang giữ thì sáng trên đàn
   useEffect(() => {
-    if (!session || inputSource !== 'KEYBOARD' || inputLockedRef.current) return;
+    if (inputSource !== 'KEYBOARD') return;
+    // nhớ nốt theo phím đã bấm: đổi quãng tám khi đang giữ phím vẫn nhả đúng nốt
+    const held = new Map<string, number>();
+    const publish = () => setHeldMidis([...held.values()]);
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (held.delete(event.code)) publish();
+    };
+    const releaseAll = () => {
+      held.clear();
+      publish();
+    };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
       const target = event.target;
-      if (target instanceof HTMLElement && target.closest('input, select, textarea, [role="dialog"]')) return;
+      // radio / checkbox / thanh trượt không nhận chữ: vừa chọn nguồn đàn xong (focus còn ở đó) vẫn đàn được
+      const typing = 'input:not([type="radio"], [type="checkbox"], [type="range"]), select, textarea, [role="dialog"]';
+      if (target instanceof HTMLElement && target.closest(typing)) return;
       const key = event.key.toLowerCase();
       // Z / X: dời dải phím máy tính xuống / lên một quãng tám (bài hai tay, nốt ngoài C4–C5)
       if (key === 'z' || key === 'x') {
@@ -529,11 +544,21 @@ export default function StudioPlayer() {
       const semitone = STUDIO_KEYBOARD_MAP[key];
       if (semitone === undefined) return;
       event.preventDefault();
-      onPlayNote(computerKeyboardBaseRef.current + semitone);
+      const midi = computerKeyboardBaseRef.current + semitone;
+      held.set(event.code, midi);
+      publish();
+      onPlayNote(midi);
     };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [session, inputSource, onPlayNote]);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', releaseAll);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', releaseAll);
+      releaseAll();
+    };
+  }, [inputSource, onPlayNote]);
 
   const stopPreview = useCallback(() => {
     previewTimeoutRef.current.forEach((id) => window.clearTimeout(id));
@@ -1368,6 +1393,7 @@ export default function StudioPlayer() {
                   guideDurationMs={activeSchedule.durationMs}
                   guideLoop={session ? session.loopStartMeasure !== null : repeatSection}
                   computerKeyboardBase={computerKeyboardBase}
+                  heldMidis={heldMidis}
                 />
               )}
             </div>

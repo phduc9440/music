@@ -6,6 +6,23 @@ interface WorkerScope {
 }
 
 const workerScope = self as unknown as WorkerScope;
+
+// TF.js 3.x gọi `!window` khi chờ GPU đọc kết quả (backend WebGL). Trong worker không có `window` nên lệnh đó ném lỗi
+// trong một promise không ai bắt, việc đọc kết quả treo mãi và mô hình không bao giờ nạp xong. Gán `window` trỏ về
+// chính worker để phép kiểm tra đó chạy được; TF.js vẫn nhận ra đây là worker vì không có `window.document`.
+const globalScope = self as unknown as { window?: unknown };
+globalScope.window ??= self;
+
+/**
+ * Ngưỡng tách nốt, đo bằng bài thử dựng từ tiếng piano của app (giai điệu, hai tay có hợp âm ngân, chạy nốt nhanh):
+ * ngưỡng mặc định của Basic Pitch (0,5 / 0,3) thay cho 0,25 / 0,25 trước đây (quá nhạy, bắt cả bồi âm và tiếng ngân);
+ * nốt phải dài ít nhất 8 khung (~93 ms); không suy ra nốt từ tiếng đang kêu (piano luôn có tiếng búa rõ), nếu không thì
+ * nốt đang ngân bị đọc lại thành nốt mới.
+ */
+const ONSET_THRESHOLD = 0.5;
+const FRAME_THRESHOLD = 0.3;
+const MIN_NOTE_FRAMES = 8;
+
 let modelPromise: Promise<import('@spotify/basic-pitch').BasicPitch> | null = null;
 
 workerScope.onmessage = async ({ data }) => {
@@ -67,7 +84,9 @@ workerScope.onmessage = async ({ data }) => {
       tf.engine().endScope();
     }
 
-    const notes = noteFramesToTime(outputToNotesPoly(frames, onsets, 0.25, 0.25, 5)).map((note) => ({
+    const notes = noteFramesToTime(
+      outputToNotesPoly(frames, onsets, ONSET_THRESHOLD, FRAME_THRESHOLD, MIN_NOTE_FRAMES, false),
+    ).map((note) => ({
       pitchMidi: note.pitchMidi,
       startTimeSeconds: note.startTimeSeconds,
       amplitude: note.amplitude,

@@ -3,7 +3,7 @@ import type { Dispatch, SetStateAction, MutableRefObject } from 'react';
 import { toast } from 'react-toastify';
 import { fetchMusicXmlWithVersion, saveBlob, saveMusicXml, scoreApi } from '../../../services';
 import { versionApi } from '../../../services/score/versionApi';
-import { getConflictVersion, getSaveErrorMessage, toSafeFileName } from '../../../utils/score';
+import { getConflictVersion, getErrorCode, getSaveErrorMessage, toSafeFileName } from '../../../utils/score';
 import { reportPlanLimit } from '../../../utils/planLimit';
 import { clearDraft, purgeOtherDrafts } from './draft';
 import { History } from './history';
@@ -12,6 +12,30 @@ import { getVersionErrorMessage } from '../version/versionUtils';
 import { readHeader } from '../structure/header';
 import type { ScoreDocument } from './ScoreDocument';
 import { t } from '../../../i18n/core';
+
+/** Mã lỗi BE: bản nhạc còn phiên cùng sửa đang mở. */
+const LIVE_SESSION_ACTIVE = 3122;
+const VERSION_CONFLICT = 2014;
+const LEAVE_RETRIES = 10;
+const LEAVE_RETRY_MS = 500;
+
+/**
+ * Khôi phục ngay sau khi rời phiên cùng sửa. Server cần chút thời gian để lưu phần còn dở (có thể thành một phiên bản
+ * mới) và đóng phiên, nên đọc lại số phiên bản hiện tại và thử lại khi phiên chưa đóng hoặc số phiên bản vừa đổi.
+ */
+async function restoreAfterLeave(scoreId: string, target: number, known: number) {
+  for (let attempt = 1; ; attempt++) {
+    const { data } = await versionApi.list(scoreId);
+    const current = data.result.find((v) => v.isCurrent)?.version ?? known;
+    try {
+      return await versionApi.restore(scoreId, target, current);
+    } catch (err) {
+      const code = getErrorCode(err);
+      if (attempt >= LEAVE_RETRIES || (code !== LIVE_SESSION_ACTIVE && code !== VERSION_CONFLICT)) throw err;
+      await new Promise((resolve) => window.setTimeout(resolve, LEAVE_RETRY_MS));
+    }
+  }
+}
 
 interface SaveFlowOptions {
   canEdit: boolean;
@@ -152,19 +176,25 @@ export function useSaveFlow(o: SaveFlowOptions) {
   const restoreVersion = useCallback(
     async (target: number): Promise<boolean> => {
       if (!canEdit || savingRef.current) return false;
-      // Đang cùng sửa: khôi phục ghi đè bản chung mà phiên không biết, thay đổi của người khác sẽ mất
-      if (liveRef.current?.active) {
+      // Có người khác cùng sửa: khôi phục sẽ ghi đè thay đổi của họ. Chỉ có một mình thì tạm rời phiên rồi khôi phục
+      const collab = liveRef.current;
+      if (collab?.othersEditing) {
         flash(t('editor.version.panel.liveBlocked'));
         return false;
       }
       savingRef.current = true;
       setSaving(true);
+      let rejoin = !!collab?.active;
       try {
-        const result = await versionApi.restore(scoreId, target, version);
+        if (rejoin) await collab?.suspend();
+        const result = rejoin
+          ? await restoreAfterLeave(scoreId, target, version)
+          : await versionApi.restore(scoreId, target, version);
         try {
           const fetched = await fetchMusicXmlWithVersion(scoreId);
           doc.restore(fetched.xml);
         } catch {
+          rejoin = false; // tài liệu còn là bản cũ: không vào lại phiên cho tới khi tải lại trang
           toast.warn(t('editor.toast.restoredNoReload', { version: result.version }));
           return false;
         }
@@ -183,6 +213,7 @@ export function useSaveFlow(o: SaveFlowOptions) {
         else toast.error(getVersionErrorMessage(err));
         return false;
       } finally {
+        if (rejoin) collab?.resume();
         savingRef.current = false;
         setSaving(false);
       }
