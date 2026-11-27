@@ -380,7 +380,9 @@ def repair_triplets(body: list[str], default_meter: Optional[Fraction] = None) -
         )
         if rows and len(widths) == 1 and not changes:
             width = widths.pop()
-            meter = _page_meter(lines, start, width, default_meter)
+            # Số chỉ nhịp có hiệu lực ở dòng nốt đầu tiên của ô: ô đổi nhịp có dòng *M ngay sau vạch nhịp (Giấc Mơ Trưa
+            # ô 16, 21: 2/4 giữa bài 4/4), đọc từ vạch nhịp thì vẫn lấy *M4/4 cũ và bỏ qua nhóm liên ba bị mất số 3
+            meter = _page_meter(lines, rows[0], width, default_meter)
             if meter is not None and meter > 0:
                 totals = [_spine_total(lines, rows, column) for column in range(width)]
                 contents = [_spine_content(lines, rows, column) for column in range(width)]
