@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { OpenSheetMusicDisplay, VexFlowGraphicalNote } from 'opensheetmusicdisplay';
 import { t } from '../../../i18n/core';
+import { drawSmallHeads, prepareSmallNotes } from '../../editor/core/osmdBridge';
 
 interface Props {
   /** Nội dung MusicXML cần vẽ. */
@@ -58,8 +59,10 @@ export default function MusicXmlViewer({ xml, firstMeasure, lastMeasure, playhea
         if (lastMeasure != null) instance.setOptions({ drawUpToMeasureNumber: lastMeasure });
         await instance.load(xml);
         if (cancelled) return;
+        prepareSmallNotes(instance);
         instance.zoom = 0.8;
         instance.render();
+        drawSmallHeads(instance);
         const cursorOptions = instance.cursorsOptions?.[0];
         if (cursorOptions) {
           cursorOptions.color = '#ff7a00';
@@ -72,7 +75,11 @@ export default function MusicXmlViewer({ xml, firstMeasure, lastMeasure, playhea
           if (host.clientWidth === lastWidth) return; // chỉ vẽ lại khi độ rộng đổi
           lastWidth = host.clientWidth;
           clearTimeout(timer);
-          timer = setTimeout(() => !cancelled && instance.render(), RESIZE_DEBOUNCE_MS);
+          timer = setTimeout(() => {
+            if (cancelled) return;
+            instance.render();
+            drawSmallHeads(instance);
+          }, RESIZE_DEBOUNCE_MS);
         });
         observer.observe(host);
       } catch {
@@ -123,7 +130,11 @@ export default function MusicXmlViewer({ xml, firstMeasure, lastMeasure, playhea
       cursor.show();
       if (cursor.Iterator.currentTimeStamp.RealValue > target + eps) cursor.reset();
       let guard = 0;
-      while (!cursor.Iterator.EndReached && cursor.Iterator.currentTimeStamp.RealValue < target - eps && guard++ < 20000) {
+      while (
+        !cursor.Iterator.EndReached &&
+        cursor.Iterator.currentTimeStamp.RealValue < target - eps &&
+        guard++ < 20000
+      ) {
         cursor.next();
       }
       cursor.update();

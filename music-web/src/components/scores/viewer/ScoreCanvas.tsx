@@ -8,7 +8,9 @@ import {
   SELECTED_CLASS,
   applySelection,
   bindNoteIds,
+  drawSmallHeads,
   noteIdsFromEvent,
+  prepareSmallNotes,
 } from '../../editor/core/osmdBridge';
 import { DURATION_QUARTERS } from '../../editor/notes/durations';
 import type { AccidentalChoice, DurationChoice, DurationType, InsertTarget } from '../../editor/notes/durations';
@@ -645,6 +647,11 @@ export default function ScoreCanvas({
     const host = hostRef.current;
     const current = latest.current.doc;
     playheadMapRef.current = null;
+    try {
+      drawSmallHeads(osmd); // nốt bè nhỏ trong hợp âm có nốt to (OSMD vẽ cả hợp âm một cỡ)
+    } catch {
+      // chỉ mất phần thu nhỏ nốt bè
+    }
     if (!host || !current) return;
     try {
       bindNoteIds(osmd, current, host);
@@ -743,6 +750,7 @@ export default function ScoreCanvas({
         osmd.setOptions(breakOptions(text));
         await osmd.load(text);
         if (cancelled) return;
+        prepareSmallNotes(osmd);
         osmdRef.current = osmd;
         setLoadId((n) => n + 1);
       } catch {
@@ -834,6 +842,7 @@ export default function ScoreCanvas({
         osmd.setOptions(breakOptions(text));
         await osmd.load(text);
         if (cancelled) return;
+        prepareSmallNotes(osmd);
         applyHeaderStyle(osmd, readHeader(doc), shownOf(doc, latest.current.headerFallback));
         syncTranspose(osmd, latest.current.transpose);
         osmd.render();
