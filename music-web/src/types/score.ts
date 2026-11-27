@@ -396,6 +396,8 @@ export interface OmrResult {
   textAbove?: { page: number }[] | null;
   /** Nhịp độ không đọc được nên đang dùng mặc định (OMR-13). */
   tempoDefaulted?: boolean | null;
+  /** Tên bài, tác giả, nhịp độ đọc từ lớp chữ của PDF xuất từ phần mềm chép nhạc; null với ảnh, PDF scan, kết quả cũ. */
+  pageText?: { title?: string | null; composer?: string | null; tempoBpm?: number | null } | null;
   /** Phiên bản MusicXML do lần nhận diện này tạo; khác musicXmlVersion nghĩa là bản nhạc đã được lưu thêm sau OMR. */
   omrVersion?: number | null;
   kernFileId?: string | null;

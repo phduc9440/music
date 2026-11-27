@@ -129,3 +129,25 @@ def test_real_pymupdf(storage_root, java, tmp_path):
     run_omr_job(job, threading.Event(), JavaCallback(str(job.taskId)))
     assert java.endpoints()[-1] == "complete"
     assert [f["pageNumber"] for f in java.bodies("files")] == [1, 2]
+
+
+def test_vector_pdf_pages_are_cleaned_by_their_text_layer(storage_root, java, monkeypatch):
+    from app.omr import vector_pdf
+
+    pages = [make_score_page(width=1240, height=1754, systems=3)]
+    module = _fake_pymupdf(pages)
+    spans = [
+        {"font": "ABCDEF+Leland", "text": "" * 30, "size": 20.0, "bbox": (100, 300, 400, 320)},
+        {"font": "Times-Roman", "text": "Ave Maria", "size": 22.0, "bbox": (230, 40, 360, 62)},
+    ]
+    module_page = module.open("x").load_page(0).__class__
+    module_page.get_text = lambda self, kind: {"blocks": [{"type": 0, "lines": [{"spans": spans}]}]}
+    monkeypatch.setitem(sys.modules, "pymupdf", module)
+    calls = []
+    original = vector_pdf.clean_page
+    monkeypatch.setattr(vector_pdf, "clean_page", lambda gray, text: calls.append(text) or original(gray, text))
+    job = _pdf_job(storage_root, score="p2")
+    run_omr_job(job, threading.Event(), JavaCallback(str(job.taskId)))
+
+    assert java.endpoints()[-1] == "complete"
+    assert len(calls) == 1 and calls[0].is_music

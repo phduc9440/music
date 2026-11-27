@@ -52,9 +52,10 @@ from app.omr import (
     routing,
     stability,
     textstrip,
+    vector_pdf,
 )
 from app.omr.layout import PageLayout, analyze_layout
-from app.omr.pdf import iter_pdf_pages
+from app.omr.pdf import iter_pdf_pages_with_text
 from app.omr.preprocess import PreprocessOptions, UnreadablePage, load_image_gray, process_page
 from app.omr.transcoda import Recognizer, RecognizerNotReady, get_recognizer
 from app.schemas import JobRequest
@@ -218,6 +219,12 @@ class JobContext:
     """Số ô bước sửa trường độ đã đụng tới; được gắn cờ AUTO_FIXED trong measureMap để người dùng kiểm lại."""
     text_above_pages: list[int] = field(default_factory=list)
     """Trang có chữ phía trên khuông (tên hợp âm, nhịp độ...) mà OMR không đọc (OMR-13)."""
+    page_text: dict = field(default_factory=dict)
+    """Tên bài, tác giả, nhịp độ đọc từ lớp chữ của PDF xuất từ phần mềm (:mod:`app.omr.vector_pdf`); rỗng nếu không có."""
+    vector_pdf: Optional[dict] = None
+    """PDF vector: ``{"pages": số trang nhạc vector, "erasedText": số mảng chữ đã xóa theo lớp chữ}``; None nếu không phải."""
+    chord_pages: set[int] = field(default_factory=set)
+    """Trang gốc của PDF vector có in tên hợp âm (chữ đã bị xóa khỏi ảnh nên không dò trên ảnh được nữa)."""
 
     @property
     def task_id(self) -> str:
@@ -340,18 +347,21 @@ def _split_pages(ctx: JobContext) -> list[Optional[tuple[int, np.ndarray]]]:
 
     if inputs[0].kind == "PDF":
         path = storage.resolve_existing_file(inputs[0].path)
-        total, iterator = iter_pdf_pages(path)
+        total, iterator = iter_pdf_pages_with_text(path)
+        texts: list[Optional[vector_pdf.PageText]] = []
         for index in range(total):
             budget.start_page(index + 1)
             budget.check()
             try:
-                page_number, gray = next(iterator)
+                page_number, gray, text = next(iterator)
             except UnreadablePage as exc:
                 exc.page_number = exc.page_number or index + 1
                 raise
             pages.append((page_number, gray))
+            texts.append(text)
             budget.end_page()
             callback.progress(5 + round(5 * (index + 1) / total), STEP_SPLIT_PDF)
+        _clean_vector_pages(ctx, pages, texts)
         return pages
 
     # Nhiều ảnh: sắp theo số trang Java gửi (không có thì theo thứ tự nhận)
@@ -370,6 +380,38 @@ def _split_pages(ctx: JobContext) -> list[Optional[tuple[int, np.ndarray]]]:
         budget.end_page()
         callback.progress(5 + round(5 * (position + 1) / total), STEP_SPLIT_PDF)
     return pages
+
+
+def _clean_vector_pages(
+    ctx: JobContext, pages: list[Optional[tuple[int, np.ndarray]]], texts: list[Optional["vector_pdf.PageText"]]
+) -> None:
+    """PDF xuất từ phần mềm chép nhạc: xóa chữ thường (lời ca, hợp âm, tên bài) theo lớp chữ của PDF và lấy tên bài,
+    tác giả, nhịp độ từ trang 1 (:mod:`app.omr.vector_pdf`). PDF scan (không có font nhạc) thì giữ nguyên. Lỗi ở đây chỉ
+    làm mất phần xóa chữ chính xác (bước xóa chữ bằng ảnh vẫn chạy), không làm hỏng job."""
+    known = [t for t in texts if t is not None]
+    if not known or not vector_pdf.is_music_pdf(known):
+        return
+    erased = music_pages = 0
+    for index, (entry, text) in enumerate(zip(pages, texts)):
+        if entry is None or text is None or not text.is_music:
+            continue
+        try:
+            cleaned, count = vector_pdf.clean_page(entry[1], text)
+        except Exception:  # noqa: BLE001
+            log.exception("Job %s: không xóa được chữ theo lớp chữ PDF trang %s", ctx.task_id, entry[0])
+            continue
+        pages[index] = (entry[0], cleaned)
+        erased += count
+        music_pages += 1
+        if vector_pdf.chord_names(text) >= 2:
+            ctx.chord_pages.add(entry[0])
+    first = texts[0]
+    if first is not None:
+        try:
+            ctx.page_text = vector_pdf.page_text(first)
+        except Exception:  # noqa: BLE001
+            log.exception("Job %s: không đọc được tên bài từ lớp chữ PDF", ctx.task_id)
+    ctx.vector_pdf = {"pages": music_pages, "erasedText": erased}
 
 
 def _preprocess_pages(ctx: JobContext, pages: list[Optional[tuple[int, np.ndarray]]]) -> list[tuple[int, str]]:
@@ -412,6 +454,8 @@ def _preprocess_pages(ctx: JobContext, pages: list[Optional[tuple[int, np.ndarra
             relative, size = _save_page_png(score_id, kept, result.image)
             kept_pages.append((kept, relative))
             _analyze_page_layout(ctx, kept, result.image)
+            if page_number in ctx.chord_pages and kept not in ctx.text_above_pages:
+                ctx.text_above_pages.append(kept)  # PDF vector: tên hợp âm đã bị xóa theo lớp chữ trước bước này
             callback.file(
                 file_type="PNG",
                 storage_path=relative,
@@ -1100,6 +1144,12 @@ def _merge_pages(ctx: JobContext, pages: list[merge.PageKern]) -> Optional[tuple
         score_metadata["timeSignature"] = meta.time_signature
     if meta.tempo_bpm:
         score_metadata["tempoBpm"] = meta.tempo_bpm
+    elif ctx.page_text.get("tempoBpm"):
+        score_metadata["tempoBpm"] = ctx.page_text["tempoBpm"]  # "♩ = 60" in trên PDF, model không đọc được chữ
+    if ctx.page_text:
+        extra["pageText"] = ctx.page_text
+    if ctx.vector_pdf is not None:
+        extra["vectorPdf"] = ctx.vector_pdf
     return extra, score_metadata
 
 

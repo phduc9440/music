@@ -524,6 +524,8 @@
   },
   "titleFromPage": {
     "label": "Đặt tên bài theo trang gốc",
+    "fromPdf": "Đọc từ bản PDF:",
+    "useSuggestion": "Dùng tên này",
     "cropAlt": "Phần đầu trang 1 của bản gốc",
     "caption": "Đầu trang 1 của ảnh gốc: tên bài và tác giả thường in ở đây.",
     "placeholder": "Nhập tên bài như in trên bản gốc",

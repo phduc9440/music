@@ -528,6 +528,8 @@
   },
   "titleFromPage": {
     "label": "Name the score from the original page",
+    "fromPdf": "Read from the PDF:",
+    "useSuggestion": "Use this title",
     "cropAlt": "Top of page 1 of the original",
     "caption": "Top of page 1 of the original: the title and composer are usually printed here.",
     "placeholder": "Type the title as printed on the original",
