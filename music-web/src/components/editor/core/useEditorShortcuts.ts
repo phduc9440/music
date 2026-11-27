@@ -16,6 +16,13 @@ const DIGIT_DURATIONS: Record<string, DurationType> = {
   '7': '64th',
 };
 
+/** Chữ cái A–G của phím đang bấm; với Alt/⌥ (máy Mac đổi `key` thành ký tự đặc biệt) thì đọc theo vị trí phím. */
+const chordLetter = (e: KeyboardEvent): string | null => {
+  if (isLetterKey(e.key)) return e.key.toLowerCase();
+  const code = /^Key([A-G])$/.exec(e.code);
+  return code ? code[1].toLowerCase() : null;
+};
+
 export interface EditorShortcutActions {
   canEdit: boolean;
   /** Có hộp thoại khác đang mở, đang xung đột hoặc đang hỏi khôi phục nháp: phím không sửa bản nhạc. */
@@ -37,6 +44,7 @@ export interface EditorShortcutActions {
   chooseDuration: (type: DurationType) => void;
   toggleDot: () => void;
   enterLetter: (letter: string) => void;
+  addChordLetterAt: (letter: string, below: boolean) => void;
   setChordMode: (enabled: boolean) => void;
   setLyricMode: (enabled: boolean) => void;
   setInputMode: (enabled: boolean) => void;
@@ -48,7 +56,7 @@ export interface EditorShortcutActions {
 export function useEditorShortcuts(a: EditorShortcutActions) {
   const { canEdit, blocked, conflict, draft, selection, inputMode, lyricMode, chordMode } = a;
   const { save, undo, redo, selectAll, editTuplet, applyPitch, selectInChord, applySymbol } = a;
-  const { chooseDuration, toggleDot, enterLetter, setChordMode, setLyricMode, setInputMode } = a;
+  const { chooseDuration, toggleDot, enterLetter, addChordLetterAt, setChordMode, setLyricMode, setInputMode } = a;
   const { clearSelection, selectRelative } = a;
   useEffect(() => {
     if (!canEdit) return;
@@ -96,6 +104,10 @@ export function useEditorShortcuts(a: EditorShortcutActions) {
         chooseDuration(DIGIT_DURATIONS[e.key]);
       } else if (!mod && !e.altKey && e.key === '.') {
         toggleDot();
+      } else if (!mod && e.shiftKey && selection.size > 0 && chordLetter(e)) {
+        // Shift + A–G: thêm nốt bè vào hợp âm (Alt/⌥: phía dưới), như MuseScore
+        e.preventDefault();
+        addChordLetterAt(chordLetter(e) as string, e.altKey);
       } else if (inputMode && !mod && !e.altKey && isLetterKey(e.key) && selection.size > 0) {
         e.preventDefault();
         enterLetter(e.key);
@@ -140,6 +152,7 @@ export function useEditorShortcuts(a: EditorShortcutActions) {
     chooseDuration,
     toggleDot,
     enterLetter,
+    addChordLetterAt,
     editTuplet,
     inputMode,
   ]);

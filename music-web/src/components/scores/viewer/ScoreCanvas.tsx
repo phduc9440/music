@@ -9,6 +9,7 @@ import {
   applySelection,
   bindNoteIds,
   noteIdsFromEvent,
+  normalizeNoteSizes,
 } from '../../editor/core/osmdBridge';
 import { DURATION_QUARTERS } from '../../editor/notes/durations';
 import type { AccidentalChoice, DurationChoice, DurationType, InsertTarget } from '../../editor/notes/durations';
@@ -451,12 +452,12 @@ const syncTranspose = (osmd: OpenSheetMusicDisplay, semitones: number): void => 
 /** Chiều cao ước lượng của khung thêm nốt (px), để quyết định mở lên hay xuống. */
 const POPOVER_HEIGHT = 190;
 
-/** Nốt mờ ở chỗ sẽ thêm nốt: đầu nốt, dòng kẻ phụ và tên nốt. */
+/** Nốt mờ ở chỗ sẽ thêm nốt: đầu nốt, dòng kẻ phụ và tên nốt ("+" khi thêm nốt bè vào cột của nốt có sẵn). */
 function NoteGhost({ spot }: { spot: StaffSpot }) {
   const w = spot.halfStep * 2.6;
   const h = spot.halfStep * 2;
   return (
-    <div className="ed-ghost" style={{ left: spot.x, top: spot.y }}>
+    <div className={`ed-ghost${spot.chordOf ? ' ed-ghost--chord' : ''}`} style={{ left: spot.x, top: spot.y }}>
       {ledgerLines(spot.line).map((k) => (
         <span
           key={k}
@@ -466,6 +467,7 @@ function NoteGhost({ spot }: { spot: StaffSpot }) {
       ))}
       <span className="ed-ghost__head" style={{ left: -w / 2, top: -h / 2, width: w, height: h }} />
       <span className="ed-ghost__label" style={{ left: w, top: -h * 1.6 }}>
+        {spot.chordOf ? '+ ' : ''}
         {solfegeName(spot.step, spot.octave)}
       </span>
     </div>
@@ -743,6 +745,7 @@ export default function ScoreCanvas({
         osmd.setOptions(breakOptions(text));
         await osmd.load(text);
         if (cancelled) return;
+        normalizeNoteSizes(osmd);
         osmdRef.current = osmd;
         setLoadId((n) => n + 1);
       } catch {
@@ -834,6 +837,7 @@ export default function ScoreCanvas({
         osmd.setOptions(breakOptions(text));
         await osmd.load(text);
         if (cancelled) return;
+        normalizeNoteSizes(osmd);
         applyHeaderStyle(osmd, readHeader(doc), shownOf(doc, latest.current.headerFallback));
         syncTranspose(osmd, latest.current.transpose);
         osmd.render();
@@ -1272,7 +1276,7 @@ export default function ScoreCanvas({
       {shownGhost && <NoteGhost spot={shownGhost} />}
       {activePopover && (
         <NoteInsertPopover
-          key={`${activePopover.spot.measureIndex}-${activePopover.spot.beforeEntry}-${Math.round(activePopover.spot.y)}`}
+          key={`${activePopover.spot.measureIndex}-${activePopover.spot.beforeEntry}-${activePopover.spot.chordOf ?? ''}-${Math.round(activePopover.spot.y)}`}
           target={spotTarget(activePopover.spot)}
           left={Math.max(8, Math.min(activePopover.spot.x + 16, window.innerWidth - 272))}
           top={Math.max(

@@ -156,9 +156,10 @@ export default function EditorHeader(p: Props) {
             className={`sc-btn sv-ai-toggle${p.checkToggle.shown ? ' is-active' : ''}`}
             aria-pressed={p.checkToggle.shown}
             onClick={p.checkToggle.onClick}
-            title={t('upload.check.toggleHint')}
+            title={`${t('upload.check.title')}: ${t('upload.check.toggleHint')}`}
+            aria-label={`${t('upload.check.title')} (${p.checkToggle.count})`}
           >
-            <Icon name="alert" size={16} /> <span className="sv-desktop-only">{t('upload.check.title')}</span>
+            <Icon name="alert" size={16} />
             <span className="sv-count">{p.checkToggle.count}</span>
           </button>
         )}

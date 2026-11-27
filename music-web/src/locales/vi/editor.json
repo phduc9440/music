@@ -3,6 +3,7 @@
     "range": "Không thể đổi: cao độ vượt quá khoảng A0–C8",
     "rest": "Dấu lặng không có cao độ nên không đổi được",
     "duplicate": "Không thể đổi: hợp âm đã có nốt cùng cao độ",
+    "unison": "Hai nốt cùng vị trí trên khuông (ví dụ Fa và Fa♯) không chung thân được: hãy thêm vào bè riêng",
     "unchanged": "Nốt đã ở đúng trạng thái này rồi",
     "empty": "Hãy chọn ít nhất một nốt (không phải dấu lặng)",
     "tuplet": "Nốt này đã nằm trong chùm, hoặc vị trí chèn nằm giữa một chùm (chưa hỗ trợ chùm lồng nhau)",
@@ -85,9 +86,9 @@
     "voice": {
       "write": "Viết bè",
       "writeSame": "Viết bè cùng thân",
-      "cue": "Nốt nhỏ",
-      "normal": "Về nốt thường",
-      "remove": "Xóa bè"
+      "remove": "Xóa bè",
+      "addNote": "Thêm nốt bè {pitch}",
+      "addVoiceNote": "Thêm nốt bè riêng {pitch}"
     },
     "header": {
       "title": "Sửa tiêu đề",
@@ -231,7 +232,9 @@
     "tupletInput": "{name}: trường độ nhập {duration}, bấm vào dấu lặng để nhập nốt",
     "undone": "Đã hoàn tác: {label}",
     "redone": "Đã làm lại: {label}",
-    "nothingToSave": "Không có thay đổi để lưu"
+    "nothingToSave": "Không có thay đổi để lưu",
+    "unisonVoice": "{pitch} cùng vị trí trên khuông với một nốt của hợp âm nên không chung thân được: đã thêm vào bè riêng",
+    "chordNoteExists": "Hợp âm đã có nốt {pitch}"
   },
   "toast": {
     "chordsPlaced": "Đã gán {count} hợp âm",
@@ -485,7 +488,13 @@
       "durationGroup": "Trường độ",
       "dotTitle": "Chấm dôi (.): bấm thêm lần nữa để chấm dôi kép",
       "accidentalGroup": "Dấu hóa",
-      "add": "Thêm"
+      "add": "Thêm",
+      "chordTitle": "Thêm nốt bè",
+      "stemGroup": "Kiểu nốt bè",
+      "sameStem": "Cùng thân",
+      "sameStemTitle": "Nốt bè chung thân với hợp âm, cùng trường độ (nốt sát nhau tự đặt lệch sang bên)",
+      "ownStem": "Bè riêng",
+      "ownStemTitle": "Nốt bè có thân riêng (bè thứ hai của khuông), chọn được trường độ khác"
     },
     "notation": {
       "title": "Khóa nhạc, dấu hóa & nhịp",
@@ -734,11 +743,11 @@
       },
       "chordBelow": {
         "label": "Bè thân ↓",
-        "title": "Bè cùng thân: thêm vào mỗi nốt đang chọn một nốt cùng trường độ, thấp hơn một quãng ba (hai nốt chung một thân)"
+        "title": "Bè cùng thân: thêm dưới nốt thấp nhất của hợp âm một nốt cùng trường độ (quãng ba, hoặc nốt thuộc hợp âm ghi trên bản nếu có); bấm nhiều lần để chồng thêm"
       },
       "chordAbove": {
         "label": "Bè thân ↑",
-        "title": "Bè cùng thân: thêm nốt cùng trường độ, cao hơn một quãng ba"
+        "title": "Bè cùng thân: thêm trên nốt cao nhất của hợp âm một nốt cùng trường độ (quãng ba, hoặc nốt thuộc hợp âm ghi trên bản nếu có)"
       },
       "blank": {
         "label": "Bè riêng",
@@ -746,15 +755,11 @@
       },
       "addBelow": {
         "label": "Chép bè ↓",
-        "title": "Chép cả ô nhịp sang bè riêng thấp hơn một quãng ba, rồi sửa trường độ, cao độ từng nốt"
+        "title": "Chép các nốt đang chọn sang bè riêng thấp hơn (quãng ba, hoặc theo hợp âm ghi trên bản); chỗ còn lại của ô là dấu lặng ẩn, bè trên thân lên, bè dưới thân xuống"
       },
       "addAbove": {
         "label": "Chép bè ↑",
-        "title": "Chép cả ô nhịp sang bè riêng cao hơn một quãng ba"
-      },
-      "cue": {
-        "label": "Nốt nhỏ",
-        "title": "Bật/tắt hình nốt nhỏ cho các nốt đang chọn (thường dùng cho nốt bè)"
+        "title": "Chép các nốt đang chọn sang bè riêng cao hơn (quãng ba, hoặc theo hợp âm ghi trên bản)"
       },
       "removeVoice": {
         "label": "Xóa bè",
@@ -953,7 +958,7 @@
     },
     "transposeHint": "Bạn có thể hoàn tác (Ctrl+Z) và cần bấm Lưu để giữ lại.",
     "status": {
-      "inputMode": "Nhập nốt · trường độ {duration} · bấm vào khuông để thêm nốt, hoặc chọn dấu lặng rồi bấm A–G",
+      "inputMode": "Nhập nốt · trường độ {duration} · bấm vào khuông để thêm nốt, bấm trên/dưới nốt có sẵn để thêm nốt bè, hoặc chọn dấu lặng rồi bấm A–G (Shift + A–G thêm nốt bè)",
       "issueTitle": "Bấm để cuộn tới ô nhịp sai",
       "issueAria": "Cảnh báo: {message}. Bấm để cuộn tới ô nhịp",
       "issueMore": " (+{count} ô khác)",
@@ -1022,6 +1027,10 @@
         "keys": "Bấm vào khuông (chế độ Nhập nốt)",
         "desc": "Mở khung chọn nốt tại đúng dòng/khe đã bấm rồi bấm Thêm"
       },
+      "clickChord": {
+        "keys": "Bấm trên/dưới một nốt có sẵn (chế độ Nhập nốt)",
+        "desc": "Thêm nốt bè ở đúng cột đó: cùng thân (mặc định) hoặc bè riêng"
+      },
       "dragDuration": {
         "keys": "Kéo nút trường độ vào khuông",
         "desc": "Thêm nốt có trường độ đó tại chỗ thả"
@@ -1029,6 +1038,9 @@
       "letters": {
         "keys": "A – G (chế độ Nhập nốt)",
         "desc": "Biến nốt/dấu lặng đang chọn thành nốt đó rồi sang mục kế tiếp"
+      },
+      "chordLetter": {
+        "desc": "Thêm nốt bè tên đó vào hợp âm của nốt đang chọn (vừa nhập), ngay trên nốt cao nhất; thêm Alt/⌥: ngay dưới nốt thấp nhất"
       },
       "header": {
         "keys": "Bấm vào tiêu đề, tên tác giả hoặc nhịp độ",
@@ -1052,7 +1064,7 @@
       },
       "voices": {
         "keys": "Nhóm Viết bè",
-        "desc": "Bè thân: thêm nốt chung thân cùng trường độ. Bè riêng: bè mới nhịp điệu riêng (bấm vào dấu lặng để nhập). Chép bè: sao cả ô sang bè mới"
+        "desc": "Bè thân: thêm nốt chung thân (chồng dưới/trên hợp âm). Bè riêng: bè mới nhịp điệu riêng (bấm vào dấu lặng để nhập). Chép bè: chép các nốt đang chọn sang bè riêng"
       },
       "dynamics": {
         "keys": "Nhóm Sắc thái",
@@ -1117,8 +1129,8 @@
     "tie": "Dấu nối",
     "slur": "Dấu luyến",
     "voices": "Hợp âm và bè",
-    "chordAboveHint": "Thêm nốt cao hơn một quãng ba, chung thân",
-    "chordBelowHint": "Thêm nốt thấp hơn một quãng ba, chung thân",
+    "chordAboveHint": "Thêm nốt chung thân trên nốt cao nhất (quãng ba, hoặc theo hợp âm ghi trên bản)",
+    "chordBelowHint": "Thêm nốt chung thân dưới nốt thấp nhất (quãng ba, hoặc theo hợp âm ghi trên bản)",
     "attachedHeader": "Ký hiệu trên nốt",
     "attachedMenu": "Xóa ký hiệu ({count})",
     "removeAttachment": "Xóa {name}",

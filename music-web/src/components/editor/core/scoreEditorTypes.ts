@@ -96,7 +96,7 @@ export interface ScoreEditor {
   editStaves: (op: 'addBass' | 'addG' | 'addF' | 'addTenor' | 'remove') => void;
   /** Đổi khóa nhạc, dấu hóa đầu khuông hoặc nhịp tại vùng chọn. */
   editNotation: (change: NotationChange) => void;
-  /** Viết bè (sao nốt sang bè mới, nốt nhỏ), bật/tắt nốt nhỏ, hoặc xóa bè phụ. */
+  /** Viết bè: bè thân, bè riêng, chép bè, hoặc xóa bè phụ. */
   editVoice: (op: VoiceOp) => void;
   /** Tạo chùm (chùm ba, chùm năm...) từ nốt đang chọn, hoặc gộp chùm đang chọn về một nốt. */
   editTuplet: (op: TupletOp) => void;
@@ -122,6 +122,8 @@ export interface ScoreEditor {
   toggleDot: () => void;
   /** Nhập nốt tên `letter` (a–g) tại nốt đang chọn. */
   enterLetter: (letter: string) => void;
+  /** Shift + chữ cái: thêm nốt bè tên `letter` vào hợp âm của nốt đang chọn / vừa nhập (`below`: phía dưới). */
+  addChordLetterAt: (letter: string, below: boolean) => void;
   /** Thêm nốt tại vị trí trên khuông (bấm khuông hoặc kéo-thả trường độ); true nếu thêm được. */
   /** Xác nhận ô nhịp thừa/thiếu phách là đúng (ô lấy đà...), bỏ viền đỏ. */
   confirmMeasureOk: (measureIndex: number) => void;

@@ -92,6 +92,11 @@
   height: 0;
   border-top: 1.5px solid color-mix(in srgb, var(--ui-primary-hover) 75%, transparent);
 }
+/* Nốt mờ ở cột của một nốt có sẵn: sẽ thêm nốt bè (viền nét đứt) */
+.ed-ghost--chord .ed-ghost__head {
+  border-style: dashed;
+  background: color-mix(in srgb, var(--ui-primary) 35%, transparent);
+}
 .ed-ghost__label {
   position: absolute;
   padding: 1px 6px;
@@ -171,6 +176,11 @@
 }
 .ed-pop__btn--dot {
   font-size: 1.2rem;
+}
+/* Thêm nốt bè cùng thân: trường độ theo hợp âm nên các nút trường độ mờ đi */
+.ed-pop__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 .ed-pop__btn.is-active {
   border-color: var(--sc-accent, var(--ui-note-selected));

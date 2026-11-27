@@ -47,11 +47,19 @@ const ACCIDENTALS: { value: AccidentalChoice; icon?: ReactNode }[] = [
   { value: 'natural', icon: <ToolNatural /> },
 ];
 
-/** Khung nhỏ hiện khi bấm vào khuông ở chế độ Nhập nốt: chọn trường độ, dấu hóa, chỉnh cao độ rồi bấm "Thêm". */
+/**
+ * Khung nhỏ hiện khi bấm vào khuông ở chế độ Nhập nốt: chọn trường độ, dấu hóa, chỉnh cao độ rồi bấm "Thêm". Bấm ngay
+ * trên/dưới một nốt có sẵn (`target.chordOf`) thì là "Thêm nốt bè": cùng thân (trường độ theo hợp âm) hoặc bè riêng
+ * (chọn trường độ khác).
+ */
 export default function NoteInsertPopover({ target, left, top, initialDuration, onAdd, onClose }: Props) {
   const [duration, setDuration] = useState<DurationChoice>(initialDuration);
   const [accidental, setAccidental] = useState<AccidentalChoice>('auto');
   const [shift, setShift] = useState(0);
+  const harmony = !!target.chordOf;
+  const [separate, setSeparate] = useState(false);
+  // Cùng thân: trường độ theo hợp âm, các nút trường độ không dùng tới
+  const durationLocked = harmony && !separate;
   const addRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -65,7 +73,8 @@ export default function NoteInsertPopover({ target, left, top, initialDuration, 
   const name = solfegeName(step, octave);
 
   const add = () => {
-    if (onAdd({ ...target, step, octave }, duration, accidental)) onClose();
+    const extra = harmony ? { separate } : {};
+    if (onAdd({ ...target, step, octave, ...extra }, duration, accidental)) onClose();
   };
 
   // Chặn phím lọt ra ngoài để các phím tắt toàn trang (số 1–5, A–G, Delete...) không đổi bản nhạc phía sau
@@ -97,7 +106,13 @@ export default function NoteInsertPopover({ target, left, top, initialDuration, 
     >
       <div className="ed-pop__head">
         <div className="ed-pop__name">
-          {t(target.restEntry !== null ? 'editor.toolbar.insert.replaceRest' : 'editor.toolbar.insert.title')}{' '}
+          {t(
+            harmony
+              ? 'editor.toolbar.insert.chordTitle'
+              : target.restEntry !== null
+                ? 'editor.toolbar.insert.replaceRest'
+                : 'editor.toolbar.insert.title',
+          )}{' '}
           <strong>{name}</strong>
           <span className="ed-pop__latin">
             {' '}
@@ -125,6 +140,29 @@ export default function NoteInsertPopover({ target, left, top, initialDuration, 
         </div>
       </div>
 
+      {harmony && (
+        <div className="ed-pop__row" role="group" aria-label={t('editor.toolbar.insert.stemGroup')}>
+          <button
+            type="button"
+            className={`ed-pop__btn ed-pop__btn--wide${separate ? '' : ' is-active'}`}
+            aria-pressed={!separate}
+            title={t('editor.toolbar.insert.sameStemTitle')}
+            onClick={() => setSeparate(false)}
+          >
+            {t('editor.toolbar.insert.sameStem')}
+          </button>
+          <button
+            type="button"
+            className={`ed-pop__btn ed-pop__btn--wide${separate ? ' is-active' : ''}`}
+            aria-pressed={separate}
+            title={t('editor.toolbar.insert.ownStemTitle')}
+            onClick={() => setSeparate(true)}
+          >
+            {t('editor.toolbar.insert.ownStem')}
+          </button>
+        </div>
+      )}
+
       <div
         className="ed-pop__row ed-pop__row--durations"
         role="group"
@@ -134,8 +172,9 @@ export default function NoteInsertPopover({ target, left, top, initialDuration, 
           <button
             key={d.type}
             type="button"
-            className={`ed-pop__btn${duration.type === d.type ? ' is-active' : ''}`}
-            aria-pressed={duration.type === d.type}
+            className={`ed-pop__btn${duration.type === d.type && !durationLocked ? ' is-active' : ''}`}
+            aria-pressed={duration.type === d.type && !durationLocked}
+            disabled={durationLocked}
             title={`${durationLabel(d.type)} (${d.key})`}
             onClick={() => setDuration((cur) => ({ ...cur, type: d.type }))}
           >
@@ -144,8 +183,9 @@ export default function NoteInsertPopover({ target, left, top, initialDuration, 
         ))}
         <button
           type="button"
-          className={`ed-pop__btn ed-pop__btn--dot${duration.dots > 0 ? ' is-active' : ''}`}
-          aria-pressed={duration.dots > 0}
+          className={`ed-pop__btn ed-pop__btn--dot${duration.dots > 0 && !durationLocked ? ' is-active' : ''}`}
+          aria-pressed={duration.dots > 0 && !durationLocked}
+          disabled={durationLocked}
           title={t('editor.toolbar.insert.dotTitle')}
           onClick={() => setDuration((cur) => ({ ...cur, dots: nextDots(cur.dots) }))}
         >
