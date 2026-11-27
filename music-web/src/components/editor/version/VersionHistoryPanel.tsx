@@ -124,7 +124,7 @@ export default function VersionHistoryPanel({
   }
 
   return (
-    <Modal title={t('editor.version.panel.title')} onClose={onClose}>
+    <Modal title={t('editor.version.panel.title')} onClose={onClose} className="vh-modal--list">
       {error ? (
         <p className="vh-empty" role="alert">
           {error}
@@ -176,7 +176,7 @@ export default function VersionHistoryPanel({
                     )}
                     {canEdit && !v.isCurrent && (
                       <button
-                        className="sc-btn sc-btn--sm"
+                        className="sc-btn sc-btn--sm vh-item__restore"
                         disabled={busy || restoring !== null || !!restoreBlockedReason}
                         title={restoreBlockedReason ?? undefined}
                         onClick={() => void restore(v.version)}

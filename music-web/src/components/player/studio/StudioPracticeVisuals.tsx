@@ -66,6 +66,8 @@ interface PianoProps {
   guideLoop?: boolean;
   /** Nốt gốc của bàn phím máy tính (mặc định C4 = 60), để vẽ nhãn phím A-K lên đàn */
   computerKeyboardBase?: number;
+  /** Nốt đang giữ bằng bàn phím máy tính: tô phím như đang bấm. */
+  heldMidis?: readonly number[];
 }
 
 /** Nốt ngắn vẫn giữ phím sáng ít nhất chừng này để mắt kịp thấy. */
@@ -326,6 +328,7 @@ export function StudioVirtualPiano({
   guideDurationMs = 0,
   guideLoop = false,
   computerKeyboardBase,
+  heldMidis = [],
 }: PianoProps) {
   const guide = soundingKeys(guideNotes, guideElapsedMs, guideDurationMs, guideLoop);
   const [pressedPointers, setPressedPointers] = useState<Record<number, number>>({});
@@ -396,7 +399,7 @@ export function StudioVirtualPiano({
           const event = [...feedback]
             .reverse()
             .find((item) => item.midi === key.midi && elapsedMs - item.atMs <= FEEDBACK_LIFETIME_MS);
-          const pressed = Object.values(pressedPointers).includes(key.midi);
+          const pressed = Object.values(pressedPointers).includes(key.midi) || heldMidis.includes(key.midi);
           const semitone = computerKeyboardBase !== undefined ? key.midi - computerKeyboardBase : -1;
           const shortcut =
             inputSource === 'KEYBOARD' && semitone >= -12 && semitone <= 12 ? KEYBOARD_SHORTCUTS[semitone] : null;
@@ -434,7 +437,7 @@ export function StudioVirtualPiano({
           const event = [...feedback]
             .reverse()
             .find((item) => item.midi === key.midi && elapsedMs - item.atMs <= FEEDBACK_LIFETIME_MS);
-          const pressed = Object.values(pressedPointers).includes(key.midi);
+          const pressed = Object.values(pressedPointers).includes(key.midi) || heldMidis.includes(key.midi);
           const semitone = computerKeyboardBase !== undefined ? key.midi - computerKeyboardBase : -1;
           const shortcut =
             inputSource === 'KEYBOARD' && semitone >= -12 && semitone <= 12 ? KEYBOARD_SHORTCUTS[semitone] : null;
@@ -462,9 +465,7 @@ export function StudioVirtualPiano({
                 if (clickEvent.detail === 0 && canPlay) onPlayNote(key.midi);
               }}
             >
-              {shortcut && (
-                <kbd className={`studio-player__key-badge is-black-key ${shortcutHand}`}>{shortcut}</kbd>
-              )}
+              {shortcut && <kbd className={`studio-player__key-badge is-black-key ${shortcutHand}`}>{shortcut}</kbd>}
             </button>
           );
         })}

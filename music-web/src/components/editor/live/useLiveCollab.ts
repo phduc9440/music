@@ -17,6 +17,11 @@ export interface LiveCollab {
   active: boolean;
   state: LiveState;
   session: LiveSession | null;
+  /** Có người khác (hoặc tab khác của mình) đang cùng sửa. */
+  othersEditing: boolean;
+  /** Tạm rời phiên cho việc server chỉ làm khi không còn phiên (khôi phục phiên bản); xong gọi resume. */
+  suspend: () => Promise<void>;
+  resume: () => void;
   /** Editor gắn (hoặc gỡ bằng null) nơi nhận thay đổi từ người khác. */
   bind: (bindings: LiveBindings | null) => void;
 }
@@ -45,6 +50,7 @@ const LIVE_ACCESS_CHANGED = 3128;
 export function useLiveCollab({ scoreId, doc, enabled, getSelection }: Options): LiveCollab {
   const [state, setState] = useState<LiveState>(IDLE);
   const [session, setSession] = useState<LiveSession | null>(null);
+  const [suspended, setSuspended] = useState(false);
   const bindings = useRef<LiveBindings | null>(null);
   const bind = useCallback((next: LiveBindings | null) => {
     bindings.current = next;
@@ -55,7 +61,7 @@ export function useLiveCollab({ scoreId, doc, enabled, getSelection }: Options):
   });
 
   useEffect(() => {
-    if (!enabled || !doc) return;
+    if (!enabled || suspended || !doc) return;
     const created = new LiveSession(scoreId, doc, true, {
       onState: setState,
       onDocChanged: (touched) => bindings.current?.onDocChanged(touched),
@@ -75,7 +81,17 @@ export function useLiveCollab({ scoreId, doc, enabled, getSelection }: Options):
       setState(IDLE);
       void created.stop();
     };
-  }, [enabled, doc, scoreId]);
+  }, [enabled, suspended, doc, scoreId]);
 
-  return useMemo(() => ({ active: session !== null, state, session, bind }), [session, state, bind]);
+  const suspend = useCallback(async () => {
+    await session?.stop(); // gửi "leave" xong rồi mới cho gọi API
+    setSuspended(true);
+  }, [session]);
+  const resume = useCallback(() => setSuspended(false), []);
+  const othersEditing = state.participants.some((p) => p.editing && p.sessionId !== state.selfSessionId);
+
+  return useMemo(
+    () => ({ active: session !== null, state, session, othersEditing, suspend, resume, bind }),
+    [session, state, othersEditing, suspend, resume, bind],
+  );
 }

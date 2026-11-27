@@ -66,6 +66,8 @@ interface Props {
   onMeasureHeld?: (name: string) => void;
   /** Cuộn tới một ô nhịp; `key` đổi để yêu cầu lại cùng một ô. */
   focusMeasure?: { index: number; key: number } | null;
+  /** Ô nhịp (từ 0) đang được làm sáng để người dùng kiểm tra; null = không tô. */
+  markedMeasure?: number | null;
   /** Bấm vào nốt (ids rỗng = bấm ra ngoài); additive = giữ Shift. Có prop này thì canvas cho chọn nốt. */
   onSelectNotes?: (ids: string[], additive: boolean) => void;
   /** Kéo nốt bằng chuột/bút lên hoặc xuống `steps` bậc (dương = lên). Chạm không kéo nốt để khỏi lẫn với cuộn. */
@@ -164,6 +166,7 @@ const MEASURE_OF_ID = /^(?:p\d+-)?m(\d+)-/;
 const ISSUE_BOX_CLASS = 'ed-issue-box';
 const LOCK_BOX_CLASS = 'ed-lock-box';
 const EMPTY_LOCKS: readonly LockBox[] = [];
+const FOCUS_BOX_CLASS = 'ed-focus-box';
 const LOOP_BOX_CLASS = 'pl-loop-box';
 const LOOP_PAD_X = 6;
 const LOOP_PAD_Y = 18;
@@ -255,6 +258,24 @@ const collectMeasureBoxes = (host: HTMLElement, accept: (measureIndex: number) =
     }
   });
   return boxes;
+};
+
+/** Khung sáng quanh ô nhịp đang kiểm tra. Mỗi lần vẽ tạo phần tử mới nên hiệu ứng nhấp sáng chạy lại. */
+const drawFocusBox = (host: HTMLElement, measureIndex: number | null): void => {
+  host.querySelectorAll(`.${FOCUS_BOX_CLASS}`).forEach((el) => el.remove());
+  if (measureIndex === null) return;
+  const box = collectMeasureBoxes(host, (i) => i === measureIndex).get(measureIndex);
+  if (!box) return;
+  const origin = host.getBoundingClientRect();
+  const div = document.createElement('div');
+  div.className = FOCUS_BOX_CLASS;
+  div.setAttribute('aria-hidden', 'true');
+  // rộng hơn viền đỏ (ô sai trường độ) một chút để cả hai cùng thấy được
+  div.style.left = `${box.l - origin.left - ISSUE_PAD_X - 4}px`;
+  div.style.top = `${box.t - origin.top - ISSUE_PAD_Y - 4}px`;
+  div.style.width = `${box.r - box.l + (ISSUE_PAD_X + 4) * 2}px`;
+  div.style.height = `${box.b - box.t + (ISSUE_PAD_Y + 4) * 2}px`;
+  host.appendChild(div);
 };
 
 /** Khung quanh các ô nhịp trong đoạn A-B (chỉ số ô từ 0, gồm cả hai đầu). */
@@ -495,6 +516,7 @@ export default function ScoreCanvas({
   lockBoxes = EMPTY_LOCKS,
   onMeasureHeld,
   focusMeasure = null,
+  markedMeasure = null,
   playing = EMPTY_SET,
   mutedStaves = EMPTY_SET,
   followMeasure = null,
@@ -589,6 +611,7 @@ export default function ScoreCanvas({
     transpose,
     issueMeasures,
     lockBoxes,
+    markedMeasure,
     onConfirmMeasure,
     openText,
     commentRanges,
@@ -613,6 +636,7 @@ export default function ScoreCanvas({
       transpose,
       issueMeasures,
       lockBoxes,
+      markedMeasure,
       onConfirmMeasure,
       openText,
       commentRanges,
@@ -657,6 +681,7 @@ export default function ScoreCanvas({
       drawIssueBoxes(host, latest.current.issueMeasures, (i) => latest.current.onConfirmMeasure?.(i));
       drawCommentBoxes(host, latest.current.commentRanges, (ids) => latest.current.onCommentBubble?.(ids));
       drawLockBoxes(host, latest.current.lockBoxes);
+      drawFocusBox(host, latest.current.markedMeasure);
       applyAiChords(host, latest.current.aiChords);
       if (latest.current.openText) {
         drawTextHotspots(
@@ -926,6 +951,12 @@ export default function ScoreCanvas({
     const host = hostRef.current;
     if (host && aiFocus) flashAiChord(host, aiFocus.mark);
   }, [aiFocus]);
+
+  // Làm sáng ô đang kiểm tra; bấm lại cùng ô (key đổi) thì nhấp sáng lại
+  useEffect(() => {
+    const host = hostRef.current;
+    if (host) drawFocusBox(host, markedMeasure);
+  }, [markedMeasure, focusMeasure]);
 
   // Cuộn tới ô nhịp được yêu cầu (bấm cảnh báo trên thanh trạng thái)
   useEffect(() => {

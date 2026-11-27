@@ -12,8 +12,8 @@ interface Props {
   onCloseHelp: () => void;
   historyOpen: boolean;
   onCloseHistory: () => void;
-  /** Đang có phiên cùng sửa: khôi phục phiên bản cũ sẽ ghi đè thay đổi của người khác nên bị khóa. */
-  liveActive: boolean;
+  /** Có người khác đang cùng sửa: khôi phục phiên bản cũ sẽ ghi đè thay đổi của họ nên bị khóa. */
+  othersEditing: boolean;
 }
 
 /** Các hộp thoại của Editor: phím tắt, khôi phục bản nháp, lịch sử phiên bản, xung đột phiên bản khi lưu. */
@@ -24,7 +24,7 @@ export default function EditorDialogs({
   onCloseHelp,
   historyOpen,
   onCloseHistory,
-  liveActive,
+  othersEditing,
 }: Props) {
   return (
     <>
@@ -66,7 +66,7 @@ export default function EditorDialogs({
           canEdit={score.canEdit}
           dirty={editor.dirty}
           busy={editor.saving}
-          restoreBlockedReason={liveActive ? t('editor.version.panel.liveBlocked') : null}
+          restoreBlockedReason={othersEditing ? t('editor.version.panel.liveBlocked') : null}
           onRestore={editor.restoreVersion}
           onClose={onCloseHistory}
         />

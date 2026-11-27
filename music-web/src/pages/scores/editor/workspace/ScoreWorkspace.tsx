@@ -341,6 +341,7 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
             lockBoxes={lockBoxes}
             onMeasureHeld={(name) => toast.info(t('live.notice.heldBy', { name }), { toastId: 'live-held' })}
             focusMeasure={focusMeasure}
+            markedMeasure={checkOpen && omrCheck.available ? (focusMeasure?.index ?? null) : null}
             playing={player.activeIds}
             mutedStaves={player.mutedStaves}
             loopRange={loopRange}
@@ -488,7 +489,7 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
         onCloseHelp={() => setHelpOpen(false)}
         historyOpen={historyOpen}
         onCloseHistory={() => setHistoryOpen(false)}
-        liveActive={live.active}
+        othersEditing={live.othersEditing}
       />
     </div>
   );
