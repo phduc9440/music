@@ -67,6 +67,10 @@ class PageResult:
     skipped: bool = False
     """True nếu trang bị bỏ vì không có khuông nhạc."""
 
+    transform: Optional[np.ndarray] = None
+    """Ma trận 2x3 đổi tọa độ pixel của ảnh đầu vào (``gray`` truyền vào :func:`process_page`) sang tọa độ trên ``image``
+    (sau cắt viền, xoay, cắt lề, thu phóng). Dùng để đặt ký hiệu đọc từ PDF vector (:mod:`app.omr.glyphs`) lên ảnh trang."""
+
 
 @dataclass
 class PreprocessOptions:
@@ -152,8 +156,8 @@ def flatten_illumination(gray: np.ndarray) -> np.ndarray:
     return cv2.divide(gray, np.maximum(background, 1), scale=255)
 
 
-def strip_edge_bands(gray: np.ndarray, max_fraction: float = 0.1) -> np.ndarray:
-    """Cắt các dải ngang/dọc đều màu, không phải nền trắng, sát mép ảnh.
+def _edge_band_box(gray: np.ndarray, max_fraction: float = 0.1) -> Optional[tuple[int, int, int, int]]:
+    """Khung ``(trên, dưới, trái, phải)`` giữ lại sau khi cắt các dải ngang/dọc đều màu, không phải nền trắng, sát mép ảnh.
 
     Ảnh chụp màn hình điện thoại thường dính thanh trạng thái hoặc viền xám cao vài pixel. Nếu giữ lại, bước nhị phân
     hóa biến dải xám thành vạch đen dày và model nhận diện bị rối. Một hàng (cột) bị coi là dải khi gần như đồng nhất
@@ -178,7 +182,16 @@ def strip_edge_bands(gray: np.ndarray, max_fraction: float = 0.1) -> np.ndarray:
     while width - right < int(width * max_fraction) and uniform_dark(gray[:, right - 1]):
         right -= 1
     if (top, bottom, left, right) == (0, height, 0, width) or bottom - top < 8 or right - left < 8:
+        return None
+    return top, bottom, left, right
+
+
+def strip_edge_bands(gray: np.ndarray, max_fraction: float = 0.1) -> np.ndarray:
+    """Ảnh đã cắt dải viền đều màu sát mép (xem :func:`_edge_band_box`); không có dải nào thì trả nguyên ảnh."""
+    box = _edge_band_box(gray, max_fraction)
+    if box is None:
         return gray
+    top, bottom, left, right = box
     return gray[top:bottom, left:right]
 
 
@@ -220,9 +233,9 @@ def _weighted_median(values: np.ndarray, weights: np.ndarray) -> float:
     return float(values[np.searchsorted(cumulative, cumulative[-1] / 2.0)])
 
 
-def _rotate(gray: np.ndarray, angle: float, expand: bool = True) -> np.ndarray:
-    """Xoay ảnh ``angle`` độ (dương = ngược chiều kim đồng hồ), nền trắng, mở rộng khung để không cắt góc."""
-    height, width = gray.shape[:2]
+def _rotation(shape: tuple[int, ...], angle: float, expand: bool = True) -> tuple[np.ndarray, int, int]:
+    """``(ma trận 2x3, rộng mới, cao mới)`` của phép xoay ``angle`` độ quanh tâm ảnh (xem :func:`_rotate`)."""
+    height, width = shape[:2]
     matrix = cv2.getRotationMatrix2D((width / 2.0, height / 2.0), angle, 1.0)
     if expand:
         cos, sin = abs(matrix[0, 0]), abs(matrix[0, 1])
@@ -232,6 +245,12 @@ def _rotate(gray: np.ndarray, angle: float, expand: bool = True) -> np.ndarray:
         matrix[1, 2] += new_h / 2.0 - height / 2.0
     else:
         new_w, new_h = width, height
+    return matrix, new_w, new_h
+
+
+def _rotate(gray: np.ndarray, angle: float, expand: bool = True) -> np.ndarray:
+    """Xoay ảnh ``angle`` độ (dương = ngược chiều kim đồng hồ), nền trắng, mở rộng khung để không cắt góc."""
+    matrix, new_w, new_h = _rotation(gray.shape, angle, expand)
     return cv2.warpAffine(
         gray, matrix, (new_w, new_h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=255
     )
@@ -318,8 +337,8 @@ def has_staff(gray: np.ndarray) -> bool:
     return line_count >= _MIN_STAFF_LINES
 
 
-def crop_margins(gray: np.ndarray) -> np.ndarray:
-    """Cắt bớt lề trắng thừa quanh bản nhạc để nốt to hơn sau khi resize về 1050px.
+def _margin_box(gray: np.ndarray) -> Optional[tuple[int, int, int, int]]:
+    """Khung ``(trên, dưới, trái, phải)`` sau khi cắt bớt lề trắng thừa quanh bản nhạc để nốt to hơn sau khi resize về 1050px.
 
     Dò khung bao của mực trên bản thu nhỏ (bỏ qua vài hạt nhiễu lẻ), chừa lề ~2%. Không cắt nếu khung bao nhỏ bất
     thường (< 10% diện tích: nhiều khả năng chỉ là nhiễu) để không làm mất nội dung.
@@ -333,12 +352,12 @@ def crop_margins(gray: np.ndarray) -> np.ndarray:
     row_hit = np.flatnonzero(ink.sum(axis=1, dtype=np.float64) / 255.0 >= max(4.0, 0.004 * s_width))
     col_hit = np.flatnonzero(ink.sum(axis=0, dtype=np.float64) / 255.0 >= max(4.0, 0.004 * s_height))
     if row_hit.size == 0 or col_hit.size == 0:
-        return gray
+        return None
 
     top, bottom = int(row_hit[0]), int(row_hit[-1]) + 1
     left, right = int(col_hit[0]), int(col_hit[-1]) + 1
     if (bottom - top) * (right - left) < 0.10 * s_height * s_width:
-        return gray
+        return None
 
     height, width = gray.shape
     scale = width / s_width
@@ -347,6 +366,15 @@ def crop_margins(gray: np.ndarray) -> np.ndarray:
     y1 = min(height, int(bottom * scale) + margin)
     x0 = max(0, int(left * scale) - margin)
     x1 = min(width, int(right * scale) + margin)
+    return y0, y1, x0, x1
+
+
+def crop_margins(gray: np.ndarray) -> np.ndarray:
+    """Cắt bớt lề trắng thừa quanh bản nhạc (xem :func:`_margin_box`)."""
+    box = _margin_box(gray)
+    if box is None:
+        return gray
+    y0, y1, x0, x1 = box
     return gray[y0:y1, x0:x1]
 
 
@@ -361,6 +389,22 @@ def binarize(gray: np.ndarray) -> np.ndarray:
     return cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, block, 12)
 
 
+def _fitted_size(shape: tuple[int, ...], width: int = TARGET_W, height: int = TARGET_H) -> tuple[int, int]:
+    """``(rộng, cao)`` của ảnh sau khi thu phóng giữ tỉ lệ cho vừa khung (:func:`fit_to_canvas`)."""
+    src_h, src_w = shape[:2]
+    scale = min(width / src_w, height / src_h)
+    return max(1, min(width, int(round(src_w * scale)))), max(1, min(height, int(round(src_h * scale))))
+
+
+def _crop_matrix(top: int, left: int) -> np.ndarray:
+    return np.array([[1.0, 0.0, -left], [0.0, 1.0, -top], [0.0, 0.0, 1.0]])
+
+
+def _fit_matrix(shape: tuple[int, ...]) -> np.ndarray:
+    new_w, new_h = _fitted_size(shape)
+    return np.array([[new_w / shape[1], 0.0, 0.0], [0.0, new_h / shape[0], 0.0], [0.0, 0.0, 1.0]])
+
+
 def fit_to_canvas(gray: np.ndarray, width: int = TARGET_W, height: int = TARGET_H) -> np.ndarray:
     """Đưa ảnh về đúng ``width`` x ``height``: thu phóng giữ tỉ lệ cho vừa khung, pad trắng, căn trên-trái.
 
@@ -368,10 +412,8 @@ def fit_to_canvas(gray: np.ndarray, width: int = TARGET_W, height: int = TARGET_
     - Trang cao hơn tỉ lệ (hoặc ảnh ngang): thu nhỏ cho vừa chiều cao rồi pad trắng bên PHẢI. Khác model card (cắt
       phần dưới), cách này không làm mất nội dung.
     """
-    src_h, src_w = gray.shape[:2]
-    scale = min(width / src_w, height / src_h)
-    new_w = max(1, min(width, int(round(src_w * scale))))
-    new_h = max(1, min(height, int(round(src_h * scale))))
+    new_w, new_h = _fitted_size(gray.shape, width, height)
+    scale = min(width / gray.shape[1], height / gray.shape[0])
     interpolation = cv2.INTER_AREA if scale < 1 else cv2.INTER_CUBIC
     resized = cv2.resize(gray, (new_w, new_h), interpolation=interpolation)
     canvas = np.full((height, width), 255, dtype=np.uint8)
@@ -411,14 +453,19 @@ def process_page(
         if gray.shape[1] > gray.shape[0]:
             result.warnings.append(f"Trang {page_number} nằm ngang, đã thu nhỏ cho vừa khổ dọc")
         result.image = fit_to_canvas(gray)
+        result.transform = _fit_matrix(gray.shape)[:2]
         return result
 
     check()
-    stripped = strip_edge_bands(gray)
-    if stripped.shape != gray.shape:
+    # Mỗi bước cắt/xoay/thu phóng nhân thêm vào ``matrix`` (tọa độ ảnh vào -> tọa độ ảnh ra, ma trận thuần nhất 3x3)
+    matrix = np.eye(3)
+    band = _edge_band_box(gray)
+    if band is not None:
+        top, bottom, left, right = band
+        gray = gray[top:bottom, left:right]
+        matrix = _crop_matrix(top, left) @ matrix
         result.warnings.append(f"Trang {page_number}: đã cắt dải viền đều màu ở mép ảnh (thường là thanh trạng thái)")
         result.meta["edgeBandsStripped"] = True
-    gray = stripped
     clean_source = is_clean_digital(gray)
     # Ảnh số sạch (PDF xuất từ phần mềm, ảnh chụp màn hình) không có nhiễu để khử: median/bilateral chỉ làm mờ dòng kẻ
     # mảnh. Đo trên "Thánh Vịnh 22" (PNG sạch) với sourceType=SCAN: median làm bố cục chỉ còn 1 hệ thay vì 5.
@@ -434,7 +481,9 @@ def process_page(
                 f"Trang {page_number}: góc nghiêng ước lượng {angle:.1f}° vượt quá {MAX_DESKEW_DEG:.0f}°, không xoay"
             )
         elif abs(angle) >= 0.05:
+            rotation, _w, _h = _rotation(work.shape, angle)
             work = _rotate(work, angle)
+            matrix = np.vstack([rotation, [0.0, 0.0, 1.0]]) @ matrix
             result.meta["deskewAngle"] = round(angle, 2)
 
     check()
@@ -446,7 +495,11 @@ def process_page(
         return result
 
     check()
-    work = crop_margins(work)
+    margins = _margin_box(work)
+    if margins is not None:
+        y0, y1, x0, x1 = margins
+        work = work[y0:y1, x0:x1]
+        matrix = _crop_matrix(y0, x0) @ matrix
 
     check()
     if options.binarize and not clean_source:
@@ -460,4 +513,5 @@ def process_page(
 
     check()
     result.image = fit_to_canvas(work)
+    result.transform = (_fit_matrix(work.shape) @ matrix)[:2]
     return result
