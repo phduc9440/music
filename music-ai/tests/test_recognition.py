@@ -474,7 +474,7 @@ def test_measure_map_places_each_measure_on_the_page_image(storage_root, java):
     data = java.bodies("complete")[0]["resultData"]
     check = data["measureCheck"]
     assert check["imageMeasures"] == 12 and check["kernMeasures"] == 12 and check["pagesRerouted"] == 0
-    assert check["pages"] == [{"page": 1, "imageMeasures": 12, "kernMeasures": 12}]
+    assert check["pages"] == [{"page": 1, "imageMeasures": 12, "kernMeasures": 12, "layoutChecked": True}]
     entries = data["measureMap"]
     assert [e["measure"] for e in entries] == list(range(1, 13))
     assert [e["system"] for e in entries] == [1] * 4 + [2] * 5 + [3] * 3

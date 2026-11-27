@@ -178,3 +178,13 @@ def test_describe_lines_reads_top_staff_first():
     text = review.describe_lines(["4c\t4ee-", "4d\t4r"], 2, ["PIANO", "SINGLE"])
     assert text.startswith("khuông 1 (giọng hát/khuông đơn): Eb5 (đen), lặng (đen)")
     assert "khuông 2 (piano): C4 (đen), D4 (đen)" in text
+
+
+def test_unchecked_layout_lowers_confidence_below_review_threshold_with_a_reason():
+    result = _melody("4c 4d 4e", "2.e")
+    entries = _entries(result)
+    entries[0]["flags"] = [review.FLAG_LAYOUT]
+    review.annotate(entries, result)
+    assert entries[0]["confidence"] < review.REVIEW_THRESHOLD
+    assert any("Bố cục trang" in r for r in entries[0]["reasons"])
+    assert entries[1]["confidence"] == 1.0

@@ -534,6 +534,8 @@ def _route_pages(
         found, wanted = routing.page_measures(page), routing.expected_measures(ctx.layouts.get(page_number))
         if page_number not in todo and routing.measures_off(found, wanted):
             page_warnings[page_number].append(_measure_message(page_number, found or 0, wanted or 0))
+        if measure_map.layout_unchecked(ctx.layouts.get(page_number)):
+            page_warnings[page_number].append(_layout_message(page_number, ctx.layouts[page_number]))
     if not todo:
         return
 
@@ -714,6 +716,14 @@ def _mismatch_message(page_number: int, found: int, expected: int) -> str:
     return (
         f"Trang {page_number}: đọc được {found} khuông trong khi ảnh có {expected} khuông mỗi hệ "
         "(có thể thiếu một khuông, ví dụ giọng hát)"
+    )
+
+
+def _layout_message(page_number: int, layout: PageLayout) -> str:
+    counts = ", ".join(str(c) for c in layout.staff_counts)
+    return (
+        f"Trang {page_number}: bố cục không rõ (số khuông từng hệ {counts}), chưa kiểm được số khuông và số ô trên ảnh; "
+        "hãy đối chiếu cả trang với ảnh gốc"
     )
 
 

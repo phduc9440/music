@@ -34,8 +34,10 @@ FLAG_LEAP = "LEAP"
 FLAG_ACCIDENTAL = "ACCIDENTAL"
 FLAG_UNSTABLE = "UNSTABLE"
 FLAG_AI_DOUBT = "AI_DOUBT"
+FLAG_LAYOUT = "LAYOUT_UNCHECKED"
 
 FLAG_WEIGHTS: dict[str, float] = {
+    FLAG_LAYOUT: 0.25,
     FLAG_DURATION: 0.45,
     FLAG_COUNT: 0.25,
     FLAG_RANGE: 0.35,
@@ -408,6 +410,7 @@ def analyze(
 _BASE_REASONS = {
     FLAG_DURATION: "Tổng trường độ không khớp số chỉ nhịp",
     FLAG_COUNT: "Số ô của hệ này khác số ô đếm trên ảnh, có thể thừa hoặc thiếu ô",
+    FLAG_LAYOUT: "Bố cục trang này không rõ (các hệ khác số khuông), chưa kiểm được số ô và số khuông: đối chiếu cả trang",
 }
 
 

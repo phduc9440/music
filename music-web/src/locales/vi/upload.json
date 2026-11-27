@@ -80,6 +80,7 @@
     "ACCIDENTAL": "Dấu hóa lạ chỉ xuất hiện một lần, có thể là vết bẩn hoặc chữ",
     "UNSTABLE": "Đọc lại ô này nhiều lần cho kết quả khác nhau",
     "AI_DOUBT": "AI đối chiếu ảnh cho rằng ô này đọc chưa đúng",
+    "LAYOUT_UNCHECKED": "Bố cục trang này không rõ (các hệ khác số khuông), chưa kiểm được số ô và số khuông: hãy đối chiếu cả trang",
     "AUTO_FIXED": "Máy đã tự sửa ô này, hãy đối chiếu với ảnh gốc"
   },
   "dropzone": {
@@ -478,6 +479,7 @@
     "PAGE_LOOP_TRIMMED": "Máy đọc lặp, đã cắt {count} dòng lặp",
     "PAGE_MEASURE_MISMATCH": "Đọc được {found} ô nhịp trong khi ảnh có {expected} ô, hãy kiểm tra trang này",
     "PAGE_STAFF_MISMATCH": "Đọc được {found} khuông trong khi ảnh có {expected} khuông mỗi hệ",
+    "PAGE_LAYOUT_UNCHECKED": "Bố cục trang không rõ (số khuông từng hệ {counts}), chưa kiểm được số khuông và số ô trên ảnh; hãy đối chiếu cả trang với ảnh gốc",
     "SYSTEM_MEASURE_MISMATCH": "Hệ này đọc ra {found} ô nhịp trong khi ảnh có {expected} ô",
     "BARLINES_INSERTED": "Máy bỏ sót vạch nhịp, đã tự chèn {count} vạch theo trường độ (nên đối chiếu với ảnh)",
     "TEXT_ABOVE_STAFF": "Có chữ phía trên khuông (thường là tên hợp âm hoặc nhịp độ) chưa được nhận diện; hợp âm in trên bản gốc không có trong bản số",

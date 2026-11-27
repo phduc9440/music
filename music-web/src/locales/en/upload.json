@@ -80,6 +80,7 @@
     "ACCIDENTAL": "Unusual accidental that appears only once; it may be a smudge or text",
     "UNSTABLE": "Reading this measure again gave different results",
     "AI_DOUBT": "The AI check thinks this measure was read incorrectly",
+    "LAYOUT_UNCHECKED": "The layout of this page is unclear (systems have different staff counts), so measures and staves could not be checked: compare the whole page",
     "AUTO_FIXED": "This measure was corrected automatically, compare it with the original"
   },
   "dropzone": {
@@ -482,6 +483,7 @@
     "PAGE_LOOP_TRIMMED": "The model repeated itself, {count} repeated lines were removed",
     "PAGE_MEASURE_MISMATCH": "Read {found} measures but the image has {expected}, check this page",
     "PAGE_STAFF_MISMATCH": "Read {found} staves but the image has {expected} staves per system",
+    "PAGE_LAYOUT_UNCHECKED": "Unclear page layout (staves per system {counts}): staves and measures could not be checked against the image, compare the whole page with the original",
     "SYSTEM_MEASURE_MISMATCH": "This system read {found} measures but the image has {expected}",
     "BARLINES_INSERTED": "Missing barlines: inserted {count} by duration (compare with the image)",
     "TEXT_ABOVE_STAFF": "There is text above the staff (usually chord names or tempo) that wasn't recognized; printed chords are not in the digital score",

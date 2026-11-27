@@ -30,6 +30,7 @@ _WARNING_CODES: list[tuple[str, re.Pattern[str], tuple[str, ...]]] = [
     ("PAGE_LOOP_TRIMMED", re.compile(r"^model sinh lặp, đã cắt (\d+) dòng lặp"), ("count",)),
     ("PAGE_MEASURE_MISMATCH", re.compile(r"^đọc được (\d+) ô nhịp trong khi ảnh có (\d+) ô"), ("found", "expected")),
     ("PAGE_STAFF_MISMATCH", re.compile(r"^đọc được (\d+) khuông trong khi ảnh có (\d+) khuông"), ("found", "expected")),
+    ("PAGE_LAYOUT_UNCHECKED", re.compile(r"^bố cục không rõ \(số khuông từng hệ ([\d, ]+)\)"), ("counts",)),
     ("SYSTEM_MEASURE_MISMATCH", re.compile(r"^đọc ra (\d+) ô nhịp trong khi ảnh có (\d+) ô"), ("found", "expected")),
     ("BARLINES_INSERTED", re.compile(r"^model bỏ sót vạch nhịp, đã tự chèn (\d+) vạch nhịp"), ("count",)),
     ("TEXT_ABOVE_STAFF", re.compile(r"^có chữ phía trên khuông"), ()),
@@ -133,6 +134,14 @@ def _match(
         if found:
             params: dict = {}
             for name, value in zip(names, found.groups()):
-                params[name] = float(value) if "." in value else int(value)
+                params[name] = _number(value)
             return code, params
     return None, {}
+
+
+def _number(value: str):
+    """Tham số dạng số thì đổi sang int/float; dạng khác (vd. danh sách "3, 3, 2") giữ nguyên chuỗi."""
+    try:
+        return float(value) if "." in value else int(value)
+    except ValueError:
+        return value.strip()

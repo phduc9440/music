@@ -24,6 +24,10 @@ from app.omr.layout import PageLayout, System
 
 FLAG_DURATION = "DURATION"
 FLAG_COUNT = "COUNT_MISMATCH"
+FLAG_LAYOUT = "LAYOUT_UNCHECKED"
+"""Trang có khuông nhưng bố cục không tin được (các hệ khác số khuông, vạch nối không rõ): không kiểm được số khuông và
+số ô trên ảnh, nên mọi ô của trang đều cần đối chiếu (trước đây Review chỉ báo vài ô lệch trường độ dù cả trang có thể
+mất ô)."""
 
 _BOX_PAD = 2.0
 """Khung ô lấy rộng ra trên/dưới hệ bấy nhiêu khoảng dòng kẻ (dòng kẻ phụ, dấu)."""
@@ -57,7 +61,9 @@ def build(
             continue
         first, last = span["firstMeasure"], span["lastMeasure"]
         count = last - first + 1
-        report_pages.append({"page": number, "imageMeasures": image, "kernMeasures": count})
+        report_pages.append(
+            {"page": number, "imageMeasures": image, "kernMeasures": count, "layoutChecked": not layout_unchecked(layout)}
+        )
         placed = _place(layout, count, system_counts.get(number))
         for offset in range(count):
             measure = first + offset
@@ -74,6 +80,8 @@ def build(
                 entry["flags"].append(FLAG_COUNT)
             if measure in bad:
                 entry["flags"].append(FLAG_DURATION)
+            if layout_unchecked(layout):
+                entry["flags"].append(FLAG_LAYOUT)
             entries[measure] = entry
 
     check = {
@@ -82,6 +90,11 @@ def build(
         "pages": report_pages,
     }
     return [entries[m] for m in sorted(entries)], check
+
+
+def layout_unchecked(layout: Optional[PageLayout]) -> bool:
+    """Trang có khuông nhạc nhưng bố cục không đủ tin để kiểm số khuông/số ô (xem :data:`FLAG_LAYOUT`)."""
+    return layout is not None and bool(layout.systems) and not layout.confident
 
 
 _ESTIMATE_GAP = 0.8
