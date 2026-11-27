@@ -71,9 +71,11 @@ def build(
                 continue
             entry: dict = {"measure": measure, "page": number, "system": None, "box": None, "flags": []}
             if placed is not None:
-                system_index, box, mismatch = placed[offset]
+                system_index, box, mismatch, exact = placed[offset]
                 entry["system"] = system_index + 1
                 entry["box"] = box
+                if exact:
+                    entry["_exact"] = True  # khung đúng ô trên ảnh (không phải khung cả hệ): đếm được ký hiệu PDF trong ô
                 if mismatch:
                     entry["flags"].append(FLAG_COUNT)
             elif image is not None and image != count:
@@ -203,8 +205,9 @@ def image_measure_heads(layout: PageLayout, heads_x: list[tuple[int, float]]) ->
 
 def _place(
     layout: Optional[PageLayout], count: int, counts: Optional[list[Optional[int]]]
-) -> Optional[list[tuple[int, Optional[list[int]], bool]]]:
-    """Vị trí ``count`` ô của một trang: mỗi ô ``(chỉ số hệ, khung hoặc None, hệ lệch số ô)``; None nếu không chia được."""
+) -> Optional[list[tuple[int, Optional[list[int]], bool, bool]]]:
+    """Vị trí ``count`` ô của một trang: mỗi ô ``(chỉ số hệ, khung hoặc None, hệ lệch số ô, khung đúng ô)``; None nếu
+    không chia được."""
     if layout is None or not layout.confident or not layout.systems:
         return None
     if counts is not None and len(counts) == len(layout.systems) and all(c is not None for c in counts):
@@ -215,12 +218,12 @@ def _place(
         return None
     if sum(per_system) != count:
         return None
-    placed: list[tuple[int, Optional[list[int]], bool]] = []
+    placed: list[tuple[int, Optional[list[int]], bool, bool]] = []
     for index, (system, got) in enumerate(zip(layout.systems, per_system)):
         exact = system.bars_closed and system.measures == got
         for position in range(got):
             box = _measure_box(layout, system, position) if exact else _system_box(layout, system)
-            placed.append((index, box, not exact and system.measures is not None and system.bars_closed))
+            placed.append((index, box, not exact and system.measures is not None and system.bars_closed, exact))
     return placed
 
 

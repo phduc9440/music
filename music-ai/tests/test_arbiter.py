@@ -122,6 +122,21 @@ def test_arbiter_replaces_wrong_duration_flags_disagreement_and_rewards_agreemen
     assert item["code"] == "ENGINE_REPLACED" and item["params"] == {"engine": "copisteria"} and item["measures"] == [2]
 
 
+def test_pdf_evidence_decides_between_two_readings_with_correct_durations():
+    # ô 2: cả hai cách đọc đều đủ 2/4, nhưng PDF vector có nốt Fa (vị trí 1 trên khóa Sol) chứ không phải Sol
+    merged = _merged("4c 4d", "4e 4g")
+    entries = [{"measure": m, "page": 1, "flags": [], "box": None} for m in (1, 2)]
+    entries[1]["_glyph"] = {"heads": 2, "dots": 0, "staves": [[0, 1]]}
+    review.annotate(entries, merged)
+    assert review.FLAG_PDF in entries[1]["flags"]
+    other = _melody_xml([("C", 4, 2), ("D", 4, 2)], [("E", 4, 2), ("F", 4, 2)])
+    fixed, report = arbiter.consult(merged, entries, [extra_engines.EngineRun(engine="homr", page=1, measures=other)])
+    assert report.replaced == 1 and report.disagreed == 0 and "4f" in fixed.lines
+    assert report.notes == [arbiter.replaced_message(1, 2, "homr", by_pdf=True)]
+    review.annotate(entries, fixed)
+    assert review.FLAG_PDF not in entries[1]["flags"]
+
+
 def test_page_with_a_different_measure_count_is_skipped():
     merged = _merged("4c 4d", "2e")
     entries = [{"measure": m, "page": 1, "flags": []} for m in (1, 2)]

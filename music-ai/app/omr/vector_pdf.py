@@ -11,7 +11,7 @@ thuộc font nào thì:
   tác giả, "♩ = 60"/"q = 60" là nhịp độ. Lời ca không đưa vào bản số.
 
 Mô-đun chỉ làm việc trên danh sách :class:`TextSpan` (tọa độ điểm PDF, gốc trên-trái) nên test được mà không cần
-PyMuPDF; :func:`read_spans` là chỗ duy nhất gọi PyMuPDF (``page.get_text("dict")``).
+PyMuPDF; :func:`read_spans` là chỗ duy nhất gọi PyMuPDF (``page.get_text("rawdict")``).
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from __future__ import annotations
 import re
 import statistics
 import unicodedata
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Iterable, Optional
 
 import cv2
@@ -64,6 +64,21 @@ class TextSpan:
     y1: float
 
 
+@dataclass(frozen=True)
+class Glyph:
+    """Một ký tự của font nhạc: ``x0``/``x1`` mép trái/phải, ``y`` là đường chân chữ (gốc ký tự), điểm PDF gốc trên-trái.
+
+    Font nhạc đặt tâm đầu nốt, chấm dôi, dấu hóa đúng trên đường chân chữ (cả SMuFL lẫn họ Sonata/Maestro), nên ``y``
+    chính là cao độ trên khuông của ký hiệu."""
+
+    font: str
+    char: str
+    x0: float
+    x1: float
+    y: float
+    size: float
+
+
 @dataclass
 class PageText:
     """Lớp chữ của một trang PDF."""
@@ -71,6 +86,8 @@ class PageText:
     width: float
     height: float
     spans: list[TextSpan]
+    glyphs: list[Glyph] = field(default_factory=list)
+    """Từng ký tự của các font nhạc trên trang (:mod:`app.omr.glyphs` đọc đầu nốt, chấm dôi... từ đây)."""
 
     @property
     def music_glyphs(self) -> int:
@@ -85,20 +102,40 @@ class PageText:
 
 
 def read_spans(page) -> PageText:
-    """Lớp chữ của một trang PyMuPDF (``page.get_text("dict")``): mỗi span là một đoạn chữ cùng font trên một dòng."""
-    data = page.get_text("dict")
+    """Lớp chữ của một trang PyMuPDF (``page.get_text("rawdict")``): mỗi span là một đoạn chữ cùng font trên một dòng;
+    ký tự của font nhạc được giữ riêng từng cái kèm tọa độ (:class:`Glyph`). Không lấy dữ liệu ảnh nhúng."""
+    data = _get_text(page)
     spans: list[TextSpan] = []
+    chars: list[Glyph] = []
     for block in data.get("blocks", []):
         if block.get("type", 0) != 0:
             continue  # khối ảnh
         for line in block.get("lines", []):
             for span in line.get("spans", []):
-                text = span.get("text", "")
+                font, size = span.get("font", ""), float(span.get("size", 0.0))
+                raw = span.get("chars")
+                text = "".join(c.get("c", "") for c in raw) if raw is not None else span.get("text", "")
                 if not text.strip():
                     continue
                 x0, y0, x1, y1 = span["bbox"]
-                spans.append(TextSpan(span.get("font", ""), text, float(span.get("size", 0.0)), x0, y0, x1, y1))
-    return PageText(float(page.rect.width), float(page.rect.height), spans)
+                spans.append(TextSpan(font, text, size, x0, y0, x1, y1))
+                for c in raw or []:
+                    if c.get("c", "").strip():
+                        bx0, _by0, bx1, _by1 = c["bbox"]
+                        chars.append(Glyph(font, c["c"], float(bx0), float(bx1), float(c["origin"][1]), size))
+    width, height = float(page.rect.width), float(page.rect.height)
+    musical = music_fonts(spans)
+    return PageText(width, height, spans, [g for g in chars if g.font in musical])
+
+
+def _get_text(page) -> dict:
+    try:
+        import pymupdf  # noqa: PLC0415 - chỉ cần khi đọc PDF thật
+
+        flags = pymupdf.TEXTFLAGS_RAWDICT & ~pymupdf.TEXT_PRESERVE_IMAGES
+    except (ImportError, AttributeError):
+        return page.get_text("rawdict")
+    return page.get_text("rawdict", flags=flags)
 
 
 # ====================================================================== phân loại font

@@ -141,7 +141,7 @@ def test_vector_pdf_pages_are_cleaned_by_their_text_layer(storage_root, java, mo
         {"font": "Times-Roman", "text": "Ave Maria", "size": 22.0, "bbox": (230, 40, 360, 62)},
     ]
     module_page = module.open("x").load_page(0).__class__
-    module_page.get_text = lambda self, kind: {"blocks": [{"type": 0, "lines": [{"spans": spans}]}]}
+    module_page.get_text = lambda self, kind, **kw: {"blocks": [{"type": 0, "lines": [{"spans": spans}]}]}
     monkeypatch.setitem(sys.modules, "pymupdf", module)
     calls = []
     original = vector_pdf.clean_page
@@ -151,3 +151,54 @@ def test_vector_pdf_pages_are_cleaned_by_their_text_layer(storage_root, java, mo
 
     assert java.endpoints()[-1] == "complete"
     assert len(calls) == 1 and calls[0].is_music
+
+
+def test_vector_pdf_music_glyphs_fix_pitches_and_flag_measures(storage_root, java, monkeypatch):
+    """PDF vector (O-13): đầu nốt đọc từ font nhạc của PDF sửa cao độ đọc sai và đánh dấu ô thiếu nốt."""
+    from tests.fake_recognizer import FakeRecognizer
+    from tests.synth import make_melody_page
+
+    notes = []
+    image = make_melody_page(width=1240, height=1754, measures=(4, 3), notes=notes)
+    scale = 1240 / 595.0
+    chars = [
+        {"c": "" if kind == "black" else "", "origin": (x / scale - 4, y / scale), "bbox": (x / scale - 4, y / scale - 10, x / scale + 4, y / scale + 10)}
+        for _s, _m, kind, x, y, _step in notes
+    ]
+    span = {"font": "ABCDEF+Leland", "size": 20.0, "bbox": (0, 0, 595, 842), "chars": chars}
+    module = _fake_pymupdf([image])
+    module_page = module.open("x").load_page(0).__class__
+    module_page.get_text = lambda self, kind, **kw: {"blocks": [{"type": 0, "lines": [{"spans": [span]}]}]}
+    monkeypatch.setitem(sys.modules, "pymupdf", module)
+
+    def token(step, duration):
+        degree = 30 + step
+        letter, octave = "cdefgab"[degree % 7], degree // 7
+        return duration + (letter * (octave - 3) if octave >= 4 else letter.upper() * (4 - octave))
+
+    rows = ["**kern", "*clefG2", "*M7/8"]
+    cells = sorted({(n[0], n[1]) for n in notes})
+    for index, (system, measure) in enumerate(cells):
+        own = [n for n in notes if n[0] == system and n[1] == measure]
+        half, quarter, eighth = token(own[0][5], "2"), token(own[1][5], "4"), token(own[2][5], "8")
+        if index == 1:
+            quarter = token(own[1][5] + 7, "4")  # model đọc lệch quãng tám
+        if index == 3:
+            quarter = "4r"  # model bỏ sót một nốt
+        rows += [half, quarter, eighth, "=" if index < len(cells) - 1 else "=="]
+    rows.append("*-")
+
+    job = _pdf_job(storage_root, score="g1")
+    job.options.stopAfter = "MERGE"
+    run_omr_job(job, threading.Event(), JavaCallback(str(job.taskId)), recognizer=FakeRecognizer(["\n".join(rows) + "\n"]))
+
+    assert java.endpoints()[-1] == "complete"
+    data = java.bodies("complete")[0]["resultData"]
+    assert data["vectorPdf"]["glyphPages"] == [1] and data["vectorPdf"]["glyphs"]["head"] == len(notes)
+    assert data["measureCheck"]["pdfMeasures"] == len(cells)
+    assert any(f["code"] == "PDF_PITCH_FIXED" for f in data["autoFixes"])
+    flags = [e["flags"] for e in data["measureMap"]]
+    assert "PDF_MISMATCH" in flags[3] and all("PDF_MISMATCH" not in f for i, f in enumerate(flags) if i != 3)
+    merged = (storage_root / "scores/g1/kern/merged.krn").read_text(encoding="utf-8")
+    assert token(notes[4][5], "4") in merged.split("\n")
+

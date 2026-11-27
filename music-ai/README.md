@@ -119,7 +119,7 @@ Mọi biến đều có giá trị mặc định. [`.env.example`](.env.example)
 | `ROUTING_RESERVE_S` | `30` | Số giây giữ lại cho bước ghép và xuất; nhận diện lại không bao giờ làm job quá hạn |
 | `OMR_STRIP_TEXT` | `1` | Xóa lời ca, tên hợp âm và chữ ngoài khuông trước khi đưa vào model |
 | `OMR_OTTAVA` | `auto` | `auto`: bỏ dấu `*8va` / `*8ba` model tự thêm trên khuông giọng hát và khuông đơn; `drop`: bỏ ở mọi khuông; `keep`: giữ nguyên |
-| `OMR_PITCH_CHECK` | `1` | Dò đầu nốt trên ảnh (OpenCV) để sửa nốt đúng tên nhưng sai quãng tám |
+| `OMR_PITCH_CHECK` | `1` | Dò đầu nốt trên ảnh (OpenCV) để sửa nốt đúng tên nhưng sai quãng tám; PDF vector dùng đầu nốt đọc từ font nhạc của PDF và sửa cả tên nốt |
 | `OMR_RHYTHM_FIX` | `1` | Sửa ô sai trường độ do đọc nhầm nhịp ba (`12` → `8`...), bỏ nốt thừa trong hợp âm |
 
 ### Độ tin cậy từng ô
@@ -386,7 +386,8 @@ app/
 ├── storage.py      kiểm tra và phân giải đường dẫn trong storage
 ├── schemas.py      model Pydantic của request
 ├── omr/            pipeline OMR: preprocess, layout, barlines, textstrip, transcoda, engines, routing, combine,
-│                   merge, ottava, pitch_check, rhythm_fix, review, stability, llm_check, measure_map
+│                   merge, ottava, pitch_check, rhythm_fix, review, stability, llm_check, measure_map,
+│                   vector_pdf, glyphs (PDF xuất từ phần mềm), arbiter, extra_engines (engine thêm)
 ├── convert/        kern / MusicXML / MIDI, normalize, prepare
 ├── analysis/       so sánh hai MusicXML
 ├── chords/         gợi ý hợp âm: model AutoHarmonizer (autoharmonizer/: mạng numpy, trọng số, bảng hợp âm), chèn <harmony>
@@ -404,13 +405,30 @@ tests/
 - Gợi ý hợp âm: mã và trọng số AutoHarmonizer (`github.com/sander-wood/autoharmonizer`) theo giấy phép **MIT**, giữ
   thông báo bản quyền ở `app/chords/autoharmonizer/LICENSE`.
 
+## PDF xuất từ phần mềm chép nhạc
+
+PDF xuất thẳng từ Sibelius, MuseScore, Finale, Dorico... vẽ ký hiệu nhạc bằng ký tự của font nhạc (Opus/OpusStd, SMuFL
+như Leland/Bravura, Maestro/Anastasia...). Với loại PDF này (tự nhận theo nội dung, không cần chọn gì thêm):
+
+- `app/omr/vector_pdf.py` xóa lời ca, tên hợp âm theo đúng khung chữ trong file và lấy tên bài, tác giả, nhịp độ;
+- `app/omr/glyphs.py` đọc vị trí chính xác của đầu nốt, chấm dôi (phân biệt với chấm staccato), dấu hóa, khóa, dấu lặng,
+  đặt lên ảnh trang và kiểm lại trên ảnh (không khớp thì bỏ, quay về dò ảnh). Đầu nốt PDF thay cho đầu nốt dò bằng OpenCV:
+  `pitch_check` sửa cả tên nốt lẫn quãng tám theo từng ô ở mọi khuông (mã `PDF_PITCH_FIXED`), mỗi ô được so số đầu nốt,
+  số chấm dôi, cao độ với PDF (cờ `PDF_MISMATCH`; ô khớp hoàn toàn thì bỏ các cờ đoán theo nhạc lý), trọng tài engine thêm
+  ưu tiên cách đọc khớp PDF.
+
+Kết quả ghi ở `vectorPdf` (`glyphPages`: trang dùng được ký hiệu PDF, `glyphs`: số ký hiệu theo loại) và
+`measureCheck.pdfMeasures` (số ô được so với PDF). Kiểm nhanh một file trước khi chạy:
+`python scripts/pdf_glyphs.py duong/dan/file.pdf` (in số ký hiệu từng trang và các mã font chưa có trong bảng).
+
 ## Engine thêm (so theo từng ô)
 
 Transcoda vẫn là engine chính. Bật `OMR_EXTRA_ENGINES` thì sau khi ghép kern, mỗi engine thêm đọc lại ảnh gốc từng trang
 (`scores/{id}/engine-input/page-NNN.png`) và ra MusicXML; `app/omr/arbiter.py` so từng ô với kết quả Transcoda:
 
 - giống nhau: ô được cộng điểm tin cậy;
-- Transcoda sai tổng trường độ, engine kia đúng: thay ô (ghi vào "Đã tự sửa", mã `ENGINE_REPLACED`);
+- Transcoda sai tổng trường độ, engine kia đúng (hoặc với PDF vector: engine kia khớp ký hiệu nhạc của PDF, Transcoda
+  không khớp): thay ô (ghi vào "Đã tự sửa", mã `ENGINE_REPLACED`);
 - cả hai đều đúng trường độ nhưng khác nhau: gắn cờ `ENGINE_DISAGREE` (cần kiểm tra) và đưa cách đọc kia cho AI xác minh;
 - trang mà engine kia đọc ra số ô khác thì bỏ qua (không biết ô nào ứng với ô nào).
 

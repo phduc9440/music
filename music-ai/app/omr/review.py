@@ -11,6 +11,8 @@ Mọi kiểm tra là hàm thuần trên kern đã ghép (không cần model), ch
 * ``ACCIDENTAL``: dấu hóa ngoài hóa biểu chỉ xuất hiện đúng một lần trong cả bè (dễ là vết bẩn/chữ đọc thành dấu hóa).
 * ``UNSTABLE``: các lần đọc lại hệ với ảnh dịch vài pixel cho kết quả khác nhau (:mod:`app.omr.stability`).
 * ``AI_DOUBT``: lớp AI xác minh cho rằng ô này đọc sai (:mod:`app.omr.llm_check`, mặc định tắt).
+* ``PDF_MISMATCH``: PDF vector: số đầu nốt, số chấm dôi hoặc cao độ của ô khác ký hiệu nhạc trong chính file PDF
+  (:mod:`app.omr.glyphs`). Ô khớp hoàn toàn với PDF thì bỏ cờ RANGE/LEAP (cao độ đã được PDF xác nhận).
 
 Mỗi ô có ``confidence`` trong [0, 1] (1 trừ tổng trọng số các cờ) và ``reasons`` (câu tiếng Việt cho người dùng).
 Khuông piano chỉ được kiểm trường độ (tầm âm và bước nhảy của piano quá rộng để đặt luật chung).
@@ -36,8 +38,10 @@ FLAG_UNSTABLE = "UNSTABLE"
 FLAG_AI_DOUBT = "AI_DOUBT"
 FLAG_LAYOUT = "LAYOUT_UNCHECKED"
 FLAG_ENGINE = "ENGINE_DISAGREE"
+FLAG_PDF = "PDF_MISMATCH"
 
 FLAG_WEIGHTS: dict[str, float] = {
+    FLAG_PDF: 0.45,
     FLAG_LAYOUT: 0.25,
     FLAG_ENGINE: 0.25,
     FLAG_DURATION: 0.45,
@@ -415,6 +419,7 @@ _BASE_REASONS = {
     FLAG_LAYOUT: "Bố cục trang này không rõ (các hệ khác số khuông), chưa kiểm được số ô và số khuông: đối chiếu cả trang",
     FLAG_ENGINE: "Một engine nhận diện khác đọc ô này khác, cả hai cách đều đúng trường độ",
 }
+"""Lý do của các cờ do bước khác gắn sẵn (PDF_MISMATCH có lý do riêng từng ô nên tính lại trong :func:`annotate`)."""
 
 
 def confidence_of(flags: list[str], stable: bool = False, ai_confirmed: bool = False) -> float:
@@ -429,25 +434,155 @@ def confidence_of(flags: list[str], stable: bool = False, ai_confirmed: bool = F
 def annotate(
     entries: list[dict], result: merge.MergeResult, roles_top_down: Optional[list[str]] = None
 ) -> list[dict]:
-    """Thêm cờ RANGE/LEAP/ACCIDENTAL, ``confidence`` và ``reasons`` vào các ô của ``measureMap`` (sửa tại chỗ).
+    """Thêm cờ RANGE/LEAP/ACCIDENTAL/PDF_MISMATCH, ``confidence`` và ``reasons`` vào các ô của ``measureMap`` (sửa tại chỗ).
 
     Gọi lại được nhiều lần (sau khi đọc lại hoặc AI sửa ô): mỗi lần tính lại từ cờ hiện có, giữ thông tin đọc lại/AI
-    trong các khóa riêng ``_stable``/``_ai``/``_notes`` (bỏ đi trước khi gửi về Java bằng :func:`public_entries`).
+    trong các khóa riêng ``_stable``/``_ai``/``_notes``/``_glyph`` (bỏ đi trước khi gửi về Java bằng :func:`public_entries`).
     """
     findings = analyze(result, roles_top_down)
+    slices = {piece.ordinal: piece for piece in slice_measures(result)} if any("_glyph" in e for e in entries) else {}
+    ottava = ottava_spines(result) if slices else set()
     for entry in entries:
-        flags = [f for f in entry.get("flags", []) if f not in (FLAG_RANGE, FLAG_LEAP, FLAG_ACCIDENTAL)]
+        flags = [f for f in entry.get("flags", []) if f not in (FLAG_RANGE, FLAG_LEAP, FLAG_ACCIDENTAL, FLAG_PDF)]
         reasons = [_BASE_REASONS[f] for f in flags if f in _BASE_REASONS]
+        confirmed = False
+        evidence, piece = entry.get("_glyph"), slices.get(entry["measure"])
+        if evidence is not None and piece is not None:
+            pdf_findings, confirmed = compare_glyphs(evidence, piece, result, ottava)
+            for found in pdf_findings:
+                flags.append(found.flag)
+                reasons.append(found.reason)
         for found in findings.get(entry["measure"], []):
+            if confirmed and found.flag in (FLAG_RANGE, FLAG_LEAP):
+                continue  # cao độ đã khớp từng nốt với PDF gốc: cờ đoán theo nhạc lý là báo nhầm
             flags.append(found.flag)
             reasons.append(found.reason)
         reasons.extend(entry.get("_notes", []))
         entry["flags"] = flags
         entry["reasons"] = reasons
         ai = entry.get("_ai") or {}
-        stable = bool(entry.get("_stable")) or bool(entry.get("_agree"))  # đọc lại ổn định / engine khác đọc giống hệt
+        # đọc lại ổn định / engine khác đọc giống hệt / khớp từng nốt với ký hiệu của PDF gốc
+        stable = bool(entry.get("_stable")) or bool(entry.get("_agree")) or confirmed
         entry["confidence"] = confidence_of(flags, stable, ai.get("verdict") == "confirmed")
     return entries
+
+
+# ====================================================================== đối chiếu với ký hiệu của PDF vector
+
+_RE_CLEF_TOKEN = re.compile(r"^\*clef([GFC])([v^]*)(\d)$")
+_CLEF_REFERENCE = {"G": 7 * 4 + 4, "F": 7 * 3 + 3, "C": 7 * 4}
+"""Bậc diatonic tuyệt đối (C0 = 0) của nốt mà khóa chỉ: Sol4, Fa3, Đô4."""
+
+_RE_OTTAVA = re.compile(r"^\*X?(?:8va|8ba|15ma|15mb)")
+_RE_DOTS = re.compile(r"^[^\d]*\d+(?:%\d+)?(\.*)")
+
+
+def clef_bottom(token: Optional[str]) -> Optional[int]:
+    """Bậc diatonic của dòng kẻ dưới cùng theo khóa kern (``*clefG2``, ``*clefF4``, ``*clefC3``, ``*clefGv2``...); None
+    nếu không có/không nhận ra khóa."""
+    match = _RE_CLEF_TOKEN.match(token or "")
+    if match is None:
+        return None
+    letter, shift, line = match.groups()
+    return _CLEF_REFERENCE[letter] - 2 * (int(line) - 1) + 7 * (shift.count("^") - shift.count("v"))
+
+
+def ottava_spines(result: merge.MergeResult) -> set[int]:
+    """Spine có dấu 8va/8vb ở đâu đó: cao độ ghi trên khuông khác cao độ kern, không so vị trí đầu nốt được."""
+    out: set[int] = set()
+    for line in result.lines:
+        if line.startswith("*"):
+            for column, token in enumerate(line.split(TAB)):
+                if _RE_OTTAVA.match(token):
+                    out.add(column)
+    return out
+
+
+def _kern_glyph_view(
+    lines: list[str], spines: int, clefs: list[Optional[str]], ottava: set[int]
+) -> tuple[int, int, list[Optional[list[int]]]]:
+    """``(số đầu nốt, số chấm dôi, vị trí khuông các nốt của từng spine)`` của một ô kern, theo cách PDF vẽ: mỗi nốt
+    (kể cả trong hợp âm, nốt nối, nốt hoa mỹ) là một đầu nốt, mỗi dấu chấm của trường độ (cả dấu lặng) là một chấm dôi.
+    Vị trí khuông = bậc diatonic - bậc dòng kẻ dưới cùng theo khóa; None cho spine không so được (khóa lạ, 8va, tách bè)."""
+    heads = dots = 0
+    current = list(clefs)
+    steps: list[Optional[list[int]]] = [None if column in ottava else [] for column in range(spines)]
+    for line in lines:
+        if line.startswith("*"):
+            fields = line.split(TAB)
+            if len(fields) != spines:
+                steps = [None] * spines
+                continue
+            for column, token in enumerate(fields):
+                if token.startswith("*clef"):
+                    current[column] = token
+            continue
+        if not merge.is_data_line(line):
+            continue
+        fields = line.split(TAB)
+        if len(fields) != spines:
+            steps = [None] * spines
+        for column, cell in enumerate(fields):
+            for sub in cell.split(" "):
+                if not sub or sub == "." or "yy" in sub:
+                    continue
+                found = _RE_DOTS.match(sub)
+                if found:
+                    dots += len(found.group(1))
+                if "r" in sub:
+                    continue
+                pitch = _RE_PITCH.search(sub)
+                if pitch is None:
+                    continue
+                heads += 1
+                if column >= spines or steps[column] is None:
+                    continue
+                bottom = clef_bottom(current[column])
+                if bottom is None:
+                    steps[column] = None
+                    continue
+                run = pitch.group(0)[: len(pitch.group(0)) - len(pitch.group(2))]
+                octave = 3 + len(run) if run[0].islower() else 4 - len(run)
+                steps[column].append(7 * octave + "cdefgab".index(run[0].lower()) - bottom)  # type: ignore[union-attr]
+    return heads, dots, steps
+
+
+def compare_glyphs(
+    evidence: dict, piece: MeasureSlice, result: merge.MergeResult, ottava: set[int]
+) -> tuple[list["Finding"], bool]:
+    """So một ô kern với bằng chứng PDF của ô đó (:meth:`app.omr.glyphs.GlyphPage.measure`). Trả ``(phát hiện, khớp
+    hoàn toàn)``; khớp hoàn toàn = cùng số đầu nốt, số chấm dôi và cao độ từng khuông (mọi khuông so được)."""
+    return glyph_findings(evidence, piece.lines(result), result.spines, list(piece.clefs), ottava)
+
+
+def glyph_findings(
+    evidence: dict, lines: list[str], spines: int, clefs: list[Optional[str]], ottava: set[int]
+) -> tuple[list["Finding"], bool]:
+    """Như :func:`compare_glyphs` cho các dòng kern bất kỳ của một ô (vd. cách đọc của engine khác), ``clefs``: khóa của
+    từng spine ở đầu ô."""
+    heads, dots, steps = _kern_glyph_view(lines, spines, list(clefs), ottava)
+    findings: list[Finding] = []
+    if heads != evidence["heads"]:
+        findings.append(
+            Finding(FLAG_PDF, f"Bản PDF gốc có {evidence['heads']} đầu nốt ở ô này, bản số có {heads}: có nốt thừa hoặc thiếu")
+        )
+    if dots != evidence["dots"]:
+        findings.append(
+            Finding(FLAG_PDF, f"Bản PDF gốc có {evidence['dots']} chấm dôi ở ô này, bản số có {dots}: kiểm tra trường độ")
+        )
+    staves = evidence.get("staves") or []
+    compared = len(staves) == spines
+    if compared:
+        for column in range(spines):
+            staff = spines - 1 - column  # spine 1 của kern là khuông DƯỚI cùng
+            kern_steps = steps[column]
+            if kern_steps is None:
+                compared = False
+                continue
+            if len(kern_steps) == len(staves[staff]) and sorted(kern_steps) != sorted(staves[staff]):
+                label = f"khuông {staff + 1}" if spines > 1 else "ô này"
+                findings.append(Finding(FLAG_PDF, f"Cao độ ở {label} khác ký hiệu nhạc trong PDF gốc"))
+    return findings, not findings and compared
 
 
 def public_entries(entries: list[dict]) -> list[dict]:

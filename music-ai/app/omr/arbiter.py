@@ -10,6 +10,9 @@ từng ô được xử lý như sau:
   ``_alternatives`` để AI xác minh (nếu bật) chọn;
 * engine khác sai trường độ: chỉ thêm làm phương án, không gắn cờ.
 
+PDF vector: ô có bằng chứng ký hiệu nhạc của PDF (``_glyph``, :mod:`app.omr.glyphs`) thì cách đọc khớp PDF (số đầu nốt,
+chấm dôi, cao độ) được ưu tiên trước cả tổng trường độ: engine khác khớp PDF còn Transcoda không khớp thì thay.
+
 Chỉ thay ô "thường" (không tách/gộp spine) và khi cách đọc kia chuyển được sang kern (mỗi khuông một bè, xem
 :mod:`app.omr.musicxml_measures`).
 """
@@ -48,8 +51,9 @@ class ArbiterReport:
         }
 
 
-def replaced_message(page: int, measure: int, engine: str) -> str:
-    return f"Trang {page}, ô nhịp {measure}: đã thay theo engine {engine} (máy chính đọc sai trường độ)"
+def replaced_message(page: int, measure: int, engine: str, by_pdf: bool = False) -> str:
+    why = "khớp ký hiệu nhạc của PDF gốc" if by_pdf else "máy chính đọc sai trường độ"
+    return f"Trang {page}, ô nhịp {measure}: đã thay theo engine {engine} ({why})"
 
 
 def consult(
@@ -58,6 +62,7 @@ def consult(
     """Đối chiếu ``result`` với các lần chạy engine khác (mỗi lần một trang). Sửa ``entries`` tại chỗ, trả kern mới."""
     report = ArbiterReport()
     by_measure = {e["measure"]: e for e in entries}
+    ottava = review.ottava_spines(result) if any("_glyph" in e for e in entries) else set()
     ranges = {r["page"]: r for r in merge.page_measure_ranges(result)}
     for run in runs:
         stats = report.engines.setdefault(run.engine, {"pages": 0, "seconds": 0.0, "errors": []})
@@ -94,21 +99,26 @@ def consult(
             lenient = ordinal == 1 or (ordinal == last and run.page == max(ranges))  # ô lấy đà, ô cuối bài
             mine_ok = review.chunk_duration_ok(mine, result.spines, piece.meter, lenient=lenient) is True
             other_ok = review.chunk_duration_ok(other, result.spines, piece.meter, lenient=lenient) is True
+            mine_pdf = other_pdf = False
+            evidence = entry.get("_glyph")
+            if evidence is not None:
+                mine_pdf = not review.glyph_findings(evidence, piece.lines(result), result.spines, piece.clefs, ottava)[0]
+                other_pdf = not review.glyph_findings(evidence, other, result.spines, piece.clefs, ottava)[0]
             alternatives = entry.setdefault("_alternatives", [])
-            if not mine_ok and other_ok:
+            if (other_pdf, other_ok) > (mine_pdf, mine_ok):
+                by_pdf = other_pdf and not mine_pdf
                 result = review.replace_measure(result, piece, other)
                 alternatives.append(mine)
                 entry["_replaced"] = True
                 entry["flags"] = [f for f in entry.get("flags", []) if f != review.FLAG_DURATION]
-                entry.setdefault("_notes", []).append(
-                    f"Máy chính đọc sai trường độ, đã thay theo cách đọc của engine {run.engine}"
-                )
+                why = "không khớp ký hiệu nhạc của PDF gốc" if by_pdf else "đọc sai trường độ"
+                entry.setdefault("_notes", []).append(f"Máy chính {why}, đã thay theo cách đọc của engine {run.engine}")
                 report.replaced += 1
                 report.measures.append(ordinal)
-                report.notes.append(replaced_message(run.page, ordinal, run.engine))
+                report.notes.append(replaced_message(run.page, ordinal, run.engine, by_pdf))
                 continue
             alternatives.append(other)
-            if other_ok and mine_ok:
+            if other_ok and mine_ok and other_pdf == mine_pdf:
                 flags = entry.setdefault("flags", [])
                 if FLAG_ENGINE not in flags:
                     flags.append(FLAG_ENGINE)
