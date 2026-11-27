@@ -370,6 +370,28 @@ def test_split_timing_counts_notes_of_other_staves():
     assert merge.repair_split_segments(lines, pages_) == []
 
 
+@pytest.mark.parametrize(
+    "rows, expected",
+    [
+        (["2b-", "8b-]L", "8g"], ["2b-[", "8b-]L", "8g"]),  # thiếu đầu nối
+        (["2a[", "=2", "8a", "8d"], ["2a[", "=2", "8a]", "8d"]),  # thiếu đầu cuối, vắt qua vạch nhịp
+        (["2a[", "8b", "8d"], ["2a", "8b", "8d"]),  # "nối" tới nốt khác cao độ, nốt sau không có đầu cuối
+        (["4b[", "8.a#]", "16g"], ["4b(", "8.a#)", "16g"]),  # dấu luyến bị đọc thành dấu nối
+        (["16ff[LL", "16bb-]J"], ["16ff(LL", "16bb-)J"]),
+        (["4r", "4c]"], ["4r", "4c"]),  # không có nốt nào để nối từ
+        (["4c", "4d["], ["4c", "4d"]),  # hết bài
+        (["4c[ 4e", "4c 4e]"], ["4c[ 4e[", "4c] 4e]"]),  # hợp âm: xét từng nốt
+        (["4c[", "8qd", "4c]"], ["4c[", "8qd", "4c]"]),  # nốt hoa mỹ không cắt dấu nối
+        (["4c[", "*^", f"4c]{T}4e", f"*v{T}*v", "4d"], ["4c[", "*^", f"4c]{T}4e", f"*v{T}*v", "4d"]),  # qua chỗ tách
+        (["2c[", "4c_", "4c]"], ["2c[", "4c_", "4c]"]),  # đúng sẵn
+    ],
+)
+def test_repair_ties(rows, expected):
+    lines = list(rows)
+    merge.repair_ties(lines)
+    assert lines == expected
+
+
 # ------------------------------------------------------------------ vai trò khuông, độn cột, thống kê ô nhịp
 
 

@@ -882,6 +882,127 @@ def _repair_one_segment(
     return removed, f"hai giọng trong đoạn tách có độ dài khác nhau, {detail}"
 
 
+# ====================================================================== dấu nối (tie) thiếu đầu hoặc cuối
+
+
+_RE_TIE_PITCH = re.compile(r"([a-gA-G])\1*[#\-n]*")
+_TIE_STARTS = ("[", "_")
+_TIE_ENDS = ("]", "_")
+
+
+def _tie_pitch(sub: str) -> Optional[str]:
+    """Cao độ của một nốt kern để so dấu nối (chữ cái + dấu hóa, bỏ dấu bình ``n``); None với dấu lặng/nốt hoa mỹ."""
+    if not sub or sub == "." or "r" in sub or "q" in sub or "Q" in sub:
+        return None
+    match = _RE_TIE_PITCH.search(sub)
+    return match.group(0).replace("n", "") if match else None
+
+
+def _with_tie_mark(sub: str, mark: str) -> str:
+    """Thêm ``[`` hoặc ``]`` ngay sau cao độ (cách Transcoda viết: ``2a[``, ``8a]L``)."""
+    match = _RE_TIE_PITCH.search(sub)
+    return sub + mark if match is None else sub[: match.end()] + mark + sub[match.end() :]
+
+
+def repair_ties(lines: list[str]) -> list[int]:
+    """Sửa dấu nối (tie) lẻ, sửa trực tiếp ``lines``; trả chỉ số các dòng đã sửa.
+
+    Dấu nối chỉ nối hai nốt *cùng cao độ* liền nhau trong một spine. Model hay ghi thiếu một đầu: ``2b- 8b-]`` (thiếu
+    ``[``), ``2a[ 8a`` (thiếu ``]``); music21 khi đó ghi ``<tie type="stop">`` mồ côi hoặc dấu nối treo, trình phát và
+    trình sửa hiểu khác nhau. Với mỗi cặp nốt liền nhau trong cùng cột:
+
+    * nốt sau có ``]`` mà nốt trước cùng cao độ chưa có ``[``: thêm ``[`` cho nốt trước;
+    * nốt trước có ``[`` mà nốt sau cùng cao độ chưa có ``]``: thêm ``]`` cho nốt sau;
+    * ``[`` và ``]`` nối hai nốt khác cao độ (``4b[ 8.a#]``): đó là dấu luyến bị đọc thành dấu nối, đổi thành ``(``/``)``;
+    * còn lại, không có nốt cùng cao độ ở phía bên kia (dấu lặng, hết bài...): bỏ đầu nối lẻ đó.
+
+    Hợp âm xét từng nốt; nốt hoa mỹ bỏ qua. Không phán xét qua chỗ tách/gộp spine (thứ tự cột thay đổi): dấu nối vắt qua
+    chỗ đó được giữ nguyên.
+    """
+    changed: set[int] = set()
+    unknown = (-1, -1)  # sau chỗ đổi cấu trúc spine: không biết nốt trước là nốt nào
+    previous: list[Optional[tuple[int, int]]] = []  # (dòng, cột) của nốt/dấu lặng gần nhất trong từng cột
+    width: Optional[int] = None
+
+    def subs_at(where: tuple[int, int]) -> list[str]:
+        return lines[where[0]].split(TAB)[where[1]].split(" ")
+
+    def store(where: tuple[int, int], subs: list[str]) -> None:
+        fields = lines[where[0]].split(TAB)
+        new = " ".join(subs)
+        if fields[where[1]] != new:
+            fields[where[1]] = new
+            lines[where[0]] = TAB.join(fields)
+            changed.add(where[0])
+
+    def drop_open_ends(where: Optional[tuple[int, int]]) -> None:
+        """Bỏ đầu nối ``[`` không có nốt nối tới (``_`` thành ``]``)."""
+        if where is None or where == unknown:
+            return
+        subs = subs_at(where)
+        fixed = [sub.replace("[", "").replace("_", "]") if _tie_pitch(sub) else sub for sub in subs]
+        store(where, fixed)
+
+    for index, line in enumerate(lines):
+        if not line or line.startswith("!") or is_barline(line):
+            continue
+        fields = line.split(TAB)
+        if line.startswith("*"):
+            if width is not None and (width != len(fields) or any(t in _SPINE_CHANGES for t in fields)):
+                previous = [unknown] * len(fields)  # đổi cấu trúc spine: không phán xét qua chỗ này
+            elif width is None:
+                previous = [None] * len(fields)
+            width = len(fields)
+            continue
+        if width != len(fields):
+            previous = [unknown if width is not None else None] * len(fields)
+            width = len(fields)
+        for column, token in enumerate(fields):
+            if token == "." or all("q" in sub or "Q" in sub for sub in token.split(" ")):
+                continue
+            here = (index, column)
+            current = token.split(" ")
+            before = previous[column]
+            if before == unknown:
+                previous[column] = here
+                continue
+            prior = subs_at(before) if before is not None else []
+            prior_pitches = {_tie_pitch(sub): k for k, sub in enumerate(prior) if _tie_pitch(sub)}
+            current_pitches = {_tie_pitch(sub): k for k, sub in enumerate(current) if _tie_pitch(sub)}
+            if before is not None:
+                # Một đầu "[" và một đầu "]" nối hai nốt khác cao độ: model đọc dấu luyến thành dấu nối, đổi lại thành luyến
+                loose_start = [k for p, k in prior_pitches.items() if "[" in prior[k] and p not in current_pitches]
+                loose_end = [k for p, k in current_pitches.items() if "]" in current[k] and p not in prior_pitches]
+                if len(loose_start) == 1 and len(loose_end) == 1:
+                    k, other = loose_start[0], loose_end[0]
+                    slur = "(" not in " ".join(prior) and ")" not in " ".join(current)
+                    prior[k] = prior[k].replace("[", "(" if slur else "")
+                    current[other] = current[other].replace("]", ")" if slur else "")
+                for pitch, k in prior_pitches.items():
+                    if not any(mark in prior[k] for mark in _TIE_STARTS):
+                        continue
+                    other = current_pitches.get(pitch)
+                    if other is None:
+                        prior[k] = prior[k].replace("[", "").replace("_", "]")  # nối tới nốt khác cao độ: bỏ
+                    elif not any(mark in current[other] for mark in _TIE_ENDS):
+                        current[other] = _with_tie_mark(current[other], "]")  # thiếu đầu cuối
+            for pitch, k in current_pitches.items():
+                if not any(mark in current[k] for mark in _TIE_ENDS):
+                    continue
+                other = prior_pitches.get(pitch)
+                if other is None:
+                    current[k] = current[k].replace("]", "").replace("_", "[")  # không có nốt nào để nối từ: bỏ
+                elif not any(mark in prior[other] for mark in _TIE_STARTS):
+                    prior[other] = _with_tie_mark(prior[other], "[")  # thiếu đầu nối
+            if before is not None:
+                store(before, prior)
+            store(here, current)
+            previous[column] = here
+    for where in previous:
+        drop_open_ends(where)
+    return sorted(changed)
+
+
 # ====================================================================== ghép
 
 
@@ -1108,6 +1229,8 @@ def merge_pages(pages: list[PageKern], lenient: bool = False) -> MergeResult:
       giá trị cũ thì bỏ.
     * Vạch nhịp trùng ở chỗ nối trang bị bỏ bớt một; vạch kết thúc ``==`` giữa bài đổi thành ``=``; số ô nhịp được đánh
       lại liên tục.
+    * ``lenient=True`` còn sửa đoạn tách spine lệch nhau (:func:`repair_split_segments`) và dấu nối lẻ
+      (:func:`repair_ties`), sau khi đã ghép để sửa được cả chỗ vắt qua hai trang.
     """
     if not pages:
         raise ValueError("Không có trang nào để ghép")
@@ -1174,6 +1297,10 @@ def merge_pages(pages: list[PageKern], lenient: bool = False) -> MergeResult:
     _finalize_barlines(lines)
     if lenient:
         warnings.extend(repair_split_segments(lines, line_pages))
+        tied = repair_ties(lines)
+        for page_no in sorted({line_pages[i] for i in tied}):
+            count = sum(1 for i in tied if line_pages[i] == page_no)
+            warnings.append(f"Trang {page_no}: model ghi dấu nối thiếu đầu hoặc cuối, đã sửa ở {count} dòng")
     header = first.header
     text = "\n".join([header, *lines, TAB.join(["*-"] * base)]) + "\n"
     return MergeResult(text=text, spines=base, warnings=warnings, line_pages=line_pages, lines=lines, header=header)
