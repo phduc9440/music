@@ -252,10 +252,18 @@ Kết quả nằm trong `result_data` của job:
   - bỏ trang rỗng và cắt các dòng lặp vô hạn;
   - trang sau kế thừa khóa nhạc, hóa biểu và số chỉ nhịp từ trang trước;
   - đánh lại số ô nhịp liên tục;
-  - cảnh báo ô sai tổng trường độ (ô lấy đà và ô cuối được phép ngắn hơn);
+  - sửa đoạn tách bè lệch nhau, kể cả khi model gộp bè (`*v`) lúc nốt dài của bè kia còn ngân: chỗ gộp được dời
+    xuống sau nốt đó, không đổi nốt nào;
+  - sửa dấu nối (tie) thiếu một đầu; `[` và `]` nối hai nốt khác cao độ được đổi thành dấu luyến;
+  - cảnh báo ô sai tổng trường độ. Không báo các **ô thiếu hợp lệ** (`convert/incomplete_measures.py`): ô lấy đà, ô
+    cuối bài, và hai phần của một ô bị vạch nhịp chia đôi (hai ô ngắn liền nhau cộng lại vừa đủ số chỉ nhịp, hai ô kề
+    bên đủ trường độ; thường ở chỗ cuối phiên khúc / đầu điệp khúc). Bản in không có ký hiệu riêng cho ô chia đôi, chỉ
+    nhận ra qua trường độ. Hai ô này có ghi chú trong `measureMap`, không bị bước sửa trường độ thêm chấm dôi;
   - cuối cùng cho music21 đọc thử `merged.krn`.
 - **kern → MusicXML** (`convert/kern.py`, `convert/musicxml.py`):
   - music21 ghi MusicXML thô, sau đó bước chuẩn hóa gộp các khuông thành một part "Piano" nhiều staff;
+  - ô thiếu hợp lệ giữ nguyên độ dài (không bị music21 lấp dấu lặng ẩn) và có `implicit="yes"`: hai phần của ô chia
+    đôi phát liền nhau, trình sửa trên web không tô đỏ các ô này;
   - đồng bộ `divisions`, đánh lại `<staff>` / `<voice>`, thêm tempo;
   - rút metadata (số ô, giọng, nhịp, tempo, số khuông) từ chính file MusicXML này.
 - **MusicXML → MIDI** (`convert/midi.py`):
