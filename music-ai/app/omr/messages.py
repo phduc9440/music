@@ -78,6 +78,7 @@ _FIX_CODES: list[tuple[str, re.Pattern[str], tuple[str, ...]]] = [
     ("OTTAVA_FIXED", re.compile(r"^model thêm dấu 8va .*đã đưa (\d+) nốt"), ("count",)),
     ("REREAD_REPLACED", re.compile(r"^đã sửa theo các lần đọc lại hệ"), ()),
     ("AI_REPLACED", re.compile(r"^đã sửa theo đối chiếu của AI"), ()),
+    ("ENGINE_REPLACED", re.compile(r"^đã thay theo engine ([\w.-]+)"), ("engine",)),
 ]
 
 _RHYTHM = re.compile(r"^Sửa trường độ ở ô ([\d,\s]+):")

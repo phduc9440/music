@@ -81,6 +81,7 @@
     "UNSTABLE": "Đọc lại ô này nhiều lần cho kết quả khác nhau",
     "AI_DOUBT": "AI đối chiếu ảnh cho rằng ô này đọc chưa đúng",
     "LAYOUT_UNCHECKED": "Bố cục trang này không rõ (các hệ khác số khuông), chưa kiểm được số ô và số khuông: hãy đối chiếu cả trang",
+    "ENGINE_DISAGREE": "Một engine nhận diện khác đọc ô này khác, cả hai cách đều đúng trường độ",
     "AUTO_FIXED": "Máy đã tự sửa ô này, hãy đối chiếu với ảnh gốc"
   },
   "dropzone": {
@@ -495,7 +496,8 @@
     "OCTAVE_FIXED": "Sửa quãng tám {count} nốt theo vị trí đầu nốt trên ảnh",
     "OTTAVA_FIXED": "Bỏ dấu 8va máy tự thêm, đưa {count} nốt về đúng quãng tám in trên ảnh",
     "REREAD_REPLACED": "Đã thay ô này bằng cách đọc giống nhau của các lần đọc lại",
-    "AI_REPLACED": "AI đối chiếu ảnh và chọn cách đọc khác cho ô này"
+    "AI_REPLACED": "AI đối chiếu ảnh và chọn cách đọc khác cho ô này",
+    "ENGINE_REPLACED": "Máy chính đọc sai trường độ, đã thay ô này theo cách đọc của engine {engine}"
   },
   "check": {
     "title": "Cần kiểm tra",

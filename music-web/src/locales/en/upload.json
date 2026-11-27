@@ -81,6 +81,7 @@
     "UNSTABLE": "Reading this measure again gave different results",
     "AI_DOUBT": "The AI check thinks this measure was read incorrectly",
     "LAYOUT_UNCHECKED": "The layout of this page is unclear (systems have different staff counts), so measures and staves could not be checked: compare the whole page",
+    "ENGINE_DISAGREE": "Another recognition engine read this measure differently, and both readings fit the meter",
     "AUTO_FIXED": "This measure was corrected automatically, compare it with the original"
   },
   "dropzone": {
@@ -499,7 +500,8 @@
     "OCTAVE_FIXED": "Fixed the octave of {count} notes from the notehead positions",
     "OTTAVA_FIXED": "Removed an 8va the model added, moved {count} notes back to the printed octave",
     "REREAD_REPLACED": "Replaced this measure with the reading that repeated re-reads agreed on",
-    "AI_REPLACED": "AI compared the image and chose a different reading for this measure"
+    "AI_REPLACED": "AI compared the image and chose a different reading for this measure",
+    "ENGINE_REPLACED": "The main engine got the rhythm wrong, so this measure was replaced with the reading of {engine}"
   },
   "check": {
     "title": "To check",

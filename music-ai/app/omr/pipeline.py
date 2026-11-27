@@ -40,6 +40,8 @@ from app.convert.kern import kern_file_to_musicxml_file
 from app.convert.midi import musicxml_file_to_midi_file
 from app.convert.musicxml import DEFAULT_TEMPO_BPM
 from app.omr import (
+    arbiter,
+    extra_engines,
     kern_check,
     llm_check,
     measure_map,
@@ -426,6 +428,7 @@ def _preprocess_pages(ctx: JobContext, pages: list[Optional[tuple[int, np.ndarra
     )
     score_id = ctx.job.scoreId
     _clear_dir(score_id, "layout", (".json",))
+    _clear_dir(score_id, "engine-input", (".png",))
     ctx.layouts = {}
 
     total = len(pages)
@@ -434,6 +437,7 @@ def _preprocess_pages(ctx: JobContext, pages: list[Optional[tuple[int, np.ndarra
     for index in range(total):
         page_number, gray = pages[index]  # type: ignore[misc]
         pages[index] = None  # giải phóng bộ nhớ ngay khi xử lý xong trang
+        source_gray = gray if ctx.settings.extra_engines else None
         budget.start_page(page_number)
         budget.check()
         try:
@@ -453,6 +457,8 @@ def _preprocess_pages(ctx: JobContext, pages: list[Optional[tuple[int, np.ndarra
             # Đánh số theo thứ tự đầu ra (liền mạch 1..N kể cả khi có trang bị bỏ); trang gốc nằm trong meta.sourcePage
             relative, size = _save_page_png(score_id, kept, result.image)
             kept_pages.append((kept, relative))
+            if source_gray is not None:  # engine thêm đọc ảnh trang ở độ phân giải gốc (detector train ở ~300 dpi)
+                _save_png(f"scores/{score_id}/engine-input/page-{kept:03d}.png", source_gray)
             _analyze_page_layout(ctx, kept, result.image)
             if page_number in ctx.chord_pages and kept not in ctx.text_above_pages:
                 ctx.text_above_pages.append(kept)  # PDF vector: tên hợp âm đã bị xóa theo lớp chữ trước bước này
@@ -855,6 +861,11 @@ def _review_measures(
     roles = ctx.staff_roles
     try:
         review.annotate(measures, merged, roles)
+        if settings.extra_engines:
+            merged, engines_report = _consult_engines(ctx, merged, measures, pages)
+            check["engines"] = engines_report.to_dict()
+            ctx.fixes.extend(engines_report.notes)
+            review.annotate(measures, merged, roles)
         images = _review_images(ctx, measures)
         merged, reread = _reread_systems(ctx, merged, measures, images)
         review.annotate(measures, merged, roles)
@@ -1036,6 +1047,32 @@ def _reread_systems(
         roles_top_down=ctx.staff_roles,
         abort=(_RoutingAbort,),
     )
+
+
+def _consult_engines(
+    ctx: JobContext, merged: merge.MergeResult, measures: list[dict], pages: list[merge.PageKern]
+) -> tuple[merge.MergeResult, arbiter.ArbiterReport]:
+    """Chạy các engine thêm (``OMR_EXTRA_ENGINES``) trên ảnh gốc từng trang rồi so theo từng ô với kết quả hiện tại
+    (:mod:`app.omr.arbiter`). Engine lỗi chỉ được ghi vào báo cáo; hủy/hết hạn job vẫn dừng ngay."""
+    budget, settings = ctx.budget, ctx.settings
+    runs: list[extra_engines.EngineRun] = []
+    engines = extra_engines.configured(settings.extra_engines)
+    for page in pages:
+        path = storage.resolve(f"scores/{ctx.job.scoreId}/engine-input/page-{page.number:03d}.png")
+        if not path.is_file():
+            continue
+        for name, command, cwd in engines:
+            if budget.remaining_s() - settings.routing_reserve_s < 30:
+                ctx.warnings.append(f"Không đủ thời gian chạy engine {name} cho trang {page.number}")
+                continue
+            limit = min(float(settings.extra_engine_timeout_s), budget.remaining_s() - settings.routing_reserve_s)
+            run = extra_engines.run_page(name, command, cwd, path, page.number, budget.check, limit)
+            if run.error:
+                log.warning("Job %s: engine %s trang %s: %s", ctx.task_id, name, page.number, run.error)
+            runs.append(run)
+    merged, report = arbiter.consult(merged, measures, runs)
+    log.info("Job %s: so engine %s", ctx.task_id, report.to_dict())
+    return merged, report
 
 
 def _ask_ai(

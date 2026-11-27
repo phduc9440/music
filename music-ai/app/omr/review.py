@@ -35,9 +35,11 @@ FLAG_ACCIDENTAL = "ACCIDENTAL"
 FLAG_UNSTABLE = "UNSTABLE"
 FLAG_AI_DOUBT = "AI_DOUBT"
 FLAG_LAYOUT = "LAYOUT_UNCHECKED"
+FLAG_ENGINE = "ENGINE_DISAGREE"
 
 FLAG_WEIGHTS: dict[str, float] = {
     FLAG_LAYOUT: 0.25,
+    FLAG_ENGINE: 0.25,
     FLAG_DURATION: 0.45,
     FLAG_COUNT: 0.25,
     FLAG_RANGE: 0.35,
@@ -411,6 +413,7 @@ _BASE_REASONS = {
     FLAG_DURATION: "Tổng trường độ không khớp số chỉ nhịp",
     FLAG_COUNT: "Số ô của hệ này khác số ô đếm trên ảnh, có thể thừa hoặc thiếu ô",
     FLAG_LAYOUT: "Bố cục trang này không rõ (các hệ khác số khuông), chưa kiểm được số ô và số khuông: đối chiếu cả trang",
+    FLAG_ENGINE: "Một engine nhận diện khác đọc ô này khác, cả hai cách đều đúng trường độ",
 }
 
 
@@ -442,7 +445,8 @@ def annotate(
         entry["flags"] = flags
         entry["reasons"] = reasons
         ai = entry.get("_ai") or {}
-        entry["confidence"] = confidence_of(flags, bool(entry.get("_stable")), ai.get("verdict") == "confirmed")
+        stable = bool(entry.get("_stable")) or bool(entry.get("_agree"))  # đọc lại ổn định / engine khác đọc giống hệt
+        entry["confidence"] = confidence_of(flags, stable, ai.get("verdict") == "confirmed")
     return entries
 
 

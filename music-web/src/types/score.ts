@@ -295,7 +295,7 @@ export interface OmrMeasure {
   /**
    * DURATION: tổng trường độ sai số chỉ nhịp; COUNT_MISMATCH: số ô của hệ/trang lệch số ô đếm trên ảnh; RANGE: nốt giọng
    * hát ngoài tầm thường gặp; LEAP: bước nhảy/nốt vọt bất thường; ACCIDENTAL: dấu hóa lạ; UNSTABLE: đọc lại ra kết quả
-   * khác; AI_DOUBT: AI xác minh cho là sai; LAYOUT_UNCHECKED: bố cục trang không rõ nên chưa kiểm được số ô/số khuông.
+   * khác; AI_DOUBT: AI xác minh cho là sai; LAYOUT_UNCHECKED: bố cục trang không rõ nên chưa kiểm được số ô/số khuông; ENGINE_DISAGREE: engine khác đọc khác.
    */
   flags: OmrMeasureFlag[];
   /** Độ tin cậy 0..1 (null với kết quả cũ). */
@@ -314,6 +314,8 @@ export type OmrMeasureFlag =
   | 'AI_DOUBT'
   /** Bố cục trang không rõ (các hệ khác số khuông), chưa kiểm được số ô và số khuông trên ảnh. */
   | 'LAYOUT_UNCHECKED'
+  /** Engine nhận diện thêm (copisteria, homr...) đọc ô này khác máy chính, cả hai đều đúng trường độ. */
+  | 'ENGINE_DISAGREE'
   /** Máy đã tự sửa ô này (sửa trường độ, đọc lại hệ, AI), cần đối chiếu lại với ảnh (OMR-14). */
   | 'AUTO_FIXED';
 

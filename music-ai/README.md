@@ -129,6 +129,9 @@ Mọi biến đều có giá trị mặc định. [`.env.example`](.env.example)
 | `OMR_TTA` | `2` | Số lần đọc lại (ảnh dịch vài pixel) cho hệ có ô nghi ngờ; `0` là tắt; từ `2` trở lên mới tự thay ô |
 | `OMR_TTA_SHIFT_PX` | `3` | Độ dịch ảnh giữa các lần đọc lại (pixel, trên ảnh 1050×1485) |
 | `OMR_TTA_MAX_SYSTEMS` | `4` | Số hệ tối đa được đọc lại mỗi job |
+| `OMR_EXTRA_ENGINES` | (rỗng) | Engine nhận diện thêm chạy trên từng trang để so theo ô với Transcoda, ví dụ `copisteria,homr` (xem mục "Engine thêm") |
+| `OMR_ENGINE_<TÊN>_COMMAND`, `OMR_ENGINE_<TÊN>_CWD` | | Lệnh chạy engine `<TÊN>` (có `{image}`, `{outdir}`; lệnh phải ghi MusicXML vào `{outdir}`) và thư mục chạy lệnh |
+| `OMR_EXTRA_ENGINE_TIMEOUT_S` | `600` | Hạn mỗi lần chạy một engine thêm trên một trang |
 | `OMR_LLM` | `off` | `anthropic`: gửi ảnh cắt các ô tin cậy thấp nhất cho AI xác minh (cần `ANTHROPIC_API_KEY`) |
 | `OMR_LLM_MODEL` | `claude-haiku-5-5` | Model AI dùng để xác minh (nên chọn model rẻ) |
 | `OMR_LLM_MAX_MEASURES`, `OMR_LLM_TIMEOUT_S` | `10`, `30` | Số ô tối đa gửi AI mỗi job; thời gian chờ mỗi lần gọi. Kết quả được cache ở `{storage}/cache/llm/` |
@@ -400,3 +403,37 @@ tests/
   vào dự án.
 - Gợi ý hợp âm: mã và trọng số AutoHarmonizer (`github.com/sander-wood/autoharmonizer`) theo giấy phép **MIT**, giữ
   thông báo bản quyền ở `app/chords/autoharmonizer/LICENSE`.
+
+## Engine thêm (so theo từng ô)
+
+Transcoda vẫn là engine chính. Bật `OMR_EXTRA_ENGINES` thì sau khi ghép kern, mỗi engine thêm đọc lại ảnh gốc từng trang
+(`scores/{id}/engine-input/page-NNN.png`) và ra MusicXML; `app/omr/arbiter.py` so từng ô với kết quả Transcoda:
+
+- giống nhau: ô được cộng điểm tin cậy;
+- Transcoda sai tổng trường độ, engine kia đúng: thay ô (ghi vào "Đã tự sửa", mã `ENGINE_REPLACED`);
+- cả hai đều đúng trường độ nhưng khác nhau: gắn cờ `ENGINE_DISAGREE` (cần kiểm tra) và đưa cách đọc kia cho AI xác minh;
+- trang mà engine kia đọc ra số ô khác thì bỏ qua (không biết ô nào ứng với ô nào).
+
+Kết quả nằm ở `measureCheck.engines` (số ô so được, giống, đã thay, khác nhau, lỗi từng engine). Mặc định tắt: đo trên
+bộ benchmark trước (`--variant engines:OMR_EXTRA_ENGINES=copisteria`), vì số liệu công bố của các engine là do chính tác giả đo.
+
+Cài thử ngoài Docker (engine cần Python riêng; music-ai chạy thẳng trên máy cũng được):
+
+```bash
+# copisteria (Apache-2.0, cần Python 3.12)
+git clone https://github.com/kobimusic/copisteria /opt/copisteria && cd /opt/copisteria
+python3.12 -m venv .venv && .venv/bin/pip install torch && .venv/bin/pip install -e . huggingface_hub
+.venv/bin/hf download kobimusic/copisteria evidence-2m.pt --local-dir models
+.venv/bin/hf download kobimusic/copisteria v7_obj-recall-30m_best.pt v7_obj-recall_best.pt --local-dir models/small
+export OMR_ENGINE_COPISTERIA_COMMAND='/opt/copisteria/.venv/bin/python -m copisteria.pipeline {image} --out {outdir}'
+export OMR_ENGINE_COPISTERIA_CWD=/opt/copisteria
+
+# homr (AGPL-3.0: giữ nguyên mã gốc, gọi như chương trình riêng)
+python3 -m venv /opt/homr && /opt/homr/bin/pip install homr
+export OMR_ENGINE_HOMR_COMMAND='/opt/homr/bin/homr {image}'
+
+export OMR_EXTRA_ENGINES=copisteria,homr
+```
+
+Kiểm tra lệnh trước khi bật: chạy tay lệnh với một ảnh trang và xem file MusicXML được ghi ra đâu (cờ dòng lệnh thật của
+mỗi engine xem `--help` của engine đó). Audiveris (AGPL-3.0, Java) dùng được tương tự với lệnh xuất `.mxl` vào `{outdir}`.

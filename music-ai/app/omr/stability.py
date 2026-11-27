@@ -213,7 +213,7 @@ def _vote(
             if key not in seen:
                 seen.add(key)
                 alternatives.append([line for line in variant if merge.is_data_line(line)])
-        entry["_alternatives"] = alternatives
+        entry["_alternatives"] = entry.get("_alternatives", []) + alternatives  # giữ phương án của engine khác
         agreed = len(keys) >= 2 and all(k == keys[0] for k in keys) and keys[0] != base
         if not agreed or not piece.regular or not _regular(variants[0], result.spines):
             entry.setdefault("_notes", []).append(

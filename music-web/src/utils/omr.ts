@@ -246,6 +246,7 @@ export const MEASURE_FLAG_LABELS: Record<OmrMeasure['flags'][number], string> = 
   'UNSTABLE',
   'AI_DOUBT',
   'LAYOUT_UNCHECKED',
+  'ENGINE_DISAGREE',
   'AUTO_FIXED',
 ]);
 

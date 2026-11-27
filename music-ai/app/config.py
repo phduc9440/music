@@ -185,6 +185,14 @@ class Settings:
     llm_timeout_s: int = 30
     """Hạn mỗi lần gọi AI (giây). Đặt bằng ``OMR_LLM_TIMEOUT_S``."""
 
+    extra_engines: tuple[str, ...] = ()
+    """Engine nhận diện thêm chạy bằng lệnh ngoài trên từng trang để so theo ô với Transcoda (``app/omr/extra_engines.py``,
+    ``app/omr/arbiter.py``), ví dụ ``copisteria,homr``. Lệnh của từng engine đặt ở ``OMR_ENGINE_<TÊN>_COMMAND``. Đặt
+    bằng ``OMR_EXTRA_ENGINES``; rỗng (mặc định) là tắt."""
+
+    extra_engine_timeout_s: int = 600
+    """Hạn mỗi lần chạy một engine thêm trên một trang (giây). Đặt bằng ``OMR_EXTRA_ENGINE_TIMEOUT_S``."""
+
     def task_budget_s(self, pages: int) -> int:
         """Ngân sách thời gian cho job ``pages`` trang: cơ sở + số trang × hệ số, không quá ``task_timeout_s``."""
         return min(self.task_timeout_s, self.task_timeout_base_s + max(1, pages) * self.task_timeout_per_page_s)
@@ -300,6 +308,8 @@ def get_settings() -> Settings:
         llm_api_key=os.environ.get("ANTHROPIC_API_KEY", "").strip(),
         llm_max_measures=max(0, _int_env("OMR_LLM_MAX_MEASURES", 10)),
         llm_timeout_s=max(5, _int_env("OMR_LLM_TIMEOUT_S", 30)),
+        extra_engines=tuple(n.strip().lower() for n in (_env("OMR_EXTRA_ENGINES") or "").split(",") if n.strip()),
+        extra_engine_timeout_s=max(10, _int_env("OMR_EXTRA_ENGINE_TIMEOUT_S", 600)),
     )
 
 
