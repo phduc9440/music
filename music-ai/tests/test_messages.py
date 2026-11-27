@@ -42,3 +42,14 @@ def test_fix_items_from_reread_and_pitch_notes():
     assert (reread["code"], reread["page"], reread["measures"]) == ("REREAD_REPLACED", 2, [9])
     octave = messages.fix_item("Trang 1: sửa quãng tám 3 nốt theo vị trí đầu nốt trên ảnh")
     assert (octave["code"], octave["page"], octave["params"]) == ("OCTAVE_FIXED", 1, {"count": 3})
+
+
+def test_unchecked_layout_warning_is_coded_with_staff_counts():
+    from app.omr.layout import PageLayout, Staff, System
+    from app.omr.pipeline import _layout_message
+
+    staff = Staff(top=0, bottom=40, left=0, right=900, lines=5)
+    layout = PageLayout(width=1050, height=1485, interline=10.0, systems=[System([staff, staff]), System([staff])])
+    item = messages.warning_item(_layout_message(2, layout))
+    assert (item["code"], item["page"]) == ("PAGE_LAYOUT_UNCHECKED", 2)
+    assert item["params"] == {"counts": "2, 1"}

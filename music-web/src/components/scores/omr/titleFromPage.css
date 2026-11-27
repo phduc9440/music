@@ -44,6 +44,22 @@
   margin-top: 0.35rem;
 }
 
+/* Tên bài đọc được từ PDF xuất từ phần mềm chép nhạc */
+.tfp__suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  margin: 0 0 0.35rem;
+  font-size: var(--ui-text-sm);
+  color: var(--ui-text-2);
+  overflow-wrap: anywhere;
+}
+
+.tfp__suggest .sc-btn {
+  margin-top: 0;
+}
+
 @media (max-width: 720px) {
   .tfp {
     grid-template-columns: 1fr;

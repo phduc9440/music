@@ -33,6 +33,28 @@
   background: color-mix(in srgb, var(--ui-danger) 5%, transparent);
   pointer-events: none;
 }
+/* Ô đang kiểm tra (bảng "Cần kiểm tra"): khung đậm, nền sáng, nhấp hai nhịp khi vừa nhảy tới */
+.ed-focus-box {
+  position: absolute;
+  border: 3px solid var(--ui-warning-strong);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ui-warning) 18%, transparent);
+  pointer-events: none;
+  animation: ed-focus-pulse 0.7s ease-out 2;
+}
+@keyframes ed-focus-pulse {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--ui-warning-strong) 70%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 14px transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ed-focus-box {
+    animation: none;
+  }
+}
 /* Góp ý gắn vào ô nhịp (mục 4.2): nền nhạt các ô có góp ý, bong bóng số lượng */
 .ed-comment-box {
   position: absolute;
@@ -91,6 +113,11 @@
   position: absolute;
   height: 0;
   border-top: 1.5px solid color-mix(in srgb, var(--ui-primary-hover) 75%, transparent);
+}
+/* Nốt mờ ở cột của một nốt có sẵn: sẽ thêm nốt bè (viền nét đứt) */
+.ed-ghost--chord .ed-ghost__head {
+  border-style: dashed;
+  background: color-mix(in srgb, var(--ui-primary) 35%, transparent);
 }
 .ed-ghost__label {
   position: absolute;
@@ -171,6 +198,11 @@
 }
 .ed-pop__btn--dot {
   font-size: 1.2rem;
+}
+/* Thêm nốt bè cùng thân: trường độ theo hợp âm nên các nút trường độ mờ đi */
+.ed-pop__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 .ed-pop__btn.is-active {
   border-color: var(--sc-accent, var(--ui-note-selected));

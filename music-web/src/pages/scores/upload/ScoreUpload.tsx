@@ -68,8 +68,8 @@ export default function ScoreUpload() {
   const [title, setTitle] = useState(() => (initial.length ? titleFromFileName(initial[0].file.name) : ''));
   const [titleTouched, setTitleTouched] = useState(false); // người dùng đã tự sửa tiêu đề thì không tự điền nữa
   const [composer, setComposer] = useState('');
-  const [sourceType, setSourceType] = useState<OmrSourceType>(() => guessSourceType(initial.map((it) => it.file)));
-  const [sourceTouched, setSourceTouched] = useState(false); // tương tự: đã tự chọn loại nguồn thì không tự đoán
+  // Loại nguồn người dùng tự chọn; chưa chọn thì tự đoán theo file (xem ``sourceType`` bên dưới)
+  const [chosenSource, setChosenSource] = useState<OmrSourceType | null>(null);
   const [uploading, setUploading] = useState(false);
   const [preparing, setPreparing] = useState(false); // đang xoay ảnh trước khi gửi
   // Chặn gửi hai lần (bấm đúp, Enter liên tiếp) trước khi state kịp vẽ lại: mỗi lần gửi tạo một bản nhạc và trừ hạn mức
@@ -103,6 +103,9 @@ export default function ScoreUpload() {
   const inspecting = items.some((it) => it.inspecting);
   const busy = uploading || preparing;
   const onlyImages = items.length > 0 && !items.some((it) => isPdf(it.file));
+  // Loại nguồn tự đoán theo nội dung file, gồm loại PDF đọc từ lệnh vẽ trang 1 (O-11): PDF scan -> Bản scan
+  const sourceType = chosenSource ?? guessSourceType(files, items.map((it) => it.pdfKind));
+  const detectedKind = items.length > 0 && items.every((it) => isPdf(it.file)) ? items[0].pdfKind : undefined;
   const totalPages = onlyImages ? items.length : (items.find((it) => isPdf(it.file))?.pageCount ?? 0);
 
   // Trần thật của một lần = số nhỏ hơn giữa gói và hệ thống; còn lại trong tháng = hạn mức tháng - đã dùng (OMR-04)
@@ -155,10 +158,8 @@ export default function ScoreUpload() {
 
   const updateItems = (next: UploadItem[]) => {
     setItems(next);
-    const nextFiles = next.map((it) => it.file);
-    // Tiêu đề tự điền theo tên file đầu tiên, loại nguồn tự đoán theo loại file, trừ khi người dùng đã tự sửa
+    // Tiêu đề tự điền theo tên file đầu tiên, trừ khi người dùng đã tự sửa (loại nguồn tự đoán ở ``sourceType``)
     if (!titleTouched) setTitle(next.length ? titleFromFileName(next[0].file.name) : '');
-    if (!sourceTouched) setSourceType(guessSourceType(nextFiles));
   };
 
   const handleAdd = (added: File[]) => {
@@ -318,15 +319,17 @@ export default function ScoreUpload() {
                   aria-checked={sourceType === type}
                   className={`sc-segment__opt ${sourceType === type ? 'is-active' : ''}`}
                   disabled={busy}
-                  onClick={() => {
-                    setSourceType(type);
-                    setSourceTouched(true);
-                  }}
+                  onClick={() => setChosenSource(type)}
                 >
                   {OMR_SOURCE_LABELS[type]}
                 </button>
               ))}
             </div>
+            {!chosenSource && detectedKind && (
+              <p className="sc-upload__hint">
+                {detectedKind === 'scan' ? t('upload.sourceDetected.scan') : t('upload.sourceDetected.vector')}
+              </p>
+            )}
 
             {plan && (
               <p className="sc-upload__hint sc-upload__quota">

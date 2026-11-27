@@ -63,13 +63,34 @@ export const topLineDiatonic = (
 export const pitchAtLine = naturalAt;
 
 interface EntryBox {
+  /** Id nốt đầu của mục (hợp âm/nốt/dấu lặng). */
+  id: string;
   voice: number;
   entryIndex: number;
   isRest: boolean;
   left: number;
   right: number;
   centerX: number;
+  /** Mép trái/phải của các đầu nốt (không tính dấu hóa, đuôi, chấm); null nếu không đo được. */
+  heads: { left: number; right: number } | null;
 }
+
+/** Bấm cách mép đầu nốt trong khoảng này (tính theo khoảng dòng kẻ) vẫn tính là bấm vào cột của nốt đó. */
+const COLUMN_SLACK = 0.3;
+
+/** Khung chứa các đầu nốt của một nhóm SVG (bỏ đầu nốt của nốt hoa mỹ). */
+const headExtent = (el: Element): { left: number; right: number } | null => {
+  const heads = Array.from(el.querySelectorAll('.vf-notehead')).filter((h) => !h.closest('.vf-gracenotegroup'));
+  if (heads.length === 0) return null;
+  let left = Infinity;
+  let right = -Infinity;
+  for (const h of heads) {
+    const r = h.getBoundingClientRect();
+    left = Math.min(left, r.left);
+    right = Math.max(right, r.right);
+  }
+  return right > left ? { left, right } : null;
+};
 
 /**
  * Tìm chỗ trên khuông ứng với điểm (clientX, clientY).
@@ -150,18 +171,25 @@ export function locateSpot(
     seen.add(key);
     const r = el.getBoundingClientRect();
     boxes.push({
+      id: info.id,
       voice: info.voice,
       entryIndex: info.entryIndex,
       isRest: info.isRest,
       left: r.left,
       right: r.right,
       centerX: (r.left + r.right) / 2,
+      heads: info.isRest ? null : headExtent(el),
     });
   });
 
   const restHit = boxes.find((b) => b.isRest && clientX >= b.left - REST_SLACK && clientX <= b.right + REST_SLACK);
-  let voice = restHit?.voice ?? 1;
-  if (!restHit && boxes.length > 0) {
+  // Bấm thẳng trên/dưới đầu nốt của một nốt có sẵn: thêm nốt bè vào đúng cột đó (bè thân hoặc bè riêng)
+  const slack = COLUMN_SLACK * best.space;
+  const column = restHit
+    ? undefined
+    : boxes.find((b) => b.heads && clientX >= b.heads.left - slack && clientX <= b.heads.right + slack);
+  let voice = column?.voice ?? restHit?.voice ?? 1;
+  if (!restHit && !column && boxes.length > 0) {
     voice = boxes.reduce((a, b) => (Math.abs(b.centerX - clientX) < Math.abs(a.centerX - clientX) ? b : a)).voice;
   }
   // Chỉ số mục trong bè tính theo DOM (bỏ nốt trang trí), khớp với chỉ số dùng khi chèn
@@ -181,9 +209,10 @@ export function locateSpot(
   const beforeEntry = afterAt >= 0 ? afterAt : entries.length;
   const restAt = restHit ? entries.findIndex((n) => n.entryIndex === restHit.entryIndex) : -1;
   // Trong đoạn 8va/8vb vị trí vẽ lệch cao độ thật một quãng tám: cộng phần lệch vào cao độ chèn
-  const anchorEntry = entries[restAt >= 0 ? restAt : beforeEntry];
+  const anchorEntry = column ? doc.getInfo(column.id) : entries[restAt >= 0 ? restAt : beforeEntry];
   const shift = octaveShiftAt(doc, best.partIndex, best.staff, best.measureIndex, anchorEntry?.onsetKey ?? Infinity);
 
+  const columnX = column?.heads ? (column.heads.left + column.heads.right) / 2 : null;
   return {
     partIndex: best.partIndex,
     measureIndex: best.measureIndex,
@@ -193,7 +222,8 @@ export function locateSpot(
     octave: octave + shift,
     beforeEntry,
     restEntry: restAt >= 0 ? restAt : null,
-    x: restHit && restAt >= 0 ? restHit.centerX : clientX,
+    ...(column ? { chordOf: column.id } : {}),
+    x: columnX ?? (restHit && restAt >= 0 ? restHit.centerX : clientX),
     y: best.top + line * halfStep,
     halfStep,
     line,
@@ -213,6 +243,7 @@ export const spotTarget = (spot: StaffSpot): InsertTarget => ({
   octave: spot.octave,
   beforeEntry: spot.beforeEntry,
   restEntry: spot.restEntry,
+  ...(spot.chordOf ? { chordOf: spot.chordOf } : {}),
 });
 
 /** Các dòng kẻ phụ (theo chỉ số bậc) cần vẽ cho nốt ở `line`. */

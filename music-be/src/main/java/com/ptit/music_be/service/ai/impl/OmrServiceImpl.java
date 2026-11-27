@@ -384,6 +384,7 @@ public class OmrServiceImpl implements OmrService {
         JsonNode warningItems = data.path("warningItems");
         JsonNode autoFixes = data.path("autoFixes");
         JsonNode textAbove = data.path("textAbove");
+        JsonNode pageText = data.path("pageText");
         int pageCount = data.hasNonNull("pageCount") ? data.get("pageCount").asInt() : pages.size();
         String stoppedAfter =
                 data.hasNonNull("stoppedAfter") ? data.get("stoppedAfter").asText() : null;
@@ -404,6 +405,7 @@ public class OmrServiceImpl implements OmrService {
                 .warningItems(warningItems.isArray() ? warningItems : null)
                 .autoFixes(autoFixes.isArray() ? autoFixes : null)
                 .textAbove(textAbove.isArray() ? textAbove : null)
+                .pageText(pageText.isObject() ? pageText : null)
                 .omrVersion(
                         data.path("musicXmlVersion").isInt()
                                 ? data.get("musicXmlVersion").asInt()

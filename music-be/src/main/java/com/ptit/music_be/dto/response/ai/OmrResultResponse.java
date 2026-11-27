@@ -73,6 +73,12 @@ public class OmrResultResponse {
     Boolean tempoDefaulted;
 
     /**
+     * Tên bài, tác giả, nhịp độ đọc từ lớp chữ của PDF xuất từ phần mềm chép nhạc (result_data.pageText: {title, composer,
+     * tempoBpm}, thiếu khóa nào thì không đọc được khóa đó). Web gợi ý tên bài từ đây. Null với ảnh, PDF scan, kết quả cũ.
+     */
+    JsonNode pageText;
+
+    /**
      * Phiên bản MusicXML do chính lần nhận diện này tạo (result_data.musicXmlVersion). Khác {@link #musicXmlVersion} nghĩa
      * là bản nhạc đã được lưu thêm sau khi số hóa, số ô trong measureMap có thể lệch nếu người dùng thêm/xóa ô.
      */

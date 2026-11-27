@@ -97,6 +97,7 @@ Mọi biến đều có giá trị mặc định. [`.env.example`](.env.example)
 | `LOAD_MODEL` | `true` | `false`: không nạp Transcoda, không cần cài `torch` |
 | `MODEL_ID` | `btrkeks/transcoda-59M-zeroshot-v1` | Repo Hugging Face, hoặc thư mục model đã tải về (ví dụ `models/transcoda`) |
 | `DEVICE` | `auto` | `auto` (có CUDA thì dùng, không thì CPU), `cpu`, `cuda`, `mps` |
+| `OMR_PROFILE` | `default` | `accurate`: mặc định cho các biến chưa đặt chuyển sang cấu hình chính xác hơn nhưng chậm (`NUM_BEAMS=3`, `OMR_ROUTING_MEASURES=1`, `OMR_TTA=3`, `OMR_TTA_MAX_SYSTEMS=12`, nới thời gian). Biến đặt riêng vẫn thắng. A/B: `omr_benchmark.py run --variant moi: --variant chinhxac:OMR_PROFILE=accurate` |
 | `NUM_BEAMS` | `1` | `1` = greedy (nhanh); `3` = beam search như bài báo (chính xác hơn, chậm hơn nhiều) |
 | `MAX_TOKENS`, `REPETITION_PENALTY` | `2048`, `1.1` | Số token sinh tối đa mỗi lần đọc; hệ số phạt lặp |
 | `INFERENCE_PAGE_TIMEOUT_S` | `90` | Thời gian tối đa cho nhận diện mỗi trang. **Chạy CPU thì nên tăng**, cùng với `TASK_TIMEOUT_S` |
@@ -118,7 +119,7 @@ Mọi biến đều có giá trị mặc định. [`.env.example`](.env.example)
 | `ROUTING_RESERVE_S` | `30` | Số giây giữ lại cho bước ghép và xuất; nhận diện lại không bao giờ làm job quá hạn |
 | `OMR_STRIP_TEXT` | `1` | Xóa lời ca, tên hợp âm và chữ ngoài khuông trước khi đưa vào model |
 | `OMR_OTTAVA` | `auto` | `auto`: bỏ dấu `*8va` / `*8ba` model tự thêm trên khuông giọng hát và khuông đơn; `drop`: bỏ ở mọi khuông; `keep`: giữ nguyên |
-| `OMR_PITCH_CHECK` | `1` | Dò đầu nốt trên ảnh (OpenCV) để sửa nốt đúng tên nhưng sai quãng tám |
+| `OMR_PITCH_CHECK` | `1` | Dò đầu nốt trên ảnh (OpenCV) để sửa nốt đúng tên nhưng sai quãng tám; PDF vector dùng đầu nốt đọc từ font nhạc của PDF và sửa cả tên nốt |
 | `OMR_RHYTHM_FIX` | `1` | Sửa ô sai trường độ do đọc nhầm nhịp ba (`12` → `8`...), bỏ nốt thừa trong hợp âm |
 
 ### Độ tin cậy từng ô
@@ -128,6 +129,9 @@ Mọi biến đều có giá trị mặc định. [`.env.example`](.env.example)
 | `OMR_TTA` | `2` | Số lần đọc lại (ảnh dịch vài pixel) cho hệ có ô nghi ngờ; `0` là tắt; từ `2` trở lên mới tự thay ô |
 | `OMR_TTA_SHIFT_PX` | `3` | Độ dịch ảnh giữa các lần đọc lại (pixel, trên ảnh 1050×1485) |
 | `OMR_TTA_MAX_SYSTEMS` | `4` | Số hệ tối đa được đọc lại mỗi job |
+| `OMR_EXTRA_ENGINES` | (rỗng) | Engine nhận diện thêm chạy trên từng trang để so theo ô với Transcoda, ví dụ `copisteria,homr` (xem mục "Engine thêm") |
+| `OMR_ENGINE_<TÊN>_COMMAND`, `OMR_ENGINE_<TÊN>_CWD` | | Lệnh chạy engine `<TÊN>` (có `{image}`, `{outdir}`; lệnh phải ghi MusicXML vào `{outdir}`) và thư mục chạy lệnh |
+| `OMR_EXTRA_ENGINE_TIMEOUT_S` | `600` | Hạn mỗi lần chạy một engine thêm trên một trang |
 | `OMR_LLM` | `off` | `anthropic`: gửi ảnh cắt các ô tin cậy thấp nhất cho AI xác minh (cần `ANTHROPIC_API_KEY`) |
 | `OMR_LLM_MODEL` | `claude-haiku-5-5` | Model AI dùng để xác minh (nên chọn model rẻ) |
 | `OMR_LLM_MAX_MEASURES`, `OMR_LLM_TIMEOUT_S` | `10`, `30` | Số ô tối đa gửi AI mỗi job; thời gian chờ mỗi lần gọi. Kết quả được cache ở `{storage}/cache/llm/` |
@@ -382,7 +386,8 @@ app/
 ├── storage.py      kiểm tra và phân giải đường dẫn trong storage
 ├── schemas.py      model Pydantic của request
 ├── omr/            pipeline OMR: preprocess, layout, barlines, textstrip, transcoda, engines, routing, combine,
-│                   merge, ottava, pitch_check, rhythm_fix, review, stability, llm_check, measure_map
+│                   merge, ottava, pitch_check, rhythm_fix, review, stability, llm_check, measure_map,
+│                   vector_pdf, glyphs (PDF xuất từ phần mềm), arbiter, extra_engines (engine thêm)
 ├── convert/        kern / MusicXML / MIDI, normalize, prepare
 ├── analysis/       so sánh hai MusicXML
 ├── chords/         gợi ý hợp âm: model AutoHarmonizer (autoharmonizer/: mạng numpy, trọng số, bảng hợp âm), chèn <harmony>
@@ -399,3 +404,57 @@ tests/
   vào dự án.
 - Gợi ý hợp âm: mã và trọng số AutoHarmonizer (`github.com/sander-wood/autoharmonizer`) theo giấy phép **MIT**, giữ
   thông báo bản quyền ở `app/chords/autoharmonizer/LICENSE`.
+
+## PDF xuất từ phần mềm chép nhạc
+
+PDF xuất thẳng từ Sibelius, MuseScore, Finale, Dorico... vẽ ký hiệu nhạc bằng ký tự của font nhạc (Opus/OpusStd, SMuFL
+như Leland/Bravura, Maestro/Anastasia...). Với loại PDF này (tự nhận theo nội dung, không cần chọn gì thêm):
+
+- `app/omr/vector_pdf.py` xóa lời ca, tên hợp âm theo đúng khung chữ trong file và lấy tên bài, tác giả, nhịp độ;
+- `app/omr/glyphs.py` đọc vị trí chính xác của đầu nốt, chấm dôi (phân biệt với chấm staccato), dấu hóa, khóa, dấu lặng,
+  đặt lên ảnh trang và kiểm lại trên ảnh (không khớp thì bỏ, quay về dò ảnh). Đầu nốt PDF thay cho đầu nốt dò bằng OpenCV:
+  `pitch_check` sửa cả tên nốt lẫn quãng tám theo từng ô ở mọi khuông (mã `PDF_PITCH_FIXED`), mỗi ô được so số đầu nốt,
+  số chấm dôi, cao độ với PDF (cờ `PDF_MISMATCH`; ô khớp hoàn toàn thì bỏ các cờ đoán theo nhạc lý), trọng tài engine thêm
+  ưu tiên cách đọc khớp PDF.
+
+Trang PDF là ảnh scan (một ảnh phủ kín trang, không có font nhạc) mà loại nguồn là "PDF gốc" thì được khử nhiễu như bản
+scan (cảnh báo `PAGE_SCANNED_PDF`); trang tải lên cũng tự chọn "Bản scan" cho PDF loại này.
+
+Kết quả ghi ở `vectorPdf` (`glyphPages`: trang dùng được ký hiệu PDF, `glyphs`: số ký hiệu theo loại) và
+`measureCheck.pdfMeasures` (số ô được so với PDF). Kiểm nhanh một file trước khi chạy:
+`python scripts/pdf_glyphs.py duong/dan/file.pdf` (in số ký hiệu từng trang và các mã font chưa có trong bảng).
+
+## Engine thêm (so theo từng ô)
+
+Transcoda vẫn là engine chính. Bật `OMR_EXTRA_ENGINES` thì sau khi ghép kern, mỗi engine thêm đọc lại ảnh gốc từng trang
+(`scores/{id}/engine-input/page-NNN.png`) và ra MusicXML; `app/omr/arbiter.py` so từng ô với kết quả Transcoda:
+
+- giống nhau: ô được cộng điểm tin cậy;
+- Transcoda sai tổng trường độ, engine kia đúng (hoặc với PDF vector: engine kia khớp ký hiệu nhạc của PDF, Transcoda
+  không khớp): thay ô (ghi vào "Đã tự sửa", mã `ENGINE_REPLACED`);
+- cả hai đều đúng trường độ nhưng khác nhau: gắn cờ `ENGINE_DISAGREE` (cần kiểm tra) và đưa cách đọc kia cho AI xác minh;
+- trang mà engine kia đọc ra số ô khác thì bỏ qua (không biết ô nào ứng với ô nào).
+
+Kết quả nằm ở `measureCheck.engines` (số ô so được, giống, đã thay, khác nhau, lỗi từng engine). Mặc định tắt: đo trên
+bộ benchmark trước (`--variant engines:OMR_EXTRA_ENGINES=copisteria`), vì số liệu công bố của các engine là do chính tác giả đo.
+
+Cài thử ngoài Docker (engine cần Python riêng; music-ai chạy thẳng trên máy cũng được):
+
+```bash
+# copisteria (Apache-2.0, cần Python 3.12)
+git clone https://github.com/kobimusic/copisteria /opt/copisteria && cd /opt/copisteria
+python3.12 -m venv .venv && .venv/bin/pip install torch && .venv/bin/pip install -e . huggingface_hub
+.venv/bin/hf download kobimusic/copisteria evidence-2m.pt --local-dir models
+.venv/bin/hf download kobimusic/copisteria v7_obj-recall-30m_best.pt v7_obj-recall_best.pt --local-dir models/small
+export OMR_ENGINE_COPISTERIA_COMMAND='/opt/copisteria/.venv/bin/python -m copisteria.pipeline {image} --out {outdir}'
+export OMR_ENGINE_COPISTERIA_CWD=/opt/copisteria
+
+# homr (AGPL-3.0: giữ nguyên mã gốc, gọi như chương trình riêng)
+python3 -m venv /opt/homr && /opt/homr/bin/pip install homr
+export OMR_ENGINE_HOMR_COMMAND='/opt/homr/bin/homr {image}'
+
+export OMR_EXTRA_ENGINES=copisteria,homr
+```
+
+Kiểm tra lệnh trước khi bật: chạy tay lệnh với một ảnh trang và xem file MusicXML được ghi ra đâu (cờ dòng lệnh thật của
+mỗi engine xem `--help` của engine đó). Audiveris (AGPL-3.0, Java) dùng được tương tự với lệnh xuất `.mxl` vào `{outdir}`.

@@ -12,6 +12,8 @@ interface Props {
   score: ScoreDetail;
   /** Ảnh trang 1 đã xử lý (PNG); không có thì không hiện khung. */
   pageUrl?: string | null;
+  /** Tên bài, tác giả đọc từ lớp chữ của PDF xuất từ phần mềm chép nhạc (OmrResult.pageText); không có với ảnh/PDF scan. */
+  suggested?: { title?: string | null; composer?: string | null } | null;
   onSaved: (updated: ScoreDetail) => void;
 }
 
@@ -19,14 +21,24 @@ interface Props {
  * T46: đặt tên bài ngay ở trang Kết quả, nhìn phần đầu trang 1 của ảnh gốc (thường in tên bài và tác giả, ví dụ
  * "Bèo dạt mây trôi · Dân ca Việt Nam"). Tên lấy từ file ảnh thường vô nghĩa hoặc là "Untitled" (T37).
  */
-export default function TitleFromPage({ score, pageUrl, onSaved }: Props) {
-  const [title, setTitle] = useState(score.title === UNTITLED_TITLE ? '' : score.title);
-  const [composer, setComposer] = useState(score.composer ?? '');
+export default function TitleFromPage({ score, pageUrl, suggested, onSaved }: Props) {
+  const suggestedTitle = suggested?.title?.trim().slice(0, MAX_TITLE) ?? '';
+  const suggestedComposer = suggested?.composer?.trim().slice(0, MAX_COMPOSER) ?? '';
+  // Bài chưa có tên thật (Untitled) mà PDF có tên in sẵn: điền luôn, người dùng chỉ cần bấm Lưu
+  const untitled = score.title === UNTITLED_TITLE;
+  const [title, setTitle] = useState(untitled ? suggestedTitle : score.title);
+  const [composer, setComposer] = useState(score.composer || (untitled ? suggestedComposer : ''));
   const [saving, setSaving] = useState(false);
   if (!score.canEdit || !pageUrl) return null;
 
   const trimmed = title.trim();
   const changed = trimmed !== score.title || composer.trim() !== (score.composer ?? '');
+  const canSuggest =
+    !!suggestedTitle && (suggestedTitle !== trimmed || (!!suggestedComposer && suggestedComposer !== composer.trim()));
+  const useSuggestion = () => {
+    setTitle(suggestedTitle);
+    if (suggestedComposer) setComposer(suggestedComposer);
+  };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -50,6 +62,20 @@ export default function TitleFromPage({ score, pageUrl, onSaved }: Props) {
         <figcaption>{t('upload.titleFromPage.caption')}</figcaption>
       </figure>
       <form className="tfp__form" onSubmit={(e) => void submit(e)}>
+        {suggestedTitle && (
+          <p className="tfp__suggest">
+            <span>
+              {t('upload.titleFromPage.fromPdf')}{' '}
+              <strong>{suggestedTitle}</strong>
+              {suggestedComposer ? ` · ${suggestedComposer}` : ''}
+            </span>
+            {canSuggest && (
+              <button type="button" className="sc-btn sc-btn--sm" onClick={useSuggestion}>
+                {t('upload.titleFromPage.useSuggestion')}
+              </button>
+            )}
+          </p>
+        )}
         <label className="sc-label" htmlFor="tfp-title">
           {t('scores.edit.scoreTitle')}
           <span className="sc-counter">

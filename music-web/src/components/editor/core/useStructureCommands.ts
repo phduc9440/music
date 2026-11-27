@@ -7,7 +7,7 @@ import type { DurationChoice, DurationType } from '../notes/durations';
 import { applyMark as runMark } from '../notation/marks';
 import type { MarkOp } from '../notation/marks';
 import { deleteMeasures, insertMeasure } from '../structure/structure';
-import { addChordNote, addHarmonyVoice, removeVoice, toggleCue } from '../notes/voices';
+import { addChordNote, addHarmonyVoice, removeVoice } from '../notes/voices';
 import type { VoiceOp } from '../notes/voices';
 import { addBassStaff, addPart, changeNotation, readNotation, removeStaff } from '../structure/staves';
 import type { NotationChange } from '../structure/staves';
@@ -88,10 +88,9 @@ export function useStructureCommands(core: EditorCore, setInputDuration: (choice
     (op: VoiceOp) => {
       if (!canEdit || selection.size === 0) return;
       const ids = [...selection];
-      if (op === 'cue') commit(toggleCue(doc, ids), false);
-      else if (op === 'remove') commit(removeVoice(doc, ids), false);
-      else if (op === 'chordBelow') commit(addChordNote(doc, ids, -2), false);
-      else if (op === 'chordAbove') commit(addChordNote(doc, ids, 2), false);
+      if (op === 'remove') commit(removeVoice(doc, ids), false);
+      else if (op === 'chordBelow') commit(addChordNote(doc, ids, -1), true);
+      else if (op === 'chordAbove') commit(addChordNote(doc, ids, 1), true);
       else if (op === 'blank') commit(addHarmonyVoice(doc, ids, 0, true), false);
       else commit(addHarmonyVoice(doc, ids, op === 'addBelow' ? -2 : 2), false);
     },

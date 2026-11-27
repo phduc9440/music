@@ -80,6 +80,9 @@
     "ACCIDENTAL": "Unusual accidental that appears only once; it may be a smudge or text",
     "UNSTABLE": "Reading this measure again gave different results",
     "AI_DOUBT": "The AI check thinks this measure was read incorrectly",
+    "LAYOUT_UNCHECKED": "The layout of this page is unclear (systems have different staff counts), so measures and staves could not be checked: compare the whole page",
+    "ENGINE_DISAGREE": "Another recognition engine read this measure differently, and both readings fit the meter",
+    "PDF_MISMATCH": "The notes, dots or pitches of this measure differ from the music symbols inside the original PDF",
     "AUTO_FIXED": "This measure was corrected automatically, compare it with the original"
   },
   "dropzone": {
@@ -131,6 +134,10 @@
   "fieldComposer": "Composer",
   "composerPlaceholder": "For example: Johann Sebastian Bach",
   "sourceType": "Source type",
+  "sourceDetected": {
+    "vector": "Detected: a PDF exported from notation software (its music symbols can be read). You can still change it.",
+    "scan": "Detected: this PDF is a scanned image. You can still change it."
+  },
   "progressLabel": "Upload progress",
   "uploading": "Uploading... {progress}%",
   "preparing": "Preparing images...",
@@ -482,10 +489,12 @@
     "PAGE_LOOP_TRIMMED": "The model repeated itself, {count} repeated lines were removed",
     "PAGE_MEASURE_MISMATCH": "Read {found} measures but the image has {expected}, check this page",
     "PAGE_STAFF_MISMATCH": "Read {found} staves but the image has {expected} staves per system",
+    "PAGE_LAYOUT_UNCHECKED": "Unclear page layout (staves per system {counts}): staves and measures could not be checked against the image, compare the whole page with the original",
     "SYSTEM_MEASURE_MISMATCH": "This system read {found} measures but the image has {expected}",
     "BARLINES_INSERTED": "Missing barlines: inserted {count} by duration (compare with the image)",
     "TEXT_ABOVE_STAFF": "There is text above the staff (usually chord names or tempo) that wasn't recognized; printed chords are not in the digital score",
-    "TEMPO_DEFAULT": "The tempo couldn't be read, using {bpm} BPM; please correct it"
+    "TEMPO_DEFAULT": "The tempo couldn't be read, using {bpm} BPM; please correct it",
+    "PAGE_SCANNED_PDF": "This page is a scanned image inside the PDF (not exported from notation software), so it was processed as a scan"
   },
   "fixCodes": {
     "RHYTHM_FIXED": "Durations fixed: {parts}",
@@ -495,9 +504,11 @@
       "dots": "added {count} dots"
     },
     "OCTAVE_FIXED": "Fixed the octave of {count} notes from the notehead positions",
+    "PDF_PITCH_FIXED": "Fixed the pitch of {count} notes from the music symbols inside the original PDF",
     "OTTAVA_FIXED": "Removed an 8va the model added, moved {count} notes back to the printed octave",
     "REREAD_REPLACED": "Replaced this measure with the reading that repeated re-reads agreed on",
-    "AI_REPLACED": "AI compared the image and chose a different reading for this measure"
+    "AI_REPLACED": "AI compared the image and chose a different reading for this measure",
+    "ENGINE_REPLACED": "This measure was replaced with the reading of {engine}, which fits the meter or the original PDF better than the main engine"
   },
   "check": {
     "title": "To check",
@@ -526,6 +537,8 @@
   },
   "titleFromPage": {
     "label": "Name the score from the original page",
+    "fromPdf": "Read from the PDF:",
+    "useSuggestion": "Use this title",
     "cropAlt": "Top of page 1 of the original",
     "caption": "Top of page 1 of the original: the title and composer are usually printed here.",
     "placeholder": "Type the title as printed on the original",

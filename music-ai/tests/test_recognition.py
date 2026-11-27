@@ -474,7 +474,7 @@ def test_measure_map_places_each_measure_on_the_page_image(storage_root, java):
     data = java.bodies("complete")[0]["resultData"]
     check = data["measureCheck"]
     assert check["imageMeasures"] == 12 and check["kernMeasures"] == 12 and check["pagesRerouted"] == 0
-    assert check["pages"] == [{"page": 1, "imageMeasures": 12, "kernMeasures": 12}]
+    assert check["pages"] == [{"page": 1, "imageMeasures": 12, "kernMeasures": 12, "layoutChecked": True}]
     entries = data["measureMap"]
     assert [e["measure"] for e in entries] == list(range(1, 13))
     assert [e["system"] for e in entries] == [1] * 4 + [2] * 5 + [3] * 3
@@ -604,3 +604,38 @@ def test_ai_check_runs_through_the_pipeline_with_a_fake_client(storage_root, jav
     sixth = data["measureMap"][5]
     assert "AI_DOUBT" in sixth["flags"] and "AI: Nốt đen là G4" in sixth["reasons"]
     assert (storage_root / "cache" / "llm").is_dir()
+
+
+def test_extra_engine_is_compared_measure_by_measure(storage_root, java, monkeypatch, tmp_path):
+    import sys
+
+    from tests.kern_samples import melody
+
+    notes = "".join(
+        '<measure number="{n}">'
+        '<note><pitch><step>F</step><octave>4</octave></pitch><duration>4</duration></note>'
+        '<note><pitch><step>{last}</step><octave>4</octave></pitch><duration>2</duration></note>'
+        "</measure>".format(n=n, last="A" if n == 5 else "G")
+        for n in range(1, 13)
+    )
+    xml = (
+        '<score-partwise><part id="P1"><measure number="0"><attributes><divisions>2</divisions></attributes>'
+        f"</measure>{notes}</part></score-partwise>"
+    )
+    script = tmp_path / "engine.py"
+    script.write_text(
+        f"import sys, pathlib\npathlib.Path(sys.argv[1], 'out.musicxml').write_text({xml!r})\n", encoding="utf-8"
+    )
+    monkeypatch.setenv("OMR_EXTRA_ENGINES", "fake")
+    monkeypatch.setenv("OMR_ENGINE_FAKE_COMMAND", f"{sys.executable} {script} {{outdir}}")
+    monkeypatch.setenv("OMR_TTA", "0")
+    config.get_settings.cache_clear()
+    job = melody_job(storage_root, "e1")
+    run(job, FakeRecognizer([melody(12)]))
+    data = java.bodies("complete")[0]["resultData"]
+    report = data["measureCheck"]["engines"]
+    assert report["engines"]["fake"]["pages"] == 1 and report["engines"]["fake"]["errors"] == []
+    # ô "0" chỉ có attributes nên bị bỏ (không có nốt): 12 ô khớp 12 ô của máy chính
+    assert (report["compared"], report["agreed"], report["disagreed"]) == (12, 11, 1)
+    flagged = [e["measure"] for e in data["measureMap"] if "ENGINE_DISAGREE" in e["flags"]]
+    assert flagged == [5]

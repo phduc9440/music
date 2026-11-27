@@ -183,3 +183,30 @@ def test_is_clean_digital_accepts_jpeg_of_digital_page():
     jpeg = cv2.imdecode(buf, cv2.IMREAD_GRAYSCALE)
     assert pp.is_clean_digital(jpeg)
     assert not pp.is_clean_digital(make_score_page(noise=6))
+
+
+@pytest.mark.parametrize("tilt", [0.0, 1.5])
+def test_transform_maps_input_pixels_to_output_image(tilt):
+    """``PageResult.transform`` đặt một điểm của ảnh vào đúng chỗ trên ảnh 1050x1485 sau cắt viền, xoay, cắt lề, thu phóng
+    (để đặt ký hiệu đọc từ PDF vector lên ảnh trang)."""
+    gray = make_score_page(tilt=tilt)
+    gray = np.vstack([np.full((40, gray.shape[1]), 200, np.uint8), gray])  # dải xám kiểu thanh trạng thái
+    result = pp.process_page(gray, pp.PreprocessOptions(binarize=False), 1)
+    assert result.transform is not None and result.transform.shape == (2, 3)
+
+    # điểm đánh dấu: một chấm tròn đen ở khoảng trống giữa hệ 2 và hệ 3 (trong khung nội dung nên không đổi cách cắt lề)
+    point = (int(gray.shape[1] * 0.5), 40 + int(2400 * (0.08 + 0.21 * 1.8)))
+    marked = gray.copy()
+    cv2.circle(marked, point, 9, 0, -1)
+    after = pp.process_page(marked, pp.PreprocessOptions(binarize=False), 1)
+    diff = (result.image.astype(int) - after.image.astype(int)) > 60
+    ys, xs = np.nonzero(diff)
+    expected = result.transform @ np.array([point[0], point[1], 1.0])
+    assert abs(xs.mean() - expected[0]) < 2.0 and abs(ys.mean() - expected[1]) < 2.0
+
+
+def test_transform_without_preprocessing_is_a_plain_scale():
+    gray = make_score_page()
+    result = pp.process_page(gray, pp.PreprocessOptions(preprocess=False), 1)
+    scale = pp.TARGET_H / gray.shape[0] if gray.shape[0] / gray.shape[1] > pp.TARGET_H / pp.TARGET_W else pp.TARGET_W / gray.shape[1]
+    assert np.allclose(result.transform[:, :2], np.diag([scale, scale]), atol=1e-3)

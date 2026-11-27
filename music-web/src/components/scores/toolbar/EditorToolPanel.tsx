@@ -901,13 +901,6 @@ export default function EditorToolPanel({
               needSelection,
             ),
             textEntry(
-              'cue',
-              t('editor.tool.text.cue.label'),
-              t('editor.tool.text.cue.title'),
-              () => onVoice('cue'),
-              needSelection,
-            ),
-            textEntry(
               'removeVoice',
               t('editor.tool.text.removeVoice.label'),
               t('editor.tool.text.removeVoice.title'),

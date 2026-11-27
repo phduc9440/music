@@ -52,8 +52,12 @@ def make_vocal_page(
     drop_line=False,
     seed=0,
     bars=0,
+    system_staves=None,
 ) -> np.ndarray:
     """Trang giọng hát + piano: mỗi hệ ``staves`` khuông, khuông trên cùng có "lời ca" bên dưới.
+
+    ``system_staves``: số khuông riêng từng hệ (trang hỗn hợp, vd. ``[2, 2, 1, 1]`` = điệp khúc 2 khuông + phần lời 1 khuông);
+    khi có thì ``systems`` lấy theo độ dài danh sách.
 
     ``brace_pair``: chỉ số khuông trên của cặp có ngoặc ở lề trái (mặc định hai khuông dưới cùng). ``connector``: vạch hệ
     nối mọi khuông ở lề trái. ``first_staves``: số khuông của hệ đầu (giấu khuông trống ở đoạn dạo đầu). ``stray_line``:
@@ -65,11 +69,15 @@ def make_vocal_page(
     spacing = 16
     left, right = int(width * 0.08), int(width * 0.94)
     top = int(height * 0.06)
+    if system_staves:
+        systems = len(system_staves)
     system_height = int((height * 0.88) / systems)
     staff_gap = int(system_height / (staves + 0.6))
     for s in range(systems):
         y0 = top + s * system_height
         count = first_staves if (s == 0 and first_staves) else staves
+        if system_staves:
+            count = system_staves[s]
         bases = [y0 + i * staff_gap for i in range(count)]
         for index, base in enumerate(bases):
             for line in range(5):
@@ -114,13 +122,14 @@ def make_vocal_page(
 
 
 def make_melody_page(
-    width=1700, height=2400, measures=(4, 5, 3), close_last=True, final_double=True, seed=0
+    width=1700, height=2400, measures=(4, 5, 3), close_last=True, final_double=True, seed=0, notes=None
 ) -> np.ndarray:
     """Trang giai điệu một khuông có vạch nhịp: hệ thứ ``i`` có ``measures[i]`` ô.
 
     Mỗi ô có một nốt trắng với thân nốt dài **phủ kín chiều cao khuông** (đầu nốt rỗng ở dòng kẻ dưới, thân lên tới dòng
     kẻ trên: dễ bị nhầm là vạch nhịp), một nốt đen thân ngắn và một nốt móc đơn có cờ. ``close_last=False``: hệ cuối không
-    có vạch nhịp ở mép phải. ``final_double``: hệ cuối kết thúc bằng vạch kết (mảnh + dày).
+    có vạch nhịp ở mép phải. ``final_double``: hệ cuối kết thúc bằng vạch kết (mảnh + dày). ``notes`` (danh sách): nhận
+    thêm ``(hệ, ô, "half"/"black", x, y, vị trí khuông)`` của từng đầu nốt đã vẽ (vị trí khuông 0 = dòng kẻ dưới).
     """
     rng = np.random.default_rng(seed)
     page = np.full((height, width), 255, np.uint8)
@@ -152,6 +161,10 @@ def make_melody_page(
             ex = x + int(width_m * 0.7)
             ey = base + 2 * spacing
             cv2.ellipse(page, (ex, ey), (10, 7), -20, 0, 360, 0, -1)
+            if notes is not None:
+                notes.append((s, m, "half", hx, bottom, 0))
+                notes.append((s, m, "black", qx, qy, (bottom - qy) * 2 // spacing))
+                notes.append((s, m, "black", ex, ey, 4))
             cv2.line(page, (ex + 9, ey), (ex + 9, ey - 3 * spacing), 0, 2)
             cv2.line(page, (ex + 9, ey - 3 * spacing), (ex + 22, ey - spacing), 0, 3)
             # vạch nhịp ở cuối ô (ô cuối của hệ cuối có thể không có)

@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent } from 'react';
 import type { StudioEventResult, StudioInputSource } from '../../../types';
 import type { StudioVisualNote } from '../engine/studioSchedule';
+import { STUDIO_KEYBOARD_MAP } from '../engine/studioKeyboardMap';
 import { t } from '../../../i18n/core';
 
 const SEMITONE_NAMES = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
@@ -65,6 +66,8 @@ interface PianoProps {
   guideLoop?: boolean;
   /** Nốt gốc của bàn phím máy tính (mặc định C4 = 60), để vẽ nhãn phím A-K lên đàn */
   computerKeyboardBase?: number;
+  /** Nốt đang giữ bằng bàn phím máy tính: tô phím như đang bấm. */
+  heldMidis?: readonly number[];
 }
 
 /** Nốt ngắn vẫn giữ phím sáng ít nhất chừng này để mắt kịp thấy. */
@@ -309,21 +312,9 @@ export function StudioWaterfall({
   );
 }
 
-const KEYBOARD_SHORTCUTS: Record<number, string> = {
-  0: 'A',
-  1: 'W',
-  2: 'S',
-  3: 'E',
-  4: 'D',
-  5: 'F',
-  6: 'T',
-  7: 'G',
-  8: 'Y',
-  9: 'H',
-  10: 'U',
-  11: 'J',
-  12: 'K',
-};
+const KEYBOARD_SHORTCUTS = Object.fromEntries(
+  Object.entries(STUDIO_KEYBOARD_MAP).map(([key, semitone]) => [semitone, key.toUpperCase()]),
+);
 
 export function StudioVirtualPiano({
   inputSource,
@@ -337,6 +328,7 @@ export function StudioVirtualPiano({
   guideDurationMs = 0,
   guideLoop = false,
   computerKeyboardBase,
+  heldMidis = [],
 }: PianoProps) {
   const guide = soundingKeys(guideNotes, guideElapsedMs, guideDurationMs, guideLoop);
   const [pressedPointers, setPressedPointers] = useState<Record<number, number>>({});
@@ -407,10 +399,11 @@ export function StudioVirtualPiano({
           const event = [...feedback]
             .reverse()
             .find((item) => item.midi === key.midi && elapsedMs - item.atMs <= FEEDBACK_LIFETIME_MS);
-          const pressed = Object.values(pressedPointers).includes(key.midi);
+          const pressed = Object.values(pressedPointers).includes(key.midi) || heldMidis.includes(key.midi);
           const semitone = computerKeyboardBase !== undefined ? key.midi - computerKeyboardBase : -1;
           const shortcut =
-            inputSource === 'KEYBOARD' && semitone >= 0 && semitone <= 12 ? KEYBOARD_SHORTCUTS[semitone] : null;
+            inputSource === 'KEYBOARD' && semitone >= -12 && semitone <= 12 ? KEYBOARD_SHORTCUTS[semitone] : null;
+          const shortcutHand = semitone < 0 ? 'is-left-hand' : 'is-right-hand';
           return (
             <button
               type="button"
@@ -436,7 +429,7 @@ export function StudioVirtualPiano({
             >
               <span>{SEMITONE_NAMES[key.midi % 12]}</span>
               {key.midi % 12 === 0 && <strong>{Math.floor(key.midi / 12) - 1}</strong>}
-              {shortcut && <kbd className="studio-player__key-badge">{shortcut}</kbd>}
+              {shortcut && <kbd className={`studio-player__key-badge ${shortcutHand}`}>{shortcut}</kbd>}
             </button>
           );
         })}
@@ -444,10 +437,11 @@ export function StudioVirtualPiano({
           const event = [...feedback]
             .reverse()
             .find((item) => item.midi === key.midi && elapsedMs - item.atMs <= FEEDBACK_LIFETIME_MS);
-          const pressed = Object.values(pressedPointers).includes(key.midi);
+          const pressed = Object.values(pressedPointers).includes(key.midi) || heldMidis.includes(key.midi);
           const semitone = computerKeyboardBase !== undefined ? key.midi - computerKeyboardBase : -1;
           const shortcut =
-            inputSource === 'KEYBOARD' && semitone >= 0 && semitone <= 12 ? KEYBOARD_SHORTCUTS[semitone] : null;
+            inputSource === 'KEYBOARD' && semitone >= -12 && semitone <= 12 ? KEYBOARD_SHORTCUTS[semitone] : null;
+          const shortcutHand = semitone < 0 ? 'is-left-hand' : 'is-right-hand';
           return (
             <button
               type="button"
@@ -471,7 +465,7 @@ export function StudioVirtualPiano({
                 if (clickEvent.detail === 0 && canPlay) onPlayNote(key.midi);
               }}
             >
-              {shortcut && <kbd className="studio-player__key-badge is-black-key">{shortcut}</kbd>}
+              {shortcut && <kbd className={`studio-player__key-badge is-black-key ${shortcutHand}`}>{shortcut}</kbd>}
             </button>
           );
         })}

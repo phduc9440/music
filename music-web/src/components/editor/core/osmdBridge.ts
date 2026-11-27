@@ -63,9 +63,11 @@ export function bindNoteIds(osmd: OpenSheetMusicDisplay, doc: ScoreDocument, hos
   const report: BindReport = { domNotes: doc.notes.length, bound: 0, problems: [] };
   const measureList = osmd.GraphicSheet?.MeasureList ?? [];
 
-  // Gom nốt DOM theo (part, ô, khuông, thời điểm, loại)
+  // Gom nốt DOM theo (part, ô, khuông, thời điểm, loại); dấu lặng ẩn (print-object="no", lấp chỗ trong bè thứ hai)
+  // không vẽ nên không ghép
   const domGroups = new Map<string, NoteInfo[]>();
   for (const info of doc.notes) {
+    if (info.element.getAttribute('print-object') === 'no') continue;
     const kind = info.isGrace ? 'g' : info.isRest ? 'r' : 'n';
     const key = [info.partIndex, info.measureIndex, info.staff, info.onsetKey, kind].join('|');
     const list = domGroups.get(key) ?? [];
@@ -96,7 +98,7 @@ export function bindNoteIds(osmd: OpenSheetMusicDisplay, doc: ScoreDocument, hos
           const voiceId = voiceEntry.parentVoiceEntry?.ParentVoice?.VoiceId ?? 0;
           for (const note of voiceEntry.notes) {
             const source = note.sourceNote;
-            if (!source) continue;
+            if (!source || (source as { PrintObject?: boolean }).PrintObject === false) continue;
             const isRest = source.isRest();
             const kind = source.IsGraceNote ? 'g' : isRest ? 'r' : 'n';
             const key = [where.part, measureIndex, where.staff, onsetKey, kind].join('|');
@@ -217,4 +219,41 @@ export function applySelection(host: HTMLElement, selected: ReadonlySet<string>)
       head.classList.toggle(SELECTED_CLASS, !all && selected.has(head.getAttribute(HEAD_ID_ATTR) ?? ''));
     }
   });
+}
+
+// ---------------------------------------------------------------------------------------------- cỡ nốt
+
+interface LooseSourceNote {
+  IsCueNote?: boolean;
+}
+interface LooseSheet {
+  SourceMeasures?: {
+    VerticalSourceStaffEntryContainers?: {
+      StaffEntries?: ({ VoiceEntries?: { Notes?: LooseSourceNote[] }[] } | undefined)[];
+    }[];
+  }[];
+}
+
+/**
+ * Gọi ngay sau `osmd.load()`: vẽ mọi nốt cùng một cỡ. Ứng dụng không dùng "nốt nhỏ" (nốt bè vẽ như nốt thường); nốt ghi
+ * `<cue/>` hay `<type size="cue">` trong file nhập vào vẫn được vẽ cỡ thường (và vẫn được phát như nốt thường). Nốt hoa
+ * mỹ (grace) không đổi.
+ */
+export function normalizeNoteSizes(osmd: OpenSheetMusicDisplay): void {
+  try {
+    const sheet = osmd.Sheet as unknown as LooseSheet | undefined;
+    for (const measure of sheet?.SourceMeasures ?? []) {
+      for (const container of measure.VerticalSourceStaffEntryContainers ?? []) {
+        for (const entry of container.StaffEntries ?? []) {
+          for (const voiceEntry of entry?.VoiceEntries ?? []) {
+            for (const note of voiceEntry.Notes ?? []) {
+              if (note.IsCueNote) note.IsCueNote = false;
+            }
+          }
+        }
+      }
+    }
+  } catch {
+    // cấu trúc OSMD khác dự kiến: nốt vẽ theo file như trước
+  }
 }

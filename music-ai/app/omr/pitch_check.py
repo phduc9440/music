@@ -333,12 +333,14 @@ def _kern_events(lines: list[str], spines: int, clefs: Optional[dict[int, str]] 
             continue
         if line.startswith("*"):
             for column, cell in enumerate(cells):
+                if not cell.startswith("*clef"):
+                    continue
                 match = _RE_CLEF.match(cell)
-                if match:
-                    clef = match.group(1) + match.group(2)
-                    if clef not in _CLEF_BOTTOM or (column in clefs and clefs[column] != clef):
-                        unsupported.add(column)
-                    clefs[column] = clef
+                # "*clefGv2" (khóa Sol 8 dưới của bè tenor) không phải khóa Sol thường: coi là khóa không hỗ trợ
+                clef = match.group(1) + match.group(2) if match and match.end() == len(cell) else cell
+                if clef not in _CLEF_BOTTOM or (column in clefs and clefs[column] != clef):
+                    unsupported.add(column)
+                clefs[column] = clef
             continue
         for column, cell in enumerate(cells):
             if column in unsupported or clefs.get(column, "G2") not in _CLEF_BOTTOM or cell == ".":
@@ -551,7 +553,7 @@ def fix_measures(lines: list[str], heads: list[Head], layout: PageLayout) -> tup
     Bắt được lỗi model "đọc lặp" một hệ (chép nốt của hệ sau vào), đọc nhầm tên nốt, mà luật nhạc lý không thấy. Chỉ chạy
     khi số ô ảnh = số ô kern và phần lớn ô đã khớp sẵn (ảnh đáng tin trên trang này). Trả ``(dòng, số nốt sửa, lý do)``.
     """
-    if any(_RE_CLEF.match(ln) and not ln.startswith("*clefG2") for ln in lines):
+    if any(ln.startswith("*clef") and ln != "*clefG2" for ln in lines):
         return lines, 0, "có khóa khác Sol"
     image = _image_measures(heads, layout)
     if image is None:
@@ -584,19 +586,176 @@ def fix_measures(lines: list[str], heads: list[Head], layout: PageLayout) -> tup
     return out, changed, None
 
 
+_RE_CLEF_TOKEN = re.compile(r"^\*clef([GFC])([v^]*)(\d)$")
+_CLEF_REFERENCE = {"G": 7 * 4 + 4, "F": 7 * 3 + 3, "C": 7 * 4}
+_RE_OTTAVA = re.compile(r"^\*X?(?:8va|8ba|15ma|15mb)")
+
+
+def _clef_bottom(token: Optional[str]) -> Optional[int]:
+    """Bậc diatonic dòng kẻ dưới cùng theo khóa kern (``*clefG2``, ``*clefF4``, ``*clefC3``, ``*clefGv2``...)."""
+    match = _RE_CLEF_TOKEN.match(token or "")
+    if match is None:
+        return None
+    letter, shift, line = match.groups()
+    return _CLEF_REFERENCE[letter] - 2 * (int(line) - 1) + 7 * (shift.count("^") - shift.count("v"))
+
+
+@dataclass
+class _Note:
+    line: int
+    column: int
+    sub: int
+    degree: int
+    bottom: int
+
+
+def _kern_measure_notes(lines: list[str], spines: int) -> list[list[Optional[list[_Note]]]]:
+    """Nốt của từng ô (chỉ ô có dòng dữ liệu), mỗi ô một danh sách theo spine: nốt theo thời gian, hợp âm từ thấp lên cao.
+    Spine không so được trong ô đó (khóa lạ/chưa có khóa, có 8va trong trang, tách bè) là None."""
+    clefs: list[Optional[str]] = [None] * spines
+    ottava = {
+        column
+        for line in lines
+        if line.startswith("*")
+        for column, token in enumerate(line.split(TAB))
+        if _RE_OTTAVA.match(token)
+    }
+    out: list[list[Optional[list[_Note]]]] = []
+    current: list[Optional[list[_Note]]] = [None if c in ottava else [] for c in range(spines)]
+    has_data = False
+    for index, line in enumerate(lines):
+        if merge.is_barline(line):
+            if has_data:
+                out.append(current)
+            current, has_data = [None if c in ottava else [] for c in range(spines)], False
+            continue
+        cells = line.split(TAB)
+        if line.startswith("*"):
+            if len(cells) != spines:
+                current = [None] * spines
+                continue
+            for column, token in enumerate(cells):
+                if token.startswith("*clef"):
+                    clefs[column] = token
+            continue
+        if not merge.is_data_line(line):
+            continue
+        has_data = True
+        if len(cells) != spines:
+            current = [None] * spines
+            continue
+        for column, cell in enumerate(cells):
+            notes = current[column]
+            if notes is None or cell == ".":
+                continue
+            bottom = _clef_bottom(clefs[column])
+            if bottom is None:
+                current[column] = None
+                continue
+            chord = []
+            for k, sub in enumerate(cell.split(" ")):
+                pitch = _kern_pitch(sub) if "yy" not in sub else None
+                if pitch:
+                    chord.append(_Note(index, column, k, _diatonic_of(*pitch), bottom))
+            notes.extend(sorted(chord, key=lambda n: n.degree))
+    if has_data:
+        out.append(current)
+    return out
+
+
+def _glyph_measures(heads: list[Head], layout: PageLayout, spines: int) -> Optional[list[Optional[list[list[int]]]]]:
+    """Vị trí khuông các đầu nốt của từng ô trên ảnh, theo khuông (khuông dưới cùng trước, như spine kern), mỗi khuông
+    theo x (hợp âm từ thấp lên cao). Ô của hệ khác số khuông là None; None cả trang nếu chưa đếm chắc vạch nhịp."""
+    if not layout.bars_confident:
+        return None
+    il = layout.interline
+    out: list[Optional[list[list[int]]]] = []
+    for si, system in enumerate(layout.systems):
+        edges = [float(system.left)] + [float(b) for b in system.barlines]
+        if not system.bars_closed:
+            edges.append(float(system.right) + 1.0)
+        own = [h for h in heads if h.system == si]
+        for a, b in zip(edges, edges[1:]):
+            if len(system.staves) != spines:
+                out.append(None)
+                continue
+            per_spine: list[list[int]] = []
+            for column in range(spines):
+                staff = spines - 1 - column
+                ordered = sorted((h for h in own if h.staff == staff and a <= h.x < b), key=lambda h: h.x)
+                groups: list[list[Head]] = []
+                for head in ordered:
+                    if groups and head.x - groups[-1][0].x <= 0.3 * il:
+                        groups[-1].append(head)
+                    else:
+                        groups.append([head])
+                per_spine.append([h.step for group in groups for h in sorted(group, key=lambda h: h.step)])
+            out.append(per_spine)
+    return out
+
+
+def fix_from_glyphs(lines: list[str], spines: int, heads: list[Head], layout: PageLayout) -> tuple[list[str], int, Optional[str]]:
+    """PDF vector: ô nào (theo từng khuông) có số đầu nốt trong PDF bằng số nốt kern thì lấy cao độ (tên nốt + quãng tám)
+    theo vị trí đầu nốt trong PDF. Đầu nốt PDF là chính xác nên áp cho mọi khuông, mọi khóa Sol/Fa/Đô.
+
+    Hàng rào: số ô ảnh = số ô kern, ít nhất :data:`MIN_MEASURE_AGREEMENT` các cặp (ô, khuông) so được đã khớp sẵn (vạch
+    nhịp căn đúng), và trong một cặp không quá nửa số nốt khác (lệch thứ tự thì không sửa). Trả ``(dòng, số nốt sửa, lý do)``."""
+    image = _glyph_measures(heads, layout, spines)
+    if image is None:
+        return lines, 0, "chưa đếm chắc vạch nhịp"
+    kern = _kern_measure_notes(lines, spines)
+    if len(image) != len(kern):
+        return lines, 0, f"số ô ảnh ({len(image)}) khác số ô kern ({len(kern)})"
+    pairs: list[tuple[list[int], list[_Note]]] = []
+    for img, notes in zip(image, kern):
+        if img is None:
+            continue
+        for column in range(spines):
+            own = notes[column]
+            if own and len(own) == len(img[column]):
+                pairs.append((img[column], own))
+    if len(pairs) < MIN_MEASURES:
+        return lines, 0, "quá ít ô so được"
+    agree = sum(1 for img, own in pairs if sorted(img) == sorted(n.degree - n.bottom for n in own))
+    if agree / float(len(pairs)) < MIN_MEASURE_AGREEMENT:
+        return lines, 0, "cao độ PDF và kern khớp thấp"
+    out = list(lines)
+    changed = 0
+    for img, own in pairs:
+        wrong = [(step, note) for step, note in zip(img, own) if note.degree - note.bottom != step]
+        if not wrong or len(wrong) > max(1, len(own) // 2):
+            continue
+        for step, note in wrong:
+            cells = out[note.line].split(TAB)
+            subs = cells[note.column].split(" ")
+            degree = note.bottom + step
+            subs[note.sub] = _rewrite_pitch(subs[note.sub], _LETTERS[degree % 7], degree // 7)
+            cells[note.column] = " ".join(subs)
+            out[note.line] = TAB.join(cells)
+            changed += 1
+    return out, changed, None
+
+
 def check_page(
-    lines: list[str], spines: int, gray: np.ndarray, layout: PageLayout
+    lines: list[str], spines: int, gray: np.ndarray, layout: PageLayout, heads: Optional[list[Head]] = None
 ) -> tuple[list[str], int, int, Optional[str]]:
-    """Sửa quãng tám cho các dòng kern của MỘT trang. Trả ``(dòng, số nốt sửa, số cặp khác tên nốt, lý do bỏ qua)``."""
+    """Sửa quãng tám cho các dòng kern của MỘT trang. Trả ``(dòng, số nốt sửa, số cặp khác tên nốt, lý do bỏ qua)``.
+
+    ``heads``: đầu nốt đọc từ ký hiệu của PDF vector (:mod:`app.omr.glyphs`, chính xác tuyệt đối); có thì dùng thay cho
+    dò ảnh và được sửa cả tên nốt theo từng ô ở mọi khuông (:func:`fix_from_glyphs`)."""
     if not layout.systems:
         return lines, 0, 0, "không có bố cục"
     staves_per_system = {len(system.staves) for system in layout.systems}
     if staves_per_system != {spines}:
         return lines, 0, 0, f"số khuông mỗi hệ {sorted(staves_per_system)} khác số spine {spines}"
-    heads = find_heads(gray, layout)
+    exact = heads is not None
+    if heads is None:
+        heads = find_heads(gray, layout)
     il = layout.interline
     rewritten = 0
-    if spines == 1:
+    if exact:
+        lines, rewritten, _why = fix_from_glyphs(lines, spines, heads, layout)
+    elif spines == 1:
         lines, rewritten, _why = fix_measures(lines, heads, layout)
     clefs: dict[int, str] = {}
     events = _kern_events(lines, spines, clefs)
@@ -624,18 +783,22 @@ def apply(
     result: merge.MergeResult,
     layouts: dict[int, PageLayout],
     page_images: dict[int, np.ndarray],
+    page_heads: Optional[dict[int, list[Head]]] = None,
 ) -> tuple[merge.MergeResult, PitchReport]:
-    """Chạy :func:`check_page` cho từng trang của bản kern đã ghép, trả bản kern mới."""
+    """Chạy :func:`check_page` cho từng trang của bản kern đã ghép, trả bản kern mới. ``page_heads``: đầu nốt đọc từ PDF
+    vector theo trang (trang không có thì dò trên ảnh)."""
     report = PitchReport()
     lines = list(result.lines)
+    page_heads = page_heads or {}
     for page in sorted(set(result.line_pages)):
         indexes = [i for i, p in enumerate(result.line_pages) if p == page]
         layout, image = layouts.get(page), page_images.get(page)
-        if layout is None or image is None:
+        heads = page_heads.get(page)
+        if layout is None or (image is None and heads is None):
             report.skipped.append(f"trang {page}: thiếu ảnh hoặc bố cục")
             continue
         chunk = [lines[i] for i in indexes]
-        fixed, count, miss, reason = check_page(chunk, result.spines, image, layout)
+        fixed, count, miss, reason = check_page(chunk, result.spines, image, layout, heads)
         report.checked_pages += 1
         report.mismatched += miss
         if reason:
@@ -644,7 +807,10 @@ def apply(
             report.fixed += count
             for i, text in zip(indexes, fixed):
                 lines[i] = text
-            report.notes.append(f"Trang {page}: sửa quãng tám {count} nốt theo vị trí đầu nốt trên ảnh")
+            if heads is not None:
+                report.notes.append(f"Trang {page}: sửa cao độ {count} nốt theo ký hiệu nhạc của PDF gốc")
+            else:
+                report.notes.append(f"Trang {page}: sửa quãng tám {count} nốt theo vị trí đầu nốt trên ảnh")
     if report.fixed == 0:
         return result, report
     return merge.with_lines(result, lines), report

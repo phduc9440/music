@@ -681,3 +681,15 @@ def test_clean_page_reports_triplet_repair():
     text = kern("**kern", "*clefG2", "*M2/4", "=1", "8g", "16a", "16b", "16cc", "4dd", "=2", "*-")
     page, warnings = merge.clean_page(1, text)
     assert "24a" in page.body and any("liên ba" in w for w in warnings)
+
+
+def test_triplet_in_a_measure_that_changes_the_meter_is_restored():
+    # Giấc Mơ Trưa ô 16: bài 4/4, ô này đổi sang 2/4 ngay sau vạch nhịp; ba móc kép luyến là liên ba bị mất số 3
+    body = _body(kern(
+        "*clefF4|*clefG2", "*M4/4|*M4/4", "=1|=1", "1C|1c", "=2|=2", "*M2/4|*M2/4",
+        "8DL|8ddL", "8A|16cc(L", ".|16dd", "8d|16cc)JJ", ".|8aL", "8fJ|8ccJ", "=3|=3",
+    ))
+    fixed, count = merge.repair_triplets(body)
+    assert count == 1
+    treble = [line.split("\t")[1] for line in fixed if line[:1].isdigit() or line.startswith(".")]
+    assert treble[2:5] == ["24cc(L", "24dd", "24cc)JJ"]
