@@ -40,6 +40,8 @@ from app.convert.kern import kern_file_to_musicxml_file
 from app.convert.midi import musicxml_file_to_midi_file
 from app.convert.musicxml import DEFAULT_TEMPO_BPM
 from app.omr import (
+    arbiter,
+    extra_engines,
     kern_check,
     llm_check,
     measure_map,
@@ -51,10 +53,12 @@ from app.omr import (
     rhythm_fix,
     routing,
     stability,
+    glyphs,
     textstrip,
+    vector_pdf,
 )
 from app.omr.layout import PageLayout, analyze_layout
-from app.omr.pdf import iter_pdf_pages
+from app.omr.pdf import iter_pdf_pages_with_text
 from app.omr.preprocess import PreprocessOptions, UnreadablePage, load_image_gray, process_page
 from app.omr.transcoda import Recognizer, RecognizerNotReady, get_recognizer
 from app.schemas import JobRequest
@@ -218,6 +222,20 @@ class JobContext:
     """Số ô bước sửa trường độ đã đụng tới; được gắn cờ AUTO_FIXED trong measureMap để người dùng kiểm lại."""
     text_above_pages: list[int] = field(default_factory=list)
     """Trang có chữ phía trên khuông (tên hợp âm, nhịp độ...) mà OMR không đọc (OMR-13)."""
+    page_text: dict = field(default_factory=dict)
+    """Tên bài, tác giả, nhịp độ đọc từ lớp chữ của PDF xuất từ phần mềm (:mod:`app.omr.vector_pdf`); rỗng nếu không có."""
+    vector_pdf: Optional[dict] = None
+    """PDF vector: ``{"pages": số trang nhạc vector, "erasedText": số mảng chữ đã xóa theo lớp chữ}``; None nếu không phải."""
+    chord_pages: set[int] = field(default_factory=set)
+    """Trang gốc của PDF vector có in tên hợp âm (chữ đã bị xóa khỏi ảnh nên không dò trên ảnh được nữa)."""
+    vector_pages: dict[int, tuple["vector_pdf.PageText", tuple[int, ...]]] = field(default_factory=dict)
+    """Trang gốc của PDF vector -> (lớp chữ, kích thước ảnh vẽ từ trang) để đặt ký hiệu nhạc lên ảnh trang."""
+    scanned_pages: set[int] = field(default_factory=set)
+    """Trang gốc của PDF là ảnh scan (một ảnh phủ kín trang, không có font nhạc)."""
+    glyph_pages: dict[int, glyphs.GlyphPage] = field(default_factory=dict)
+    """Ký hiệu nhạc của PDF vector đã gán vào bố cục, theo số trang đầu ra (:mod:`app.omr.glyphs`)."""
+    glyph_counts: dict[str, int] = field(default_factory=dict)
+    """Tổng số ký hiệu đọc được từ PDF theo loại (đầu nốt, chấm dôi...), ghi vào ``vectorPdf.glyphs``."""
 
     @property
     def task_id(self) -> str:
@@ -340,18 +358,21 @@ def _split_pages(ctx: JobContext) -> list[Optional[tuple[int, np.ndarray]]]:
 
     if inputs[0].kind == "PDF":
         path = storage.resolve_existing_file(inputs[0].path)
-        total, iterator = iter_pdf_pages(path)
+        total, iterator = iter_pdf_pages_with_text(path)
+        texts: list[Optional[vector_pdf.PageText]] = []
         for index in range(total):
             budget.start_page(index + 1)
             budget.check()
             try:
-                page_number, gray = next(iterator)
+                page_number, gray, text = next(iterator)
             except UnreadablePage as exc:
                 exc.page_number = exc.page_number or index + 1
                 raise
             pages.append((page_number, gray))
+            texts.append(text)
             budget.end_page()
             callback.progress(5 + round(5 * (index + 1) / total), STEP_SPLIT_PDF)
+        _clean_vector_pages(ctx, pages, texts)
         return pages
 
     # Nhiều ảnh: sắp theo số trang Java gửi (không có thì theo thứ tự nhận)
@@ -372,6 +393,43 @@ def _split_pages(ctx: JobContext) -> list[Optional[tuple[int, np.ndarray]]]:
     return pages
 
 
+def _clean_vector_pages(
+    ctx: JobContext, pages: list[Optional[tuple[int, np.ndarray]]], texts: list[Optional["vector_pdf.PageText"]]
+) -> None:
+    """PDF xuất từ phần mềm chép nhạc: xóa chữ thường (lời ca, hợp âm, tên bài) theo lớp chữ của PDF và lấy tên bài,
+    tác giả, nhịp độ từ trang 1 (:mod:`app.omr.vector_pdf`). PDF scan (không có font nhạc) thì giữ nguyên. Lỗi ở đây chỉ
+    làm mất phần xóa chữ chính xác (bước xóa chữ bằng ảnh vẫn chạy), không làm hỏng job."""
+    for entry, text in zip(pages, texts):
+        if entry is not None and text is not None and vector_pdf.is_scanned(text):
+            ctx.scanned_pages.add(entry[0])
+    known = [t for t in texts if t is not None]
+    if not known or not vector_pdf.is_music_pdf(known):
+        return
+    erased = music_pages = 0
+    for index, (entry, text) in enumerate(zip(pages, texts)):
+        if entry is None or text is None or not text.is_music:
+            continue
+        try:
+            cleaned, count = vector_pdf.clean_page(entry[1], text)
+        except Exception:  # noqa: BLE001
+            log.exception("Job %s: không xóa được chữ theo lớp chữ PDF trang %s", ctx.task_id, entry[0])
+            continue
+        pages[index] = (entry[0], cleaned)
+        if text.glyphs:
+            ctx.vector_pages[entry[0]] = (text, cleaned.shape)
+        erased += count
+        music_pages += 1
+        if vector_pdf.chord_names(text) >= 2:
+            ctx.chord_pages.add(entry[0])
+    first = texts[0]
+    if first is not None:
+        try:
+            ctx.page_text = vector_pdf.page_text(first)
+        except Exception:  # noqa: BLE001
+            log.exception("Job %s: không đọc được tên bài từ lớp chữ PDF", ctx.task_id)
+    ctx.vector_pdf = {"pages": music_pages, "erasedText": erased}
+
+
 def _preprocess_pages(ctx: JobContext, pages: list[Optional[tuple[int, np.ndarray]]]) -> list[tuple[int, str]]:
     """Bước PREPROCESS (10-30%): xử lý từng trang, lưu PNG, callback ``files``.
 
@@ -384,6 +442,7 @@ def _preprocess_pages(ctx: JobContext, pages: list[Optional[tuple[int, np.ndarra
     )
     score_id = ctx.job.scoreId
     _clear_dir(score_id, "layout", (".json",))
+    _clear_dir(score_id, "engine-input", (".png",))
     ctx.layouts = {}
 
     total = len(pages)
@@ -392,10 +451,16 @@ def _preprocess_pages(ctx: JobContext, pages: list[Optional[tuple[int, np.ndarra
     for index in range(total):
         page_number, gray = pages[index]  # type: ignore[misc]
         pages[index] = None  # giải phóng bộ nhớ ngay khi xử lý xong trang
+        source_gray = gray if ctx.settings.extra_engines else None
         budget.start_page(page_number)
         budget.check()
+        page_options = popts
+        if page_number in ctx.scanned_pages and options.sourceType == "PDF_NATIVE":
+            # Người dùng (hoặc web tự đoán) chọn "PDF gốc" nhưng trang này là ảnh scan nhúng trong PDF: khử nhiễu như scan
+            page_options = PreprocessOptions(preprocess=options.preprocess, binarize=options.binarize, source_type="SCAN")
+            ctx.warnings.append(messages.scanned_page_message(page_number))
         try:
-            result = process_page(gray, popts, page_number, budget.check)
+            result = process_page(gray, page_options, page_number, budget.check)
         except (JobCancelled, JobTimeout, TaskGone):
             raise
         except UnreadablePage as exc:
@@ -411,7 +476,13 @@ def _preprocess_pages(ctx: JobContext, pages: list[Optional[tuple[int, np.ndarra
             # Đánh số theo thứ tự đầu ra (liền mạch 1..N kể cả khi có trang bị bỏ); trang gốc nằm trong meta.sourcePage
             relative, size = _save_page_png(score_id, kept, result.image)
             kept_pages.append((kept, relative))
+            if source_gray is not None:  # engine thêm đọc ảnh trang ở độ phân giải gốc (detector train ở ~300 dpi)
+                _save_png(f"scores/{score_id}/engine-input/page-{kept:03d}.png", source_gray)
             _analyze_page_layout(ctx, kept, result.image)
+            if page_number in ctx.vector_pages:
+                _read_glyphs(ctx, kept, page_number, result)
+            if page_number in ctx.chord_pages and kept not in ctx.text_above_pages:
+                ctx.text_above_pages.append(kept)  # PDF vector: tên hợp âm đã bị xóa theo lớp chữ trước bước này
             callback.file(
                 file_type="PNG",
                 storage_path=relative,
@@ -534,6 +605,8 @@ def _route_pages(
         found, wanted = routing.page_measures(page), routing.expected_measures(ctx.layouts.get(page_number))
         if page_number not in todo and routing.measures_off(found, wanted):
             page_warnings[page_number].append(_measure_message(page_number, found or 0, wanted or 0))
+        if measure_map.layout_unchecked(ctx.layouts.get(page_number)):
+            page_warnings[page_number].append(_layout_message(page_number, ctx.layouts[page_number]))
     if not todo:
         return
 
@@ -542,7 +615,7 @@ def _route_pages(
     for page_number in todo:
         budget.check()
         layout = ctx.layouts[page_number]
-        expected = layout.staff_count or 0
+        expected = routing.expected_staves(layout) or 0
         expected_bars = routing.expected_measures(layout) if settings.routing_bars else None
         before = primary[page_number]
         report = routing.PageRouting(
@@ -717,6 +790,14 @@ def _mismatch_message(page_number: int, found: int, expected: int) -> str:
     )
 
 
+def _layout_message(page_number: int, layout: PageLayout) -> str:
+    counts = ", ".join(str(c) for c in layout.staff_counts)
+    return (
+        f"Trang {page_number}: bố cục không rõ (số khuông từng hệ {counts}), chưa kiểm được số khuông và số ô trên ảnh; "
+        "hãy đối chiếu cả trang với ảnh gốc"
+    )
+
+
 def _measure_message(page_number: int, found: int, expected: int) -> str:
     more = "thừa" if found > expected else "thiếu"
     return (
@@ -747,6 +828,25 @@ def _analyze_page_layout(ctx: JobContext, page_number: int, image: np.ndarray) -
             ctx.text_above_pages.append(page_number)
     except Exception:  # noqa: BLE001 - chỉ để cảnh báo
         log.exception("Không dò được chữ phía trên khuông ở trang %s của job %s", page_number, ctx.task_id)
+
+
+def _read_glyphs(ctx: JobContext, page_number: int, source_page: int, result) -> None:
+    """PDF vector: đặt ký hiệu nhạc của trang gốc lên ảnh trang đã tiền xử lý và gán vào bố cục (:mod:`app.omr.glyphs`).
+    Ký hiệu không khớp ảnh thì bỏ (các bước sau dò ảnh như cũ). Lỗi ở đây không làm hỏng job."""
+    text, shape = ctx.vector_pages.pop(source_page)
+    layout = ctx.layouts.get(page_number)
+    if layout is None or result.transform is None:
+        return
+    try:
+        marks = glyphs.classify(text)
+        for kind, count in glyphs.summary(marks).items():
+            ctx.glyph_counts[kind] = ctx.glyph_counts.get(kind, 0) + count
+        page = glyphs.build_page(glyphs.to_image(marks, text, shape, result.transform), layout, result.image)
+    except Exception:  # noqa: BLE001 - chỉ là bằng chứng thêm
+        log.exception("Job %s: không đọc được ký hiệu nhạc từ PDF trang %s", ctx.task_id, source_page)
+        return
+    if page is not None:
+        ctx.glyph_pages[page_number] = page
 
 
 def _job_roles(ctx: JobContext, spines: int) -> Optional[list[str]]:
@@ -793,6 +893,8 @@ def _review_measures(
         check["pagesRerouted"] = sum(1 for r in ctx.routing if r.get("chosen") == routing.SOURCE_SYSTEMS)
         if estimated:
             check["pagesAlignedByNotes"] = sorted(estimated)
+        if ctx.glyph_pages:
+            check["pdfMeasures"] = glyphs.attach(measures, ctx.glyph_pages, ctx.layouts)
     except Exception:  # noqa: BLE001 - bản đồ ô chỉ để hiển thị, không được làm hỏng job
         log.exception("Job %s: không lập được bản đồ ô nhịp", ctx.task_id)
         return [], None, merged
@@ -801,6 +903,11 @@ def _review_measures(
     roles = ctx.staff_roles
     try:
         review.annotate(measures, merged, roles)
+        if settings.extra_engines:
+            merged, engines_report = _consult_engines(ctx, merged, measures, pages)
+            check["engines"] = engines_report.to_dict()
+            ctx.fixes.extend(engines_report.notes)
+            review.annotate(measures, merged, roles)
         images = _review_images(ctx, measures)
         merged, reread = _reread_systems(ctx, merged, measures, images)
         review.annotate(measures, merged, roles)
@@ -858,11 +965,15 @@ def _estimate_system_counts(
         if layout.measure_count == span["lastMeasure"] - span["firstMeasure"] + 1:
             continue
         try:
-            path = storage.resolve(f"scores/{ctx.job.scoreId}/pages/page-{number:03d}.png")
-            gray = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE) if path.is_file() else None
-            if gray is None:
-                continue
-            heads = [(h.system, h.x) for h in pitch_check.find_heads(gray, layout)]
+            glyph_page = ctx.glyph_pages.get(number)
+            if glyph_page is not None:  # PDF vector: đầu nốt chính xác từ ký hiệu của PDF
+                heads = [(h.system, h.x) for h in glyph_page.heads]
+            else:
+                path = storage.resolve(f"scores/{ctx.job.scoreId}/pages/page-{number:03d}.png")
+                gray = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE) if path.is_file() else None
+                if gray is None:
+                    continue
+                heads = [(h.system, h.x) for h in pitch_check.find_heads(gray, layout)]
             image = measure_map.image_measure_heads(layout, heads)
             kern = measure_map.kern_note_counts(merged, number)
             counts = measure_map.estimate_system_counts(kern, image, len(layout.systems)) if image else None
@@ -885,7 +996,8 @@ def _check_pitch(ctx: JobContext, merged: merge.MergeResult) -> merge.MergeResul
             gray = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE) if path.is_file() else None
             if gray is not None:
                 images[page_number] = gray
-        merged, report = pitch_check.apply(merged, ctx.layouts, images)
+        page_heads = {number: page.heads for number, page in ctx.glyph_pages.items()}
+        merged, report = pitch_check.apply(merged, ctx.layouts, images, page_heads)
         ctx.fixes.extend(report.notes)
         log.info("Job %s: pitch_check %s", ctx.task_id, report.to_dict())
     except (JobCancelled, JobTimeout, TaskGone):
@@ -982,6 +1094,32 @@ def _reread_systems(
         roles_top_down=ctx.staff_roles,
         abort=(_RoutingAbort,),
     )
+
+
+def _consult_engines(
+    ctx: JobContext, merged: merge.MergeResult, measures: list[dict], pages: list[merge.PageKern]
+) -> tuple[merge.MergeResult, arbiter.ArbiterReport]:
+    """Chạy các engine thêm (``OMR_EXTRA_ENGINES``) trên ảnh gốc từng trang rồi so theo từng ô với kết quả hiện tại
+    (:mod:`app.omr.arbiter`). Engine lỗi chỉ được ghi vào báo cáo; hủy/hết hạn job vẫn dừng ngay."""
+    budget, settings = ctx.budget, ctx.settings
+    runs: list[extra_engines.EngineRun] = []
+    engines = extra_engines.configured(settings.extra_engines)
+    for page in pages:
+        path = storage.resolve(f"scores/{ctx.job.scoreId}/engine-input/page-{page.number:03d}.png")
+        if not path.is_file():
+            continue
+        for name, command, cwd in engines:
+            if budget.remaining_s() - settings.routing_reserve_s < 30:
+                ctx.warnings.append(f"Không đủ thời gian chạy engine {name} cho trang {page.number}")
+                continue
+            limit = min(float(settings.extra_engine_timeout_s), budget.remaining_s() - settings.routing_reserve_s)
+            run = extra_engines.run_page(name, command, cwd, path, page.number, budget.check, limit)
+            if run.error:
+                log.warning("Job %s: engine %s trang %s: %s", ctx.task_id, name, page.number, run.error)
+            runs.append(run)
+    merged, report = arbiter.consult(merged, measures, runs)
+    log.info("Job %s: so engine %s", ctx.task_id, report.to_dict())
+    return merged, report
 
 
 def _ask_ai(
@@ -1090,6 +1228,12 @@ def _merge_pages(ctx: JobContext, pages: list[merge.PageKern]) -> Optional[tuple
         score_metadata["timeSignature"] = meta.time_signature
     if meta.tempo_bpm:
         score_metadata["tempoBpm"] = meta.tempo_bpm
+    elif ctx.page_text.get("tempoBpm"):
+        score_metadata["tempoBpm"] = ctx.page_text["tempoBpm"]  # "♩ = 60" in trên PDF, model không đọc được chữ
+    if ctx.page_text:
+        extra["pageText"] = ctx.page_text
+    if ctx.vector_pdf is not None:
+        extra["vectorPdf"] = {**ctx.vector_pdf, "glyphPages": sorted(ctx.glyph_pages), "glyphs": ctx.glyph_counts}
     return extra, score_metadata
 
 

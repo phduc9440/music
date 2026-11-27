@@ -80,6 +80,9 @@
     "ACCIDENTAL": "Dấu hóa lạ chỉ xuất hiện một lần, có thể là vết bẩn hoặc chữ",
     "UNSTABLE": "Đọc lại ô này nhiều lần cho kết quả khác nhau",
     "AI_DOUBT": "AI đối chiếu ảnh cho rằng ô này đọc chưa đúng",
+    "LAYOUT_UNCHECKED": "Bố cục trang này không rõ (các hệ khác số khuông), chưa kiểm được số ô và số khuông: hãy đối chiếu cả trang",
+    "ENGINE_DISAGREE": "Một engine nhận diện khác đọc ô này khác, cả hai cách đều đúng trường độ",
+    "PDF_MISMATCH": "Số nốt, chấm dôi hoặc cao độ của ô này khác ký hiệu nhạc trong file PDF gốc",
     "AUTO_FIXED": "Máy đã tự sửa ô này, hãy đối chiếu với ảnh gốc"
   },
   "dropzone": {
@@ -129,6 +132,10 @@
   "fieldComposer": "Tác giả",
   "composerPlaceholder": "Ví dụ: Trịnh Công Sơn",
   "sourceType": "Loại nguồn",
+  "sourceDetected": {
+    "vector": "Tự nhận: PDF xuất từ phần mềm chép nhạc (đọc được ký hiệu nhạc trong file). Vẫn sửa được nếu sai.",
+    "scan": "Tự nhận: PDF này là ảnh scan. Vẫn sửa được nếu sai."
+  },
   "progressLabel": "Tiến độ tải lên",
   "uploading": "Đang tải lên... {progress}%",
   "preparing": "Đang chuẩn bị ảnh...",
@@ -478,10 +485,12 @@
     "PAGE_LOOP_TRIMMED": "Máy đọc lặp, đã cắt {count} dòng lặp",
     "PAGE_MEASURE_MISMATCH": "Đọc được {found} ô nhịp trong khi ảnh có {expected} ô, hãy kiểm tra trang này",
     "PAGE_STAFF_MISMATCH": "Đọc được {found} khuông trong khi ảnh có {expected} khuông mỗi hệ",
+    "PAGE_LAYOUT_UNCHECKED": "Bố cục trang không rõ (số khuông từng hệ {counts}), chưa kiểm được số khuông và số ô trên ảnh; hãy đối chiếu cả trang với ảnh gốc",
     "SYSTEM_MEASURE_MISMATCH": "Hệ này đọc ra {found} ô nhịp trong khi ảnh có {expected} ô",
     "BARLINES_INSERTED": "Máy bỏ sót vạch nhịp, đã tự chèn {count} vạch theo trường độ (nên đối chiếu với ảnh)",
     "TEXT_ABOVE_STAFF": "Có chữ phía trên khuông (thường là tên hợp âm hoặc nhịp độ) chưa được nhận diện; hợp âm in trên bản gốc không có trong bản số",
-    "TEMPO_DEFAULT": "Không đọc được nhịp độ trên bản gốc, đang dùng {bpm} BPM; hãy sửa lại cho đúng"
+    "TEMPO_DEFAULT": "Không đọc được nhịp độ trên bản gốc, đang dùng {bpm} BPM; hãy sửa lại cho đúng",
+    "PAGE_SCANNED_PDF": "Trang này là ảnh scan nằm trong PDF (không phải PDF xuất từ phần mềm), đã xử lý như bản scan"
   },
   "fixCodes": {
     "RHYTHM_FIXED": "Sửa trường độ: {parts}",
@@ -491,9 +500,11 @@
       "dots": "thêm {count} chấm dôi"
     },
     "OCTAVE_FIXED": "Sửa quãng tám {count} nốt theo vị trí đầu nốt trên ảnh",
+    "PDF_PITCH_FIXED": "Sửa cao độ {count} nốt theo ký hiệu nhạc trong file PDF gốc",
     "OTTAVA_FIXED": "Bỏ dấu 8va máy tự thêm, đưa {count} nốt về đúng quãng tám in trên ảnh",
     "REREAD_REPLACED": "Đã thay ô này bằng cách đọc giống nhau của các lần đọc lại",
-    "AI_REPLACED": "AI đối chiếu ảnh và chọn cách đọc khác cho ô này"
+    "AI_REPLACED": "AI đối chiếu ảnh và chọn cách đọc khác cho ô này",
+    "ENGINE_REPLACED": "Đã thay ô này theo cách đọc của engine {engine} (đúng trường độ hoặc khớp ký hiệu PDF gốc hơn máy chính)"
   },
   "check": {
     "title": "Cần kiểm tra",
@@ -522,6 +533,8 @@
   },
   "titleFromPage": {
     "label": "Đặt tên bài theo trang gốc",
+    "fromPdf": "Đọc từ bản PDF:",
+    "useSuggestion": "Dùng tên này",
     "cropAlt": "Phần đầu trang 1 của bản gốc",
     "caption": "Đầu trang 1 của ảnh gốc: tên bài và tác giả thường in ở đây.",
     "placeholder": "Nhập tên bài như in trên bản gốc",

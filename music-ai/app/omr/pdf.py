@@ -93,3 +93,35 @@ def iter_pdf_pages(path) -> Tuple[int, Iterator[Tuple[int, np.ndarray]]]:
             document.close()
 
     return total, generator()
+
+
+def iter_pdf_pages_with_text(path):
+    """Như :func:`iter_pdf_pages` nhưng sinh ``(số_trang_gốc, ảnh_xám, lớp_chữ)``; ``lớp_chữ`` là
+    :class:`app.omr.vector_pdf.PageText` hoặc None nếu không đọc được (PDF vector thì xóa chữ và lấy tên bài từ đây)."""
+    from app.omr.vector_pdf import read_spans  # noqa: PLC0415 - tránh import vòng (vector_pdf dùng layout)
+
+    document = open_pdf(path)
+    total = document.page_count
+    max_pages = get_settings().max_pages
+    if total > max_pages:
+        document.close()
+        raise UnreadablePage(f"PDF có {total} trang, vượt giới hạn {max_pages}")
+
+    def generator():
+        try:
+            for index in range(total):
+                try:
+                    gray = render_page_gray(document, index)
+                except UnreadablePage as exc:
+                    exc.page_number = index + 1  # type: ignore[attr-defined]
+                    raise
+                try:
+                    text = read_spans(document.load_page(index))
+                except Exception:  # noqa: BLE001 - lớp chữ chỉ là thông tin thêm, trang vẫn dùng được như ảnh
+                    log.warning("Không đọc được lớp chữ trang %s của PDF", index + 1, exc_info=True)
+                    text = None
+                yield index + 1, gray, text
+        finally:
+            document.close()
+
+    return total, generator()

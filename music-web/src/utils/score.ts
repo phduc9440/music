@@ -204,9 +204,14 @@ export const titleFromFileName = (name: string): string => {
   return base && base.length <= MAX_TITLE ? base : UNTITLED_TITLE;
 };
 
-/** Tự đoán loại nguồn: PDF -> PDF gốc, ảnh -> Ảnh chụp (người dùng sửa được). */
-export const guessSourceType = (files: File[]): OmrSourceType =>
-  files.length > 0 && files.every(isPdf) ? 'PDF_NATIVE' : 'PHOTO';
+/**
+ * Tự đoán loại nguồn (người dùng sửa được): PDF xuất từ phần mềm -> PDF gốc, PDF là ảnh scan -> Bản scan (O-11), ảnh ->
+ * Ảnh chụp. ``pdfKinds``: kết quả đọc lệnh vẽ của từng file (chưa đọc xong thì PDF tạm coi là PDF gốc).
+ */
+export const guessSourceType = (files: File[], pdfKinds: Array<'vector' | 'scan' | undefined> = []): OmrSourceType => {
+  if (files.length === 0 || !files.every(isPdf)) return 'PHOTO';
+  return pdfKinds.some((kind) => kind === 'scan') ? 'SCAN' : 'PDF_NATIVE';
+};
 
 /** Tên file tải về an toàn: bỏ ký tự cấm (\ / : * ? " < > |) và ký tự điều khiển, tối đa 120 ký tự. */
 export function toSafeFileName(name: string | null | undefined, fallback = 'ban-nhac'): string {

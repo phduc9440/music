@@ -10,6 +10,7 @@ import os
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
+from typing import Optional
 
 # music-ai/app/config.py -> parents[2] là thư mục gốc repo (chứa music-be, music-web, music-ai)
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -184,19 +185,27 @@ class Settings:
     llm_timeout_s: int = 30
     """Hạn mỗi lần gọi AI (giây). Đặt bằng ``OMR_LLM_TIMEOUT_S``."""
 
+    extra_engines: tuple[str, ...] = ()
+    """Engine nhận diện thêm chạy bằng lệnh ngoài trên từng trang để so theo ô với Transcoda (``app/omr/extra_engines.py``,
+    ``app/omr/arbiter.py``), ví dụ ``copisteria,homr``. Lệnh của từng engine đặt ở ``OMR_ENGINE_<TÊN>_COMMAND``. Đặt
+    bằng ``OMR_EXTRA_ENGINES``; rỗng (mặc định) là tắt."""
+
+    extra_engine_timeout_s: int = 600
+    """Hạn mỗi lần chạy một engine thêm trên một trang (giây). Đặt bằng ``OMR_EXTRA_ENGINE_TIMEOUT_S``."""
+
     def task_budget_s(self, pages: int) -> int:
         """Ngân sách thời gian cho job ``pages`` trang: cơ sở + số trang × hệ số, không quá ``task_timeout_s``."""
         return min(self.task_timeout_s, self.task_timeout_base_s + max(1, pages) * self.task_timeout_per_page_s)
 
 def _bool_env(name: str, default: bool) -> bool:
-    raw = os.environ.get(name)
+    raw = _env(name)
     if raw is None or not raw.strip():
         return default
     return raw.strip().lower() in ("1", "true", "yes", "on")
 
 
 def _float_env(name: str, default: float) -> float:
-    raw = os.environ.get(name)
+    raw = _env(name)
     if raw is None or not raw.strip():
         return default
     try:
@@ -207,13 +216,45 @@ def _float_env(name: str, default: float) -> float:
 
 
 def _int_env(name: str, default: int) -> int:
-    raw = os.environ.get(name)
+    raw = _env(name)
     if raw is None or not raw.strip():
         return default
     try:
         return int(raw)
     except ValueError as exc:
         raise ValueError(f"Biến môi trường {name} phải là số nguyên, nhận được {raw!r}") from exc
+
+
+PROFILE_ACCURATE = "accurate"
+
+_PROFILES: dict[str, dict[str, str]] = {
+    PROFILE_ACCURATE: {
+        "NUM_BEAMS": "3",
+        "OMR_ROUTING_MEASURES": "1",
+        "OMR_TTA": "3",
+        "OMR_TTA_MAX_SYSTEMS": "12",
+        "INFERENCE_PAGE_TIMEOUT_S": "900",
+        "TASK_TIMEOUT_PER_PAGE_S": "900",
+        "TASK_TIMEOUT_S": "7200",
+    },
+}
+"""``OMR_PROFILE``: bộ giá trị mặc định khác cho các biến chưa đặt. ``accurate`` bật các tùy chọn chính xác hơn nhưng chậm
+(beam search 3 cho lượt chính, đọc lại theo hệ cả trang có ô lệch trường độ, đọc lại TTA 3 lần cho tới 12 hệ) và nới
+ngân sách thời gian tương ứng. Biến đặt riêng vẫn thắng profile. Dùng để A/B trên benchmark trước khi đổi mặc định::
+
+    python scripts/omr_benchmark.py run --variant moi: --variant chinhxac:OMR_PROFILE=accurate
+"""
+
+
+def _env(name: str) -> Optional[str]:
+    """Giá trị biến môi trường, hoặc giá trị của ``OMR_PROFILE`` nếu biến chưa đặt."""
+    raw = os.environ.get(name)
+    if raw is not None and raw.strip():
+        return raw
+    profile = os.environ.get("OMR_PROFILE", "").strip().lower()
+    if profile and profile not in _PROFILES and profile != "default":
+        raise ValueError(f"OMR_PROFILE phải là default hoặc {', '.join(_PROFILES)}, nhận được {profile!r}")
+    return _PROFILES.get(profile, {}).get(name, raw)
 
 
 @lru_cache(maxsize=1)
@@ -248,7 +289,7 @@ def get_settings() -> Settings:
         lenient_spines=_bool_env("MERGE_LENIENT_SPINES", True),
         max_repeat_lines=_int_env("MAX_REPEAT_LINES", 24),
         omr_routing=_routing_env(),
-        routing_measures=os.environ.get("OMR_ROUTING_MEASURES", "").strip().lower() in ("1", "true", "yes", "on"),
+        routing_measures=_bool_env("OMR_ROUTING_MEASURES", False),
         routing_bars=_bool_env("OMR_ROUTING_BARS", True),
         routing_retry_beams=max(0, _int_env("ROUTING_RETRY_BEAMS", 3)),
         routing_roles_first=_bool_env("OMR_ROLES_FIRST", True),
@@ -267,6 +308,8 @@ def get_settings() -> Settings:
         llm_api_key=os.environ.get("ANTHROPIC_API_KEY", "").strip(),
         llm_max_measures=max(0, _int_env("OMR_LLM_MAX_MEASURES", 10)),
         llm_timeout_s=max(5, _int_env("OMR_LLM_TIMEOUT_S", 30)),
+        extra_engines=tuple(n.strip().lower() for n in (_env("OMR_EXTRA_ENGINES") or "").split(",") if n.strip()),
+        extra_engine_timeout_s=max(10, _int_env("OMR_EXTRA_ENGINE_TIMEOUT_S", 600)),
     )
 
 
@@ -278,7 +321,7 @@ def _choice_env(name: str, default: str, choices: tuple[str, ...]) -> str:
 
 
 def _routing_env() -> str:
-    raw = (os.environ.get("OMR_ROUTING", "").strip() or "fallback").lower()
+    raw = ((_env("OMR_ROUTING") or "").strip() or "fallback").lower()
     if raw not in ("off", "fallback", "always"):
         raise ValueError(f"OMR_ROUTING phải là off, fallback hoặc always, nhận được {raw!r}")
     return raw

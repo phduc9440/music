@@ -43,3 +43,20 @@ def test_kern_note_counts_counts_chord_notes_and_skips_rests():
     assert page is not None
     merged = merge.merge_pages([page])
     assert measure_map.kern_note_counts(merged, 1) == [5, 2]
+
+
+def test_every_measure_of_a_page_with_an_untrusted_layout_is_flagged():
+    from app.omr.layout import PageLayout, Staff, System
+
+    staff = Staff(top=100, bottom=140, left=50, right=1000, lines=5)
+    untrusted = PageLayout(width=1050, height=1485, interline=10.0, systems=[System([staff, staff]), System([staff])])
+    trusted = PageLayout(width=1050, height=1485, interline=10.0, systems=[System([staff])], confident=True)
+    text = kern("**kern", "*clefG2", "*M2/4", "2c", "=1", "2d", "=2", "*-")
+    page = merge.clean_page(1, text)[0]
+    merged = merge.merge_pages([page])
+    entries, check = measure_map.build(merged, [page], {1: untrusted}, {})
+    assert [e["flags"] for e in entries] == [[measure_map.FLAG_LAYOUT]] * 2
+    assert check["pages"][0]["layoutChecked"] is False
+    entries, check = measure_map.build(merged, [page], {1: trusted}, {})
+    assert all(measure_map.FLAG_LAYOUT not in e["flags"] for e in entries)
+    assert check["pages"][0]["layoutChecked"] is True

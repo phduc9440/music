@@ -354,6 +354,7 @@ export default function ScoreReview() {
         <TitleFromPage
           score={score}
           pageUrl={pages.find((p) => p.pageNumber === 1)?.downloadUrl ?? pages[0]?.downloadUrl}
+          suggested={result?.pageText}
           onSaved={setScore}
         />
 

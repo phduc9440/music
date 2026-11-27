@@ -137,6 +137,10 @@ class PageLayout:
     confident: bool = False
     notes: list[str] = field(default_factory=list)
     """Lý do bố cục không đáng tin (để ghi log/gỡ lỗi)."""
+    mixed: bool = False
+    """Trang hỗn hợp tin được: hệ nhiều khuông (điệp khúc 2 khuông, có vạch nối) xen hệ một khuông (phần lời), xem
+    :func:`_trusted_mix`. Khi đó :attr:`staff_count` là None nhưng :attr:`confident` vẫn True; mỗi hệ đọc theo số khuông
+    của chính nó rồi độn về :attr:`max_staves`."""
 
     @property
     def staff_counts(self) -> list[int]:
@@ -147,6 +151,11 @@ class PageLayout:
         """Số khuông mỗi hệ nếu mọi hệ giống nhau, ngược lại None."""
         counts = set(self.staff_counts)
         return counts.pop() if len(counts) == 1 else None
+
+    @property
+    def max_staves(self) -> Optional[int]:
+        """Số khuông nhiều nhất trong các hệ (số spine kern của trang sau khi ghép), None nếu không có hệ nào."""
+        return max(self.staff_counts) if self.systems else None
 
     @property
     def roles(self) -> Optional[list[str]]:
@@ -186,6 +195,7 @@ class PageLayout:
             "interline": round(self.interline, 2),
             "confident": self.confident,
             "staffCount": self.staff_count,
+            "mixed": self.mixed,
             "roles": self.roles,
             "measureCount": self.measure_count,
             "notes": self.notes,
@@ -236,11 +246,28 @@ def analyze_layout(gray: np.ndarray) -> PageLayout:
 
     counts = layout.staff_counts
     if layout.staff_count is None:
-        layout.notes.append(f"các hệ có số khuông khác nhau {counts}")
+        if _trusted_mix(layout.systems):
+            layout.mixed = True
+        else:
+            layout.notes.append(f"các hệ có số khuông khác nhau {counts}")
     if any(not s.connected for s in layout.systems if len(s.staves) > 1):
         layout.notes.append("có hệ nhiều khuông không thấy vạch nối ở lề trái")
-    layout.confident = bool(layout.systems) and layout.staff_count is not None and not layout.notes
+    layout.confident = (
+        bool(layout.systems) and (layout.staff_count is not None or layout.mixed) and not layout.notes
+    )
     return layout
+
+
+def _trusted_mix(systems: list[System]) -> bool:
+    """Các hệ khác số khuông nhưng vẫn tin được: đúng hai loại hệ, loại ít khuông là hệ một khuông (phần lời ca của thánh
+    ca: điệp khúc 2 khuông, các lời 1 khuông) và mọi hệ nhiều khuông đều có vạch nối ở lề trái.
+
+    Không nhận trang lẫn ba loại hệ hoặc hệ thiếu một khuông trong hệ nhiều khuông (vd. [3, 3, 3, 2], [2, 3, 3, 1, 1, 1]
+    ở bản scan "Ave Maria" Schubert): đó thường là bố cục dò sai (mảnh trang khác lọt vào, khuông giọng bị gộp nhầm)."""
+    counts = {len(s.staves) for s in systems}
+    if len(counts) != 2 or min(counts) != 1:
+        return False
+    return all(s.connected for s in systems if len(s.staves) > 1)
 
 
 def analyze_layout_file(path) -> PageLayout:

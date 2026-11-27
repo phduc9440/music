@@ -161,10 +161,11 @@ class SystemResult:
 
 
 def expected_staves(layout: Optional[PageLayout]) -> Optional[int]:
-    """Số spine trang phải có theo bố cục, hoặc None nếu bố cục không đủ tin cậy để đòi hỏi."""
+    """Số spine trang phải có theo bố cục, hoặc None nếu bố cục không đủ tin cậy để đòi hỏi. Trang hỗn hợp
+    (:attr:`PageLayout.mixed`): số khuông của hệ nhiều khuông nhất, vì hệ ít khuông được độn khuông dấu lặng."""
     if layout is None or not layout.confident:
         return None
-    return layout.staff_count
+    return layout.max_staves if layout.mixed else layout.staff_count
 
 
 def expected_measures(layout: Optional[PageLayout]) -> Optional[int]:
@@ -239,8 +240,8 @@ def needs_fallback(
     expected = expected_staves(layout)
     if mode == MODE_OFF or expected is None:
         return False
-    if mode == MODE_ALWAYS:
-        return True
+    if mode == MODE_ALWAYS or (layout is not None and layout.mixed):
+        return True  # trang hỗn hợp: đọc cả trang không thể ra hệ 1 khuông xen hệ 2 khuông, luôn đọc theo hệ
     if page is None or page.spines != expected:
         return True
     if check_bars and measures_off(page_measures(page), expected_measures(layout)):
@@ -410,17 +411,29 @@ _CONTEXT_GAP_INTERLINES = 4.0
 """Khoảng trắng giữa hệ đầu và hệ cần đọc trên trang ngữ cảnh (gần khoảng cách hệ của bản render lúc train)."""
 
 
+def context_index(layout: PageLayout, index: int) -> Optional[int]:
+    """Hệ dùng làm ngữ cảnh cho hệ ``index``: hệ đầu trang, hoặc với trang hỗn hợp là hệ đầu tiên cùng số khuông (ghép
+    hệ 2 khuông trên hệ 1 khuông thì model đọc ra số spine lẫn lộn). None nếu không có hệ nào phù hợp đứng trước."""
+    if index <= 0 or index >= len(layout.systems):
+        return None
+    if not layout.mixed:
+        return 0
+    count = len(layout.systems[index].staves)
+    return next((k for k in range(index) if len(layout.systems[k].staves) == count), None)
+
+
 def context_page(gray: np.ndarray, layout: PageLayout, index: int) -> Optional[np.ndarray]:
     """Trang ảo gồm hệ đầu trang (có khóa nhạc, điệu, SỐ CHỈ NHỊP) đặt trên hệ ``index``.
 
     Hệ ở giữa bài không có số chỉ nhịp nên cắt riêng ra thì model thường đọc thành toàn dấu lặng (``1r``), vì ở dữ liệu
     train mọi trang đều bắt đầu bằng số chỉ nhịp. Kèm hệ đầu cho nó đủ ngữ cảnh; kết quả của hệ đầu bị bỏ sau khi đọc
-    (:func:`read_with_context`). None nếu hai hệ không vừa một trang.
+    (:func:`read_with_context`). None nếu hai hệ không vừa một trang. Trang hỗn hợp dùng :func:`context_index`.
     """
-    if index <= 0 or index >= len(layout.systems):
+    context = context_index(layout, index)
+    if context is None:
         return None
     bands = system_bands(layout)
-    first = gray[bands[0][0] : bands[0][1], :TARGET_W]
+    first = gray[bands[context][0] : bands[context][1], :TARGET_W]
     target = gray[bands[index][0] : bands[index][1], :TARGET_W]
     gap = int(round(_CONTEXT_GAP_INTERLINES * layout.interline))
     if _TOP_MARGIN_PX + first.shape[0] + gap + target.shape[0] > TARGET_H:
@@ -449,7 +462,10 @@ def read_with_context(
 ) -> Optional[merge.PageKern]:
     """Đọc hệ ``index`` kèm hệ đầu phía trên rồi bỏ phần của hệ đầu (số ô đếm trên ảnh). None nếu không làm được
     (bố cục không tin cậy, hệ đầu không kết thúc bằng vạch nhịp, hoặc kết quả có ít ô hơn hệ đầu)."""
-    first = layout.systems[0]
+    context = context_index(layout, index)
+    if context is None:
+        return None
+    first = layout.systems[context]
     if not (layout.confident and first.bars_closed and first.measures):
         return None
     image = context_page(gray, layout, index)
@@ -485,6 +501,16 @@ def fit_spines(page: merge.PageKern, target: int, where: str) -> tuple[merge.Pag
     else:
         message = f"{where}: đọc ra {page.spines} khuông, nhiều hơn {target} trên ảnh, đã bỏ bớt khuông trên cùng"
     return merge.fit_page_spines(page, target), [message]
+
+
+def pad_to_page(page: merge.PageKern, target: int) -> merge.PageKern:
+    """Độn hệ ít khuông của trang hỗn hợp về ``target`` spine bằng khuông dấu lặng: hệ khóa Fa (bè trầm) thêm khuông ở
+    trên, còn lại (giai điệu phần lời ca) thêm khuông ở dưới để giai điệu vẫn nằm ở khuông trên như hệ 2 khuông."""
+    if page.spines >= target:
+        return page
+    clefs = [token for line in page.body if line.startswith("*clef") for token in line.split(merge.TAB)]
+    bass = bool(clefs) and all(token.startswith("*clefF") for token in clefs)
+    return merge.pad_page(page, target, below=not bass)
 
 
 def stitch_systems(number: int, pages: list[merge.PageKern]) -> merge.PageKern:
@@ -550,6 +576,8 @@ def recognize_by_systems(
             )
         page, notes = fit_spines(result.page, len(system.staves), f"Trang {number}, hệ {index}")
         warnings.extend(notes)
+        if layout.mixed:
+            page = pad_to_page(page, layout.max_staves or page.spines)
         fixed.append(page)
     if not fixed:
         return None, results, warnings

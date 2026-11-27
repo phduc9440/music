@@ -12,6 +12,8 @@ export interface FileInspection {
   preview?: string;
   /** Số trang của PDF. */
   pageCount?: number;
+  /** PDF xuất từ phần mềm (vector) hay ảnh scan nhúng trong PDF; không xác định được thì bỏ trống. */
+  pdfKind?: PdfKind;
   width?: number;
   height?: number;
   /** Lỗi nội dung; chuỗi rỗng nghĩa là hợp lệ. */
@@ -19,6 +21,29 @@ export interface FileInspection {
 }
 
 const PDF_THUMB_WIDTH = 240;
+
+export type PdfKind = 'vector' | 'scan';
+
+/** Số lệnh vẽ đường (dòng kẻ, vạch nhịp, dầm...) tối thiểu của một trang nhạc vector. */
+const MIN_VECTOR_PATHS = 20;
+
+/**
+ * Trang PDF là ảnh scan hay bản xuất từ phần mềm chép nhạc (O-11), theo các lệnh vẽ của trang: scan là một ảnh và gần như
+ * không có nét vẽ (lớp chữ OCR ẩn nếu có thì vẫn là scan); PDF vector vẽ khuông nhạc bằng đường kẻ và ký tự font nhạc.
+ */
+export const classifyPdfOps = (
+  fnArray: ArrayLike<number>,
+  ops: { paintImageXObject: number; paintInlineImageXObject: number; paintImageXObjectRepeat: number; constructPath: number },
+): PdfKind => {
+  let images = 0;
+  let paths = 0;
+  for (let i = 0; i < fnArray.length; i++) {
+    const fn = fnArray[i];
+    if (fn === ops.paintImageXObject || fn === ops.paintInlineImageXObject || fn === ops.paintImageXObjectRepeat) images++;
+    else if (fn === ops.constructPath) paths++;
+  }
+  return images > 0 && paths < MIN_VECTOR_PATHS ? 'scan' : 'vector';
+};
 
 // pdf.js khá nặng nên chỉ tải khi người dùng chọn PDF
 export const loadPdfJs = async () => {
@@ -67,8 +92,14 @@ export const inspectPdf = async (file: File): Promise<FileInspection> => {
 
     // Vẽ trang 1 ra canvas nhỏ làm ảnh xem trước; lỗi vẽ thì vẫn cho tải lên
     let preview: string | undefined;
+    let pdfKind: PdfKind | undefined;
     try {
       const page = await doc.getPage(1);
+      try {
+        pdfKind = classifyPdfOps((await page.getOperatorList()).fnArray, pdfjs.OPS);
+      } catch {
+        pdfKind = undefined; // không đọc được lệnh vẽ: để người dùng tự chọn loại nguồn
+      }
       const base = page.getViewport({ scale: 1 });
       const viewport = page.getViewport({ scale: PDF_THUMB_WIDTH / base.width });
       const canvas = document.createElement('canvas');
@@ -82,7 +113,7 @@ export const inspectPdf = async (file: File): Promise<FileInspection> => {
     } catch {
       preview = undefined;
     }
-    return { pageCount: doc.numPages, preview, error: '' };
+    return { pageCount: doc.numPages, preview, pdfKind, error: '' };
   } finally {
     void doc.destroy();
   }

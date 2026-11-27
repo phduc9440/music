@@ -79,3 +79,24 @@ def test_mixed_kinds_and_duplicate_pages_rejected(storage_root):
                 {"path": "scores/s1/b.png", "kind": "IMAGE", "page": 1},
             ],
         )
+
+
+def test_accurate_profile_fills_unset_variables_but_explicit_ones_win(monkeypatch):
+    from app import config
+
+    monkeypatch.setenv("OMR_PROFILE", "accurate")
+    monkeypatch.setenv("NUM_BEAMS", "2")
+    monkeypatch.delenv("OMR_TTA", raising=False)
+    config.get_settings.cache_clear()
+    try:
+        settings = config.get_settings()
+        assert settings.num_beams == 2  # đặt riêng thì thắng profile
+        assert settings.tta_reads == 3 and settings.routing_measures and settings.tta_max_systems == 12
+        assert settings.inference_page_timeout_s == 900
+        monkeypatch.setenv("OMR_PROFILE", "fast")
+        config.get_settings.cache_clear()
+        with pytest.raises(ValueError):
+            config.get_settings()
+    finally:
+        monkeypatch.delenv("OMR_PROFILE")
+        config.get_settings.cache_clear()

@@ -1,5 +1,6 @@
 import type { DragEvent } from 'react';
 import { formatSize, isPdf } from '../../../utils/score';
+import type { PdfKind } from '../../../utils/uploadInspect';
 import { t } from '../../../i18n/core';
 
 /** Một file người dùng đã chọn trên trang upload, kèm kết quả kiểm tra nội dung (pdf.js / đo ảnh). */
@@ -15,6 +16,8 @@ export interface UploadItem {
   height?: number;
   /** Lỗi nội dung từ bước kiểm tra (PDF mã hóa, ảnh quá nhỏ...). */
   inspectError?: string;
+  /** PDF xuất từ phần mềm hay ảnh scan (đọc từ lệnh vẽ trang 1), để tự chọn loại nguồn. */
+  pdfKind?: PdfKind;
 }
 
 interface Props {

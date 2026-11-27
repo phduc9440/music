@@ -24,6 +24,10 @@ from app.omr.layout import PageLayout, System
 
 FLAG_DURATION = "DURATION"
 FLAG_COUNT = "COUNT_MISMATCH"
+FLAG_LAYOUT = "LAYOUT_UNCHECKED"
+"""Trang có khuông nhưng bố cục không tin được (các hệ khác số khuông, vạch nối không rõ): không kiểm được số khuông và
+số ô trên ảnh, nên mọi ô của trang đều cần đối chiếu (trước đây Review chỉ báo vài ô lệch trường độ dù cả trang có thể
+mất ô)."""
 
 _BOX_PAD = 2.0
 """Khung ô lấy rộng ra trên/dưới hệ bấy nhiêu khoảng dòng kẻ (dòng kẻ phụ, dấu)."""
@@ -57,7 +61,9 @@ def build(
             continue
         first, last = span["firstMeasure"], span["lastMeasure"]
         count = last - first + 1
-        report_pages.append({"page": number, "imageMeasures": image, "kernMeasures": count})
+        report_pages.append(
+            {"page": number, "imageMeasures": image, "kernMeasures": count, "layoutChecked": not layout_unchecked(layout)}
+        )
         placed = _place(layout, count, system_counts.get(number))
         for offset in range(count):
             measure = first + offset
@@ -65,15 +71,19 @@ def build(
                 continue
             entry: dict = {"measure": measure, "page": number, "system": None, "box": None, "flags": []}
             if placed is not None:
-                system_index, box, mismatch = placed[offset]
+                system_index, box, mismatch, exact = placed[offset]
                 entry["system"] = system_index + 1
                 entry["box"] = box
+                if exact:
+                    entry["_exact"] = True  # khung đúng ô trên ảnh (không phải khung cả hệ): đếm được ký hiệu PDF trong ô
                 if mismatch:
                     entry["flags"].append(FLAG_COUNT)
             elif image is not None and image != count:
                 entry["flags"].append(FLAG_COUNT)
             if measure in bad:
                 entry["flags"].append(FLAG_DURATION)
+            if layout_unchecked(layout):
+                entry["flags"].append(FLAG_LAYOUT)
             entries[measure] = entry
 
     check = {
@@ -82,6 +92,11 @@ def build(
         "pages": report_pages,
     }
     return [entries[m] for m in sorted(entries)], check
+
+
+def layout_unchecked(layout: Optional[PageLayout]) -> bool:
+    """Trang có khuông nhạc nhưng bố cục không đủ tin để kiểm số khuông/số ô (xem :data:`FLAG_LAYOUT`)."""
+    return layout is not None and bool(layout.systems) and not layout.confident
 
 
 _ESTIMATE_GAP = 0.8
@@ -190,8 +205,9 @@ def image_measure_heads(layout: PageLayout, heads_x: list[tuple[int, float]]) ->
 
 def _place(
     layout: Optional[PageLayout], count: int, counts: Optional[list[Optional[int]]]
-) -> Optional[list[tuple[int, Optional[list[int]], bool]]]:
-    """Vị trí ``count`` ô của một trang: mỗi ô ``(chỉ số hệ, khung hoặc None, hệ lệch số ô)``; None nếu không chia được."""
+) -> Optional[list[tuple[int, Optional[list[int]], bool, bool]]]:
+    """Vị trí ``count`` ô của một trang: mỗi ô ``(chỉ số hệ, khung hoặc None, hệ lệch số ô, khung đúng ô)``; None nếu
+    không chia được."""
     if layout is None or not layout.confident or not layout.systems:
         return None
     if counts is not None and len(counts) == len(layout.systems) and all(c is not None for c in counts):
@@ -202,12 +218,12 @@ def _place(
         return None
     if sum(per_system) != count:
         return None
-    placed: list[tuple[int, Optional[list[int]], bool]] = []
+    placed: list[tuple[int, Optional[list[int]], bool, bool]] = []
     for index, (system, got) in enumerate(zip(layout.systems, per_system)):
         exact = system.bars_closed and system.measures == got
         for position in range(got):
             box = _measure_box(layout, system, position) if exact else _system_box(layout, system)
-            placed.append((index, box, not exact and system.measures is not None and system.bars_closed))
+            placed.append((index, box, not exact and system.measures is not None and system.bars_closed, exact))
     return placed
 
 
