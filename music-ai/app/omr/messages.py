@@ -60,6 +60,14 @@ def split_measure_note(first: int, second: int) -> str:
     )
 
 
+def repeat_measure_note(first: int, second: int) -> str:
+    """Ghi chú cho cặp ô bù nhau qua dấu lặp: ô ``first`` mở đầu đoạn lặp, ô ``second`` đứng trước dấu lặp cuối đoạn."""
+    return (
+        f"Ô {first} (đầu đoạn lặp) và ô {second} (trước dấu lặp cuối đoạn) cộng lại vừa đủ số chỉ nhịp: khi hát lặp lại, "
+        f"ô {second} nối thẳng vào ô {first}, nên không tính là lỗi trường độ"
+    )
+
+
 def tempo_default_message(bpm: int) -> str:
     """Câu cảnh báo OMR-13: không đọc được nhịp độ nên dùng mặc định."""
     return f"Không đọc được nhịp độ trên bản gốc, đang dùng {bpm} BPM; hãy sửa lại cho đúng bản gốc"

@@ -1633,18 +1633,27 @@ def measure_length(lines: list[str], width: int) -> Optional[Fraction]:
 
 def incomplete_roles(result: MergeResult) -> dict[int, str]:
     """Ô nhịp thiếu hợp lệ (:mod:`app.convert.incomplete_measures`) theo số thứ tự ô (từ 1, cùng cách đánh số với
-    :func:`page_measure_ranges`): ô lấy đà, ô cuối bù cho ô lấy đà và hai phần của ô bị vạch nhịp chia đôi."""
+    :func:`page_measure_ranges`): ô lấy đà, ô cuối bù cho ô lấy đà, hai phần của ô bị vạch nhịp chia đôi và cặp ô bù
+    nhau qua dấu lặp."""
+    return incomplete_analysis(result).roles
+
+
+def incomplete_analysis(result: MergeResult) -> incomplete_measures.Analysis:
+    """Như :func:`incomplete_roles`, kèm ô bù cho từng ô (cùng cách đánh số từ 1)."""
     ordered = [s for s in _measure_segments(result) if s["any"]]
-    roles = _classify_segments(ordered, result.spines)
-    return {position + 1: role for position, role in roles.items()}
+    found = _classify_segments(ordered, result.spines)
+    return incomplete_measures.Analysis(
+        roles={k + 1: role for k, role in found.roles.items()},
+        partners={k + 1: other + 1 for k, other in found.partners.items()},
+    )
 
 
 def check_measures(result: MergeResult) -> list[str]:
     """Cảnh báo ô nhịp có tổng trường độ khác số chỉ nhịp (đặc tả: không làm FAILED).
 
     Chỉ kiểm tra các ô nhịp không tách/gộp spine. Ô nhịp đầu tiên (nhịp lấy đà) và ô nhịp cuối cùng được phép ngắn
-    hơn; hai phần của một ô bị vạch nhịp chia đôi (cộng lại vừa đủ số chỉ nhịp, :func:`incomplete_roles`) cũng không bị
-    báo. Mỗi cảnh báo ghi số trang và số ô nhịp; chỉ nêu tối đa :data:`MAX_WARNINGS_PER_KIND` ô.
+    hơn; hai phần của một ô bị vạch nhịp chia đôi hoặc cặp ô bù nhau qua dấu lặp (cộng lại vừa đủ số chỉ nhịp,
+    :func:`incomplete_roles`) cũng không bị báo. Mỗi cảnh báo ghi số trang và số ô nhịp; chỉ nêu tối đa :data:`MAX_WARNINGS_PER_KIND` ô.
     """
     _, problems, _ = _measure_report(result)
     if len(problems) > MAX_WARNINGS_PER_KIND:
@@ -1672,11 +1681,11 @@ def bad_measures(result: MergeResult) -> list[int]:
 def _measure_segments(result: MergeResult) -> list[dict]:
     """Các đoạn giữa hai vạch nhịp của kern đã ghép, theo thứ tự. Mỗi đoạn: số ô (theo vạch nhịp), trang, tổng trường độ
     từng spine, số chỉ nhịp, ``ok`` (không tách/gộp spine), số dòng dữ liệu đủ cột, ``any`` (có dữ liệu: ô này có số thứ
-    tự) và ``lines`` (dòng diễn giải và dữ liệu của đoạn)."""
+    tự), ``lines`` (dòng diễn giải và dữ liệu của đoạn), ``open``/``close`` (vạch nhịp mở/đóng đoạn, để biết dấu lặp)."""
     base = result.spines
     meter: Optional[Fraction] = None
 
-    def open_segment(number: int, page_no: int) -> dict:
+    def open_segment(number: int, page_no: int, opening: str = "") -> dict:
         return {
             "number": number,
             "page": page_no,
@@ -1686,6 +1695,8 @@ def _measure_segments(result: MergeResult) -> list[dict]:
             "data": 0,
             "any": False,
             "lines": [],
+            "open": opening,
+            "close": "",
         }
 
     # Dữ liệu nằm trước vạch nhịp đầu tiên (nếu có) là ô nhịp lấy đà, mang số (số đầu - 1)
@@ -1697,10 +1708,12 @@ def _measure_segments(result: MergeResult) -> list[dict]:
 
     for line, page_no in zip(result.lines, result.line_pages):
         if is_barline(line):
+            token = line.split(TAB)[0]
+            current["close"] = token
             segments.append(current)
-            match = _RE_BARLINE.match(line.split(TAB)[0])
+            match = _RE_BARLINE.match(token)
             number = int(match.group("num")) if match and match.group("num") else current["number"] + 1
-            current = open_segment(number, page_no)
+            current = open_segment(number, page_no, token)
             continue
         if _is_interpretation(line):
             current["lines"].append(line)
@@ -1740,11 +1753,12 @@ def _segment_length(segment: dict, width: int) -> Optional[Fraction]:
     return values.pop() if len(values) == 1 else None
 
 
-def _classify_segments(ordered: list[dict], width: int) -> dict[int, str]:
-    """Vai trò ô thiếu hợp lệ của các đoạn có dữ liệu ``ordered`` (theo thứ tự), khóa là vị trí trong ``ordered``."""
+def _classify_segments(ordered: list[dict], width: int) -> incomplete_measures.Analysis:
+    """Ô thiếu hợp lệ của các đoạn có dữ liệu ``ordered`` (theo thứ tự), khóa là vị trí trong ``ordered``."""
     lengths = [_segment_length(segment, width) for segment in ordered]
     meters = [segment["meter"] for segment in ordered]
-    return incomplete_measures.classify(lengths, meters)
+    repeats = [("|:" in segment["open"], ":|" in segment["close"]) for segment in ordered]
+    return incomplete_measures.analyze(lengths, meters, repeats)
 
 
 def _measure_report(
@@ -1756,8 +1770,8 @@ def _measure_report(
     segments = _measure_segments(result)
     ordered = [s for s in segments if s["any"]]
     ordinals = {id(s): k for k, s in enumerate(ordered, start=1)}
-    roles = _classify_segments(ordered, result.spines)
-    split = {id(ordered[k]) for k, role in roles.items() if role in incomplete_measures.SPLIT_ROLES}
+    roles = _classify_segments(ordered, result.spines).roles
+    split = {id(ordered[k]) for k, role in roles.items() if role in incomplete_measures.COMPLEMENT_ROLES}
     with_data = [s for s in segments if s["data"] > 0]
     checked = 0
     positions: list[int] = []

@@ -65,12 +65,17 @@ def _quarters(value: Any) -> Fraction:
     return value if isinstance(value, Fraction) else Fraction(value).limit_denominator(1 << 16)
 
 
+def _repeat(barline: Any, direction: str) -> bool:
+    """Vạch nhịp music21 là dấu lặp theo hướng ``direction`` (``start`` = ``|:``, ``end`` = ``:|``)."""
+    return barline is not None and getattr(barline, "direction", None) == direction
+
+
 def mark_incomplete_measures(score: Any) -> dict[int, str]:
     """Giữ nguyên độ dài các ô nhịp thiếu hợp lệ (:mod:`app.convert.incomplete_measures`) khi ghi MusicXML.
 
     Mặc định music21 lấp ô ngắn hơn số chỉ nhịp bằng dấu lặng ẩn cho đủ ô. Với ô lấy đà nó đã biết (``paddingLeft``),
-    nhưng hai phần của ô bị vạch nhịp chia đôi (cuối phiên khúc + đầu điệp khúc) thì mỗi phần bị lấp thêm, nên khi phát
-    có một khoảng lặng giữa hai đoạn. Ở đây đặt ``paddingLeft``/``paddingRight`` cho các ô đó (music21 không lấp nữa) và
+    nhưng hai phần của ô bị vạch nhịp chia đôi (cuối phiên khúc + đầu điệp khúc) hay cặp ô bù nhau qua dấu lặp thì mỗi
+    phần bị lấp thêm, nên khi phát có một khoảng lặng giữa hai đoạn. Ở đây đặt ``paddingLeft``/``paddingRight`` cho các ô đó (music21 không lấp nữa) và
     ``showNumber`` = NEVER để MusicXML ghi ``implicit="yes"``: trình sửa của web hiểu đó là ô ngắn hợp lệ, không tô đỏ.
 
     Chỉ áp dụng khi mọi part có cùng số ô; độ dài một ô là độ dài chung của các part có nội dung (part lệch nhau thì ô đó
@@ -85,6 +90,7 @@ def mark_incomplete_measures(score: Any) -> dict[int, str]:
         return {}
     lengths: list[Optional[Fraction]] = []
     meters: list[Optional[Fraction]] = []
+    repeats: list[tuple[bool, bool]] = []
     for index in range(len(measures[0])):
         values = {_quarters(m[index].duration.quarterLength) for m in measures}
         values.discard(Fraction(0))
@@ -93,12 +99,13 @@ def mark_incomplete_measures(score: Any) -> dict[int, str]:
             meters.append(_quarters(measures[0][index].barDuration.quarterLength))
         except Exception:  # noqa: BLE001 - ô không tìm được số chỉ nhịp
             meters.append(None)
-    roles = incomplete_measures.classify(lengths, meters)
+        repeats.append((_repeat(measures[0][index].leftBarline, "start"), _repeat(measures[0][index].rightBarline, "end")))
+    roles = incomplete_measures.classify(lengths, meters, repeats)
     for index, role in roles.items():
         gap = meters[index] - lengths[index]  # type: ignore[operator]
         for part_measures in measures:
             measure = part_measures[index]
-            if role in (incomplete_measures.PICKUP, incomplete_measures.SPLIT_TAIL):
+            if role in incomplete_measures.MISSING_AT_START:
                 measure.paddingLeft, measure.paddingRight = opFrac(gap), 0.0  # phần thiếu nằm ở đầu ô
             else:
                 measure.paddingLeft, measure.paddingRight = 0.0, opFrac(gap)  # phần thiếu nằm ở cuối ô

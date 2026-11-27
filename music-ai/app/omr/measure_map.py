@@ -5,7 +5,8 @@ Web dùng để khoanh đúng ô trên ảnh khi người dùng chọn một ô 
 * ``DURATION``: tổng trường độ khác số chỉ nhịp (:func:`merge.bad_measures`);
 * ``COUNT_MISMATCH``: ô thuộc hệ (hoặc trang) mà số ô đọc được khác số ô đếm trên ảnh, nên chưa chắc ô nào là thừa/thiếu.
 
-Hai phần của một ô bị vạch nhịp chia đôi (:func:`merge.incomplete_roles`) không bị gắn cờ, chỉ có ghi chú giải thích.
+Hai phần của một ô bị vạch nhịp chia đôi và cặp ô bù nhau qua dấu lặp (:func:`merge.incomplete_analysis`) không bị
+gắn cờ, chỉ có ghi chú giải thích.
 
 Chỉ gán hệ và khung khi biết chắc ô nào thuộc hệ nào: trang được nhận diện lại theo hệ (biết số ô từng hệ), trang đọc
 cả trang mà tổng số ô khớp số ô trên ảnh (chia tuần tự theo số ô từng hệ), hoặc trang lệch số ô mà căn được từng ô kern
@@ -49,7 +50,7 @@ def build(
     """
     ranges = {r["page"]: r for r in merge.page_measure_ranges(merged)}
     bad = set(merge.bad_measures(merged))
-    roles = merge.incomplete_roles(merged)
+    incomplete = merge.incomplete_analysis(merged)
     entries: dict[int, dict] = {}
     report_pages: list[dict] = []
     image_total: Optional[int] = 0
@@ -86,9 +87,16 @@ def build(
                 entry["flags"].append(FLAG_COUNT)
             if measure in bad:
                 entry["flags"].append(FLAG_DURATION)
-            partner = incomplete_measures.split_partner(roles, measure)
-            if partner is not None:  # ô chia đôi: không gắn cờ, chỉ ghi chú để người dùng hiểu vì sao ô ngắn
-                entry["_notes"] = [messages.split_measure_note(min(measure, partner), max(measure, partner))]
+            role, partner = incomplete.roles.get(measure), incomplete.partners.get(measure)
+            if role in incomplete_measures.COMPLEMENT_ROLES and partner is not None:
+                # ô chia đôi / bù nhau qua dấu lặp: không gắn cờ, chỉ ghi chú để người dùng hiểu vì sao ô ngắn
+                low, high = min(measure, partner), max(measure, partner)
+                note = (
+                    messages.split_measure_note(low, high)
+                    if role in incomplete_measures.SPLIT_ROLES
+                    else messages.repeat_measure_note(low, high)
+                )
+                entry["_notes"] = [note]
             if layout_unchecked(layout):
                 entry["flags"].append(FLAG_LAYOUT)
             entries[measure] = entry

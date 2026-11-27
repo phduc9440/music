@@ -169,8 +169,8 @@ def fix_dots(lines: list[str], spines: int) -> tuple[list[str], int, list[int]]:
         meter = measure.meter
         if meter is None or not measure.regular or position == 0 or position == len(measures) - 1:
             continue  # ô đầu/cuối bài có thể là ô lấy đà/ô thiếu hợp lệ
-        if measure.role in incomplete_measures.SPLIT_ROLES:
-            continue  # hai phần của ô bị vạch nhịp chia đôi ngắn hơn số chỉ nhịp là đúng
+        if measure.role in incomplete_measures.COMPLEMENT_ROLES:
+            continue  # ô chia đôi / ô bù nhau qua dấu lặp ngắn hơn số chỉ nhịp là đúng
         for column in range(spines):
             cells = [(i, out[i].split(TAB)[column]) for i in measure.data_lines]
             total = _spine_total([c for _i, c in cells])

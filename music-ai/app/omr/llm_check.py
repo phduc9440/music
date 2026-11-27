@@ -175,10 +175,14 @@ def build_prompt(
         f"Measure {piece.ordinal}. Time signature (as a fraction of a whole note): {meter}.",
         "Staves top to bottom: " + "; ".join(keys) + ".",
     ]
-    if piece.role in incomplete_measures.SPLIT_ROLES and piece.target is not None:
+    if piece.role in incomplete_measures.COMPLEMENT_ROLES and piece.target is not None:
+        why = (
+            "one half of a measure split by a barline (for example the end of a verse and the start of the refrain)"
+            if piece.role in incomplete_measures.SPLIT_ROLES
+            else "completed by another measure across a repeat sign"
+        )
         lines.append(
-            "This measure is one half of a measure split by a barline (for example the end of a verse and the start of "
-            f"the refrain), so it lasts only {piece.target.numerator}/{piece.target.denominator} of a whole note."
+            f"This measure is {why}, so it lasts only {piece.target.numerator}/{piece.target.denominator} of a whole note."
         )
     lines.append("Candidates (staff 1 = top staff):")
     for number, candidate in enumerate(candidates):

@@ -232,8 +232,8 @@ class MeasureSlice:
     """Vai trò nếu là ô thiếu hợp lệ (:mod:`app.convert.incomplete_measures`): ô lấy đà, ô cuối, phần của ô chia đôi."""
 
     target: Optional[Fraction] = None
-    """Tổng trường độ mỗi khuông phải có: số chỉ nhịp, riêng mỗi phần của ô bị vạch nhịp chia đôi là độ dài của chính
-    phần đó (cách đọc khác làm phần này dài/ngắn đi thì hai phần không còn ghép đủ một ô)."""
+    """Tổng trường độ mỗi khuông phải có: số chỉ nhịp, riêng ô có ô khác bù cho nó (hai phần của ô bị vạch nhịp chia đôi,
+    cặp ô bù nhau qua dấu lặp) là độ dài của chính nó (cách đọc khác làm ô này dài/ngắn đi thì hai ô không còn ghép đủ)."""
 
     def lines(self, result: merge.MergeResult) -> list[str]:
         return result.lines[self.start : self.end + 1]
@@ -287,7 +287,7 @@ def slice_measures(result: merge.MergeResult) -> list[MeasureSlice]:
     for piece in slices:
         piece.role = roles.get(piece.ordinal)
         piece.target = piece.meter
-        if piece.role in incomplete_measures.SPLIT_ROLES:
+        if piece.role in incomplete_measures.COMPLEMENT_ROLES:
             piece.target = merge.measure_length(piece.lines(result), spines)
     return slices
 

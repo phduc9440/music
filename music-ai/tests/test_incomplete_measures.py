@@ -60,6 +60,23 @@ def test_short_last_measure_is_closing_only_when_it_completes_the_pickup():
     assert im.classify([WHOLE, WHOLE, F(1, 2)], [WHOLE] * 3) == {}
 
 
+def test_measure_before_an_end_repeat_completes_the_start_of_the_repeated_section():
+    # đủ | |: 1/4 (lấy đà của đoạn lặp) | đủ | 3/4 :| đủ
+    lengths = [WHOLE, F(1, 4), WHOLE, F(3, 4), WHOLE]
+    repeats = [(False, False), (True, False), (False, False), (False, True), (False, False)]
+    found = im.analyze(lengths, [WHOLE] * 5, repeats)
+    assert found.roles == {1: im.REPEAT_START, 3: im.REPEAT_END}
+    assert found.partners == {1: 3, 3: 1}
+    # không có dấu lặp thì hai ô ngắn không liền kề vẫn là lỗi
+    assert im.classify(lengths, [WHOLE] * 5) == {}
+    # dấu lặp cuối đoạn không có dấu mở: đoạn lặp từ đầu bài, ô lấy đà được bù ở cả cuối đoạn lặp lẫn cuối bài
+    lengths = [F(1, 4), WHOLE, F(3, 4), WHOLE, F(3, 4)]
+    repeats = [(False, False), (False, False), (False, True), (False, False), (False, False)]
+    found = im.analyze(lengths, [WHOLE] * 5, repeats)
+    assert found.roles == {0: im.PICKUP, 2: im.REPEAT_END, 4: im.CLOSING}
+    assert found.partners[2] == 0 and found.partners[4] == 0
+
+
 # ------------------------------------------------------------------ kern
 
 # Giai điệu một khuông rồi điệp khúc hai khuông (khuông dưới được đệm dấu lặng ở phiên khúc), giống bố cục bài hát
@@ -145,6 +162,23 @@ def test_rhythm_fix_does_not_fill_a_split_half_with_a_dot():
     assert out[3] == "2.d" and dots == 1 and touched == [2]
 
 
+# Một khuông nên viết thẳng (kern() đổi "|" thành tab, mà dấu lặp kern lại có "|")
+REPEATED = "\n".join(
+    ["**kern", "*clefG2", "*M3/4", "=1", "2.c", "=2!|:", "4e", "=3", "2.g", "=4", "2f", "=5:|!", "2.e", "==", "*-"]
+) + "\n"
+
+
+def test_measures_completing_each_other_across_a_repeat_are_not_reported():
+    result = _merged(REPEATED)
+    assert merge.incomplete_roles(result) == {2: im.REPEAT_START, 4: im.REPEAT_END}
+    assert merge.bad_measures(result) == []
+    entries, _check = measure_map.build(result, [merge.clean_page(1, REPEATED)[0]], {}, {})
+    assert entries[1]["flags"] == [] and entries[1]["_notes"][0].startswith("Ô 2 (đầu đoạn lặp) và ô 4")
+    # bỏ dấu lặp: hai ô ngắn không liền kề là lỗi như trước
+    plain = _merged(REPEATED.replace("=2!|:", "=2").replace("=5:|!", "=5"))
+    assert merge.bad_measures(plain) == [2, 4]
+
+
 def test_measure_map_explains_split_halves_without_flagging_them():
     result = _merged(SONG)
     page = merge.clean_page(1, SONG)[0]
@@ -194,3 +228,9 @@ def test_export_keeps_split_halves_short_so_playback_does_not_stop(tmp_path):
 def test_export_still_fills_a_lonely_short_measure(tmp_path):
     measures, _midi = _export(tmp_path, SONG.replace("4G\t4g\n4F#\t4a\n", "1G\t1g\n"))
     assert measures[3].get("implicit") == "no" and _hidden_rests(measures[3]) > 0
+
+
+def test_export_keeps_measures_completing_each_other_across_a_repeat_short(tmp_path):
+    measures, _midi = _export(tmp_path, REPEATED)
+    assert [m.get("implicit") for m in measures] == ["no", "yes", "no", "yes", "no"]
+    assert [_hidden_rests(m) for m in measures] == [0] * 5
