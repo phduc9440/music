@@ -230,6 +230,8 @@ class JobContext:
     """Trang gốc của PDF vector có in tên hợp âm (chữ đã bị xóa khỏi ảnh nên không dò trên ảnh được nữa)."""
     vector_pages: dict[int, tuple["vector_pdf.PageText", tuple[int, ...]]] = field(default_factory=dict)
     """Trang gốc của PDF vector -> (lớp chữ, kích thước ảnh vẽ từ trang) để đặt ký hiệu nhạc lên ảnh trang."""
+    scanned_pages: set[int] = field(default_factory=set)
+    """Trang gốc của PDF là ảnh scan (một ảnh phủ kín trang, không có font nhạc)."""
     glyph_pages: dict[int, glyphs.GlyphPage] = field(default_factory=dict)
     """Ký hiệu nhạc của PDF vector đã gán vào bố cục, theo số trang đầu ra (:mod:`app.omr.glyphs`)."""
     glyph_counts: dict[str, int] = field(default_factory=dict)
@@ -397,6 +399,9 @@ def _clean_vector_pages(
     """PDF xuất từ phần mềm chép nhạc: xóa chữ thường (lời ca, hợp âm, tên bài) theo lớp chữ của PDF và lấy tên bài,
     tác giả, nhịp độ từ trang 1 (:mod:`app.omr.vector_pdf`). PDF scan (không có font nhạc) thì giữ nguyên. Lỗi ở đây chỉ
     làm mất phần xóa chữ chính xác (bước xóa chữ bằng ảnh vẫn chạy), không làm hỏng job."""
+    for entry, text in zip(pages, texts):
+        if entry is not None and text is not None and vector_pdf.is_scanned(text):
+            ctx.scanned_pages.add(entry[0])
     known = [t for t in texts if t is not None]
     if not known or not vector_pdf.is_music_pdf(known):
         return
@@ -449,8 +454,13 @@ def _preprocess_pages(ctx: JobContext, pages: list[Optional[tuple[int, np.ndarra
         source_gray = gray if ctx.settings.extra_engines else None
         budget.start_page(page_number)
         budget.check()
+        page_options = popts
+        if page_number in ctx.scanned_pages and options.sourceType == "PDF_NATIVE":
+            # Người dùng (hoặc web tự đoán) chọn "PDF gốc" nhưng trang này là ảnh scan nhúng trong PDF: khử nhiễu như scan
+            page_options = PreprocessOptions(preprocess=options.preprocess, binarize=options.binarize, source_type="SCAN")
+            ctx.warnings.append(messages.scanned_page_message(page_number))
         try:
-            result = process_page(gray, popts, page_number, budget.check)
+            result = process_page(gray, page_options, page_number, budget.check)
         except (JobCancelled, JobTimeout, TaskGone):
             raise
         except UnreadablePage as exc:

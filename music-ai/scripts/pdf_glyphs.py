@@ -2,7 +2,7 @@
 
     python scripts/pdf_glyphs.py ../music-be/storage/benchmark-inputs/Giac_Mo_Trua.pdf
 
-Mỗi trang in: loại trang (PDF vector có font nhạc hay không), các font nhạc, số ký hiệu theo loại (đầu nốt,
+Mỗi trang in: loại trang (PDF vector có font nhạc / ảnh scan / không rõ), các font nhạc, số ký hiệu theo loại (đầu nốt,
 chấm, dấu hóa, khóa, dấu lặng) và các mã ký tự font nhạc chưa có trong bảng của ``app/omr/glyphs.py`` (dầm, đuôi móc, số
 chỉ nhịp... là bình thường; dùng để bổ sung bảng khi gặp font mới). Trang vector mà ``head`` bằng 0 nghĩa là mã font chưa
 được nhận: pipeline sẽ dò đầu nốt trên ảnh như cũ.
@@ -29,7 +29,7 @@ def main() -> None:
     with pymupdf.open(args.pdf) as document:
         for index, page in enumerate(document, start=1):
             text = vector_pdf.read_spans(page)
-            kind = "vector" if text.is_music else "không phải PDF vector"
+            kind = "vector" if text.is_music else ("scan" if vector_pdf.is_scanned(text) else "không rõ")
             pairs = glyphs.classify_glyphs(text)
             fonts = sorted(vector_pdf.font_name(f) for f in vector_pdf.music_fonts(text.spans))
             print(f"Trang {index}: {kind}, font nhạc {fonts}")

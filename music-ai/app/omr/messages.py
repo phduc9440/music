@@ -35,6 +35,7 @@ _WARNING_CODES: list[tuple[str, re.Pattern[str], tuple[str, ...]]] = [
     ("BARLINES_INSERTED", re.compile(r"^model bỏ sót vạch nhịp, đã tự chèn (\d+) vạch nhịp"), ("count",)),
     ("TEXT_ABOVE_STAFF", re.compile(r"^có chữ phía trên khuông"), ()),
     ("TEMPO_DEFAULT", re.compile(r"^Không đọc được nhịp độ trên bản gốc, đang dùng (\d+) BPM"), ("bpm",)),
+    ("PAGE_SCANNED_PDF", re.compile(r"^là ảnh scan nằm trong PDF"), ()),
 ]
 
 
@@ -44,6 +45,11 @@ def text_above_message(page: int) -> str:
         f"Trang {page}: có chữ phía trên khuông (thường là tên hợp âm hoặc nhịp độ) mà hệ thống chưa nhận diện, "
         "hợp âm in trên bản gốc không có trong bản số"
     )
+
+
+def scanned_page_message(page: int) -> str:
+    """Trang PDF là ảnh scan dù loại nguồn là "PDF gốc": đã khử nhiễu như bản scan (O-11)."""
+    return f"Trang {page}: là ảnh scan nằm trong PDF (không phải PDF xuất từ phần mềm), đã xử lý như bản scan"
 
 
 def tempo_default_message(bpm: int) -> str:

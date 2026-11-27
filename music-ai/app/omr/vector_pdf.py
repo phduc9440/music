@@ -88,6 +88,8 @@ class PageText:
     spans: list[TextSpan]
     glyphs: list[Glyph] = field(default_factory=list)
     """Từng ký tự của các font nhạc trên trang (:mod:`app.omr.glyphs` đọc đầu nốt, chấm dôi... từ đây)."""
+    image_cover: float = 0.0
+    """Tỉ lệ diện tích trang bị ảnh nhúng che phủ: trang PDF scan là một ảnh phủ gần kín trang."""
 
     @property
     def music_glyphs(self) -> int:
@@ -103,7 +105,8 @@ class PageText:
 
 def read_spans(page) -> PageText:
     """Lớp chữ của một trang PyMuPDF (``page.get_text("rawdict")``): mỗi span là một đoạn chữ cùng font trên một dòng;
-    ký tự của font nhạc được giữ riêng từng cái kèm tọa độ (:class:`Glyph`). Không lấy dữ liệu ảnh nhúng."""
+    ký tự của font nhạc được giữ riêng từng cái kèm tọa độ (:class:`Glyph`). Không lấy dữ liệu ảnh nhúng (chỉ lấy khung
+    ảnh để biết trang có phải ảnh scan không)."""
     data = _get_text(page)
     spans: list[TextSpan] = []
     chars: list[Glyph] = []
@@ -125,7 +128,7 @@ def read_spans(page) -> PageText:
                         chars.append(Glyph(font, c["c"], float(bx0), float(bx1), float(c["origin"][1]), size))
     width, height = float(page.rect.width), float(page.rect.height)
     musical = music_fonts(spans)
-    return PageText(width, height, spans, [g for g in chars if g.font in musical])
+    return PageText(width, height, spans, [g for g in chars if g.font in musical], _image_cover(page, width, height))
 
 
 def _get_text(page) -> dict:
@@ -136,6 +139,24 @@ def _get_text(page) -> dict:
     except (ImportError, AttributeError):
         return page.get_text("rawdict")
     return page.get_text("rawdict", flags=flags)
+
+
+def _image_cover(page, width: float, height: float) -> float:
+    """Tỉ lệ diện tích trang có ảnh nhúng (khung các ảnh, cộng dồn, tối đa 1)."""
+    try:
+        infos = page.get_image_info()
+    except Exception:  # noqa: BLE001 - chỉ là thông tin thêm
+        return 0.0
+    area = 0.0
+    for info in infos:
+        x0, y0, x1, y1 = info.get("bbox", (0, 0, 0, 0))
+        area += max(0.0, min(x1, width) - max(x0, 0.0)) * max(0.0, min(y1, height) - max(y0, 0.0))
+    return min(1.0, area / (width * height)) if width > 0 and height > 0 else 0.0
+
+
+def is_scanned(page: PageText) -> bool:
+    """Trang PDF là ảnh scan/ảnh chụp: một ảnh phủ phần lớn trang và không có ký tự font nhạc (vài chữ OCR thì vẫn là scan)."""
+    return page.image_cover >= 0.5 and page.music_glyphs == 0
 
 
 # ====================================================================== phân loại font

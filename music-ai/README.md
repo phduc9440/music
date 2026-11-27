@@ -417,6 +417,9 @@ như Leland/Bravura, Maestro/Anastasia...). Với loại PDF này (tự nhận t
   số chấm dôi, cao độ với PDF (cờ `PDF_MISMATCH`; ô khớp hoàn toàn thì bỏ các cờ đoán theo nhạc lý), trọng tài engine thêm
   ưu tiên cách đọc khớp PDF.
 
+Trang PDF là ảnh scan (một ảnh phủ kín trang, không có font nhạc) mà loại nguồn là "PDF gốc" thì được khử nhiễu như bản
+scan (cảnh báo `PAGE_SCANNED_PDF`); trang tải lên cũng tự chọn "Bản scan" cho PDF loại này.
+
 Kết quả ghi ở `vectorPdf` (`glyphPages`: trang dùng được ký hiệu PDF, `glyphs`: số ký hiệu theo loại) và
 `measureCheck.pdfMeasures` (số ô được so với PDF). Kiểm nhanh một file trước khi chạy:
 `python scripts/pdf_glyphs.py duong/dan/file.pdf` (in số ký hiệu từng trang và các mã font chưa có trong bảng).

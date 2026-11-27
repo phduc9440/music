@@ -202,3 +202,23 @@ def test_vector_pdf_music_glyphs_fix_pitches_and_flag_measures(storage_root, jav
     merged = (storage_root / "scores/g1/kern/merged.krn").read_text(encoding="utf-8")
     assert token(notes[4][5], "4") in merged.split("\n")
 
+
+def test_scanned_page_inside_a_pdf_is_denoised_as_a_scan(storage_root, java, monkeypatch):
+    """O-11: chọn "PDF gốc" nhưng trang là ảnh scan nhúng trong PDF (một ảnh phủ kín trang, không có font nhạc)."""
+    from app.omr import pipeline
+
+    module = _fake_pymupdf([make_score_page(width=1240, height=1754, systems=3, noise=12.0)])
+    module_page = module.open("x").load_page(0).__class__
+    module_page.get_text = lambda self, kind, **kw: {"blocks": []}
+    module_page.get_image_info = lambda self: [{"bbox": (0, 0, 595, 842)}]
+    monkeypatch.setitem(sys.modules, "pymupdf", module)
+    used = []
+    original = pipeline.process_page
+    monkeypatch.setattr(pipeline, "process_page", lambda gray, options, *a: used.append(options.source_type) or original(gray, options, *a))
+    job = _pdf_job(storage_root, score="s1")
+    run_omr_job(job, threading.Event(), JavaCallback(str(job.taskId)))
+
+    assert java.endpoints()[-1] == "complete"
+    assert used == ["SCAN"]
+    items = java.bodies("complete")[0]["resultData"]["warningItems"]
+    assert [i["page"] for i in items if i["code"] == "PAGE_SCANNED_PDF"] == [1]
