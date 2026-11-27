@@ -744,10 +744,10 @@ def _segment_times(
     rows = [k for k in range(start + 1, end) if is_data_line(lines[k])]
     for first in (measure_start, start):
         width = next((len(lines[k].split(TAB)) for k in range(first, end) if not lines[k].startswith("!")), 0)
-        timeline = _timeline(lines[first:end], width) if width else None
-        if timeline is None:
+        track = timeline(lines[first:end], width) if width else None
+        if track is None:
             continue
-        times = [timeline.times[k - first] for k in rows]
+        times = [track.times[k - first] for k in rows]
         if any(t is None for t in times):
             continue
         origin = times[0] if times else Fraction(0)
@@ -1532,11 +1532,13 @@ def _meter_fraction(token: str) -> Optional[Fraction]:
 
 
 @dataclass
-class _Timeline:
-    """Kết quả chạy trục thời gian Humdrum qua một đoạn kern (:func:`_timeline`)."""
+class Timeline:
+    """Kết quả chạy trục thời gian Humdrum qua một đoạn kern (:func:`timeline`)."""
 
     times: list[Optional[Fraction]]
     """Thời điểm bắt đầu của từng dòng (None với dòng không phải dữ liệu)."""
+    line_groups: list[Optional[list[int]]]
+    """Spine gốc của từng cột ở mỗi dòng dữ liệu (None với dòng khác)."""
     groups: list[int]
     """Spine gốc của từng cột sau dòng cuối."""
     ends: list[Fraction]
@@ -1545,7 +1547,7 @@ class _Timeline:
     """Cột có nốt/dấu lặng nào không."""
 
 
-def _timeline(lines: list[str], width: int) -> Optional[_Timeline]:
+def timeline(lines: list[str], width: int) -> Optional[Timeline]:
     """Chạy trục thời gian Humdrum qua ``lines`` (bắt đầu với ``width`` cột): dòng dữ liệu sau bắt đầu khi nốt sớm nhất
     đang vang ở bất kỳ cột nào kết thúc. Theo được ``*^``/``*v``; trả None khi số cột không khớp, gặp ``*+``/``*x``/``*-``
     hoặc ``*v`` gộp hai spine gốc khác nhau."""
@@ -1553,16 +1555,19 @@ def _timeline(lines: list[str], width: int) -> Optional[_Timeline]:
     ends = [Fraction(0)] * width  # thời điểm nốt đang vang ở từng cột kết thúc
     used = [False] * width
     times: list[Optional[Fraction]] = []
+    line_groups: list[Optional[list[int]]] = []
     now = Fraction(0)
     for line in lines:
         if not line or line.startswith("!") or is_barline(line):
             times.append(None)
+            line_groups.append(None)
             continue
         fields = line.split(TAB)
         if len(fields) != len(groups):
             return None
         if line.startswith("*"):
             times.append(None)
+            line_groups.append(None)
             new_groups: list[int] = []
             new_ends: list[Fraction] = []
             new_used: list[bool] = []
@@ -1594,6 +1599,7 @@ def _timeline(lines: list[str], width: int) -> Optional[_Timeline]:
             groups, ends, used = new_groups, new_ends, new_used
             continue
         times.append(now)
+        line_groups.append(list(groups))
         for column, token in enumerate(fields):
             if token == ".":
                 continue
@@ -1605,22 +1611,22 @@ def _timeline(lines: list[str], width: int) -> Optional[_Timeline]:
         later = [end for end in ends if end > now]
         if later:
             now = min(later)
-    return _Timeline(times=times, groups=groups, ends=ends, used=used)
+    return Timeline(times=times, line_groups=line_groups, groups=groups, ends=ends, used=used)
 
 
 def measure_length(lines: list[str], width: int) -> Optional[Fraction]:
     """Độ dài (nốt tròn) của một ô theo trục thời gian Humdrum, tính được cả ô có tách/gộp spine (``*^``/``*v``).
 
     ``width``: số cột ở đầu ô. Mọi spine gốc (khuông) có nốt phải kết thúc cùng một lúc. Trả None khi không tính được
-    (xem :func:`_timeline`), khi các khuông dài khác nhau hoặc ô không có nốt nào.
+    (xem :func:`timeline`), khi các khuông dài khác nhau hoặc ô không có nốt nào.
     """
-    timeline = _timeline(lines, width)
-    if timeline is None:
+    track = timeline(lines, width)
+    if track is None:
         return None
     totals: dict[int, Fraction] = {}
-    for column, group in enumerate(timeline.groups):
-        if timeline.used[column]:
-            totals[group] = max(totals.get(group, Fraction(0)), timeline.ends[column])
+    for column, group in enumerate(track.groups):
+        if track.used[column]:
+            totals[group] = max(totals.get(group, Fraction(0)), track.ends[column])
     values = set(totals.values())
     return values.pop() if len(values) == 1 else None
 

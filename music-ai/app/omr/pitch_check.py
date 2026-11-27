@@ -65,14 +65,19 @@ class PitchReport:
     fixed: int = 0
     mismatched: int = 0
     checked_pages: int = 0
+    slurs: int = 0
+    """Số dấu luyến bị đọc thành dấu nối đã sửa (:mod:`app.omr.tie_check`)."""
     skipped: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    measures: list[int] = field(default_factory=list)
+    """Số thứ tự (từ 1, như measureMap) các ô đã đổi dấu nối thành dấu luyến; các bước sau gắn cờ AUTO_FIXED."""
 
     def to_dict(self) -> dict:
         return {
             "fixed": self.fixed,
             "mismatched": self.mismatched,
             "checkedPages": self.checked_pages,
+            "slurs": self.slurs,
             "skipped": self.skipped,
         }
 
@@ -737,12 +742,18 @@ def fix_from_glyphs(lines: list[str], spines: int, heads: list[Head], layout: Pa
 
 
 def check_page(
-    lines: list[str], spines: int, gray: np.ndarray, layout: PageLayout, heads: Optional[list[Head]] = None
+    lines: list[str],
+    spines: int,
+    gray: np.ndarray,
+    layout: PageLayout,
+    heads: Optional[list[Head]] = None,
+    image_heads: Optional[list[Head]] = None,
 ) -> tuple[list[str], int, int, Optional[str]]:
     """Sửa quãng tám cho các dòng kern của MỘT trang. Trả ``(dòng, số nốt sửa, số cặp khác tên nốt, lý do bỏ qua)``.
 
     ``heads``: đầu nốt đọc từ ký hiệu của PDF vector (:mod:`app.omr.glyphs`, chính xác tuyệt đối); có thì dùng thay cho
-    dò ảnh và được sửa cả tên nốt theo từng ô ở mọi khuông (:func:`fix_from_glyphs`)."""
+    dò ảnh và được sửa cả tên nốt theo từng ô ở mọi khuông (:func:`fix_from_glyphs`). ``image_heads``: đầu nốt đã dò trên
+    ``gray`` (truyền vào để khỏi dò lại)."""
     if not layout.systems:
         return lines, 0, 0, "không có bố cục"
     staves_per_system = {len(system.staves) for system in layout.systems}
@@ -750,7 +761,7 @@ def check_page(
         return lines, 0, 0, f"số khuông mỗi hệ {sorted(staves_per_system)} khác số spine {spines}"
     exact = heads is not None
     if heads is None:
-        heads = find_heads(gray, layout)
+        heads = image_heads if image_heads is not None else find_heads(gray, layout)
     il = layout.interline
     rewritten = 0
     if exact:
@@ -786,10 +797,16 @@ def apply(
     page_heads: Optional[dict[int, list[Head]]] = None,
 ) -> tuple[merge.MergeResult, PitchReport]:
     """Chạy :func:`check_page` cho từng trang của bản kern đã ghép, trả bản kern mới. ``page_heads``: đầu nốt đọc từ PDF
-    vector theo trang (trang không có thì dò trên ảnh)."""
+    vector theo trang (trang không có thì dò trên ảnh).
+
+    Trước khi sửa quãng tám, mỗi trang còn được kiểm dấu nối theo đầu nốt (:mod:`app.omr.tie_check`): dấu luyến bị đọc
+    thành dấu nối (nốt sau bị chép cao độ của nốt đầu) được đổi lại, kể cả trên trang lẫn hệ một khuông và hệ hai khuông."""
+    from app.omr import tie_check  # noqa: PLC0415 - tie_check dùng Head/khóa của module này (tránh import vòng)
+
     report = PitchReport()
     lines = list(result.lines)
     page_heads = page_heads or {}
+    ordinals = _measure_ordinals(result.lines)
     for page in sorted(set(result.line_pages)):
         indexes = [i for i, p in enumerate(result.line_pages) if p == page]
         layout, image = layouts.get(page), page_images.get(page)
@@ -798,7 +815,18 @@ def apply(
             report.skipped.append(f"trang {page}: thiếu ảnh hoặc bố cục")
             continue
         chunk = [lines[i] for i in indexes]
-        fixed, count, miss, reason = check_page(chunk, result.spines, image, layout, heads)
+        found = heads if heads is not None else find_heads(image, layout)
+        chunk, ties = tie_check.fix_page(chunk, result.spines, found, layout)
+        if ties.slurs:
+            report.slurs += ties.slurs
+            report.measures.extend(sorted({ordinals[indexes[k]] for k in ties.lines}))
+            report.notes.append(
+                f"Trang {page}: đổi {ties.slurs} dấu nối thành dấu luyến và sửa cao độ nốt sau theo đầu nốt trên ảnh"
+            )
+            for i, text in zip(indexes, chunk):
+                lines[i] = text
+        image_heads = found if heads is None else None
+        fixed, count, miss, reason = check_page(chunk, result.spines, image, layout, heads, image_heads)
         report.checked_pages += 1
         report.mismatched += miss
         if reason:
@@ -811,6 +839,22 @@ def apply(
                 report.notes.append(f"Trang {page}: sửa cao độ {count} nốt theo ký hiệu nhạc của PDF gốc")
             else:
                 report.notes.append(f"Trang {page}: sửa quãng tám {count} nốt theo vị trí đầu nốt trên ảnh")
-    if report.fixed == 0:
+    if report.fixed == 0 and report.slurs == 0:
         return result, report
     return merge.with_lines(result, lines), report
+
+
+def _measure_ordinals(lines: list[str]) -> list[int]:
+    """Số thứ tự ô (từ 1, chỉ đếm ô có dòng dữ liệu, như measureMap) của từng dòng."""
+    out: list[int] = []
+    measure, has_data = 1, False
+    for line in lines:
+        if merge.is_barline(line):
+            out.append(measure)
+            if has_data:
+                measure += 1
+            has_data = False
+            continue
+        has_data = has_data or merge.is_data_line(line)
+        out.append(measure)
+    return out

@@ -89,6 +89,7 @@ def warning_items(warnings: list[str]) -> list[dict]:
 
 _FIX_CODES: list[tuple[str, re.Pattern[str], tuple[str, ...]]] = [
     ("OCTAVE_FIXED", re.compile(r"^sửa quãng tám (\d+) nốt"), ("count",)),
+    ("SLURS_FIXED", re.compile(r"^đổi (\d+) dấu nối thành dấu luyến"), ("count",)),
     ("PDF_PITCH_FIXED", re.compile(r"^sửa cao độ (\d+) nốt theo ký hiệu nhạc của PDF"), ("count",)),
     ("OTTAVA_FIXED", re.compile(r"^model thêm dấu 8va .*đã đưa (\d+) nốt"), ("count",)),
     ("REREAD_REPLACED", re.compile(r"^đã sửa theo các lần đọc lại hệ"), ()),
