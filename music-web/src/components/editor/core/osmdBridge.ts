@@ -221,10 +221,7 @@ export function applySelection(host: HTMLElement, selected: ReadonlySet<string>)
   });
 }
 
-// ---------------------------------------------------------------------------------------------- nốt nhỏ trong hợp âm
-
-/** Nốt OSMD được ghi là nốt nhỏ nhưng nằm trong hợp âm có nốt to (đã đổi sang vẽ thường, sẽ thu nhỏ riêng đầu nốt). */
-const smallInChord = new WeakSet<object>();
+// ---------------------------------------------------------------------------------------------- cỡ nốt
 
 interface LooseSourceNote {
   IsCueNote?: boolean;
@@ -238,92 +235,25 @@ interface LooseSheet {
 }
 
 /**
- * Gọi ngay sau `osmd.load()`: OSMD vẽ cả hợp âm theo cỡ của nốt đầu (nốt đầu nhỏ thì cả hợp âm nhỏ, nốt đầu to thì nốt
- * nhỏ cũng to). Hợp âm vừa có nốt to vừa có nốt nhỏ (bè chính to, nốt bè nhỏ) được đổi sang vẽ cỡ thường; các nốt nhỏ
- * được ghi lại để {@link drawSmallHeads} thu nhỏ riêng đầu nốt sau khi vẽ.
+ * Gọi ngay sau `osmd.load()`: vẽ mọi nốt cùng một cỡ. Ứng dụng không dùng "nốt nhỏ" (nốt bè vẽ như nốt thường); nốt ghi
+ * `<cue/>` hay `<type size="cue">` trong file nhập vào vẫn được vẽ cỡ thường (và vẫn được phát như nốt thường). Nốt hoa
+ * mỹ (grace) không đổi.
  */
-export function prepareSmallNotes(osmd: OpenSheetMusicDisplay): void {
+export function normalizeNoteSizes(osmd: OpenSheetMusicDisplay): void {
   try {
     const sheet = osmd.Sheet as unknown as LooseSheet | undefined;
     for (const measure of sheet?.SourceMeasures ?? []) {
       for (const container of measure.VerticalSourceStaffEntryContainers ?? []) {
         for (const entry of container.StaffEntries ?? []) {
           for (const voiceEntry of entry?.VoiceEntries ?? []) {
-            const notes = voiceEntry.Notes ?? [];
-            const small = notes.filter((n) => n.IsCueNote);
-            if (small.length === 0 || small.length === notes.length) continue;
-            for (const n of notes) {
-              if (n.IsCueNote) smallInChord.add(n);
-              n.IsCueNote = false;
+            for (const note of voiceEntry.Notes ?? []) {
+              if (note.IsCueNote) note.IsCueNote = false;
             }
           }
         }
       }
     }
   } catch {
-    // cấu trúc OSMD khác dự kiến: hợp âm vẽ theo cỡ nốt đầu như trước
+    // cấu trúc OSMD khác dự kiến: nốt vẽ theo file như trước
   }
-}
-
-/** Tỉ lệ thu nhỏ đầu nốt bè (gần bằng cỡ nốt nhỏ của OSMD/MuseScore). */
-const SMALL_HEAD_SCALE = 0.7;
-
-/**
- * Gọi sau mỗi lần `osmd.render()`: thu nhỏ đầu nốt của các nốt nhỏ trong hợp âm có nốt to (xem {@link prepareSmallNotes}),
- * giữ mép sát thân nốt để đầu nốt vẫn dính thân. Đầu nốt ghép với nốt theo cao độ (đầu nốt thấp nhất là nốt thấp nhất).
- */
-export function drawSmallHeads(osmd: OpenSheetMusicDisplay): void {
-  try {
-    shrinkAll(osmd);
-  } catch {
-    // cấu trúc OSMD khác dự kiến: nốt bè vẽ cỡ thường, bản nhạc vẫn xem được
-  }
-}
-
-function shrinkAll(osmd: OpenSheetMusicDisplay): void {
-  const measureList = osmd.GraphicSheet?.MeasureList ?? [];
-  for (const staves of measureList) {
-    for (const measure of staves ?? []) {
-      for (const staffEntry of measure?.staffEntries ?? []) {
-        for (const voiceEntry of staffEntry.graphicalVoiceEntries) {
-          const notes = voiceEntry.notes.filter((n) => n.sourceNote && !n.sourceNote.isRest());
-          if (!notes.some((n) => smallInChord.has(n.sourceNote))) continue;
-          const svg = (notes[0] as unknown as SvgNote).getSVGGElement?.();
-          if (!svg) continue;
-          try {
-            shrinkHeads(
-              svg,
-              notes.map((n) => ({
-                small: smallInChord.has(n.sourceNote),
-                halfTone: n.sourceNote.Pitch?.getHalfTone() ?? 0,
-              })),
-            );
-          } catch {
-            // SVG chưa đo được: nốt bè vẽ cỡ thường
-          }
-        }
-      }
-    }
-  }
-}
-
-function shrinkHeads(svg: SVGGElement, notes: { small: boolean; halfTone: number }[]): void {
-  const heads = ownHeads(svg);
-  if (heads.length !== notes.length) return;
-  const byY = heads.map((el) => ({ el, box: el.getBBox() })).sort((a, b) => b.box.y - a.box.y);
-  const byPitch = [...notes].sort((a, b) => a.halfTone - b.halfTone);
-  const stem = svg.querySelector<SVGGraphicsElement>('.vf-stem');
-  const stemBox = stem?.getBBox();
-  const stemX = stemBox ? stemBox.x + stemBox.width / 2 : null;
-  byY.forEach(({ el, box }, i) => {
-    if (!byPitch[i].small || el.dataset.small === '1') return;
-    const center = box.x + box.width / 2;
-    // Thu nhỏ quanh mép gần thân nốt (đầu nốt bên trái thân: mép phải; bên phải thân: mép trái)
-    const anchorX = stemX === null ? center : center < stemX ? box.x + box.width : box.x;
-    const anchorY = box.y + box.height / 2;
-    const scale = `translate(${anchorX} ${anchorY}) scale(${SMALL_HEAD_SCALE}) translate(${-anchorX} ${-anchorY})`;
-    const current = el.getAttribute('transform');
-    el.setAttribute('transform', current ? `${current} ${scale}` : scale);
-    el.dataset.small = '1';
-  });
 }

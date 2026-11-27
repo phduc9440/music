@@ -46,17 +46,12 @@ interface DurationInput {
   inputMode: boolean;
   inputDuration: DurationChoice;
   setInputDuration: (choice: DurationChoice) => void;
-  /** Tùy chọn "Bè phụ nốt nhỏ": nốt bè thêm bằng Shift + chữ cái tự vẽ nhỏ. */
-  smallHarmony?: boolean;
 }
 
 const ACCIDENTAL_ALTER = { sharp: 1, flat: -1, natural: 0 } as const;
 
 /** Lệnh sửa nốt: cao độ (phím, kéo), trường độ, chấm dôi, nhập theo chữ cái, thêm nốt, dấu hóa / dấu lặng / xóa / nối. */
-export function useNoteCommands(
-  core: EditorCore,
-  { inputMode, inputDuration, setInputDuration, smallHarmony = false }: DurationInput,
-) {
+export function useNoteCommands(core: EditorCore, { inputMode, inputDuration, setInputDuration }: DurationInput) {
   const { doc, canEdit, selection, setSelection, commit, flash } = core;
   /**
    * Nốt vừa nhập bằng chữ cái (chế độ Nhập nốt) và vùng chọn ngay sau đó (mục kế tiếp): Shift + chữ cái khi vùng chọn
@@ -129,12 +124,12 @@ export function useNoteCommands(
           keep = true;
         }
       }
-      const result = addChordLetter(doc, target, letter, below ? -1 : 1, smallHarmony);
+      const result = addChordLetter(doc, target, letter, below ? -1 : 1);
       // Đang gõ liền: giữ vùng chọn ở mục kế tiếp để gõ chữ cái tiếp theo như cũ
       if (result.ok && keep) result.command.selectAfter = [...selection];
       commit(result, true);
     },
-    [canEdit, selection, inputMode, doc, smallHarmony, commit],
+    [canEdit, selection, inputMode, doc, commit],
   );
 
   const confirmMeasureOk = useCallback(
@@ -152,9 +147,8 @@ export function useNoteCommands(
       const fifths = doc.keyAtPart(head.partIndex, head.measureIndex);
       const alter = accidental === 'auto' ? keyAlter(fifths, target.step) : ACCIDENTAL_ALTER[accidental];
       const pitch: Pitch = { step: target.step, alter, octave: target.octave };
-      const small = !!target.small;
       if (target.separate) {
-        const result = addVoiceNote(doc, head.id, pitch, choice, small);
+        const result = addVoiceNote(doc, head.id, pitch, choice);
         commit(result, true);
         if (result.ok) setInputDuration(choice);
         return result.ok;
@@ -165,10 +159,10 @@ export function useNoteCommands(
         flash(t('editor.flash.chordNoteExists', { pitch: pitchName(pitch) }));
         return true;
       }
-      let result = addChordPitch(doc, head.id, pitch, small);
+      let result = addChordPitch(doc, head.id, pitch);
       if (!result.ok && result.reason === 'unison') {
         // Fa và Fa♯ (cùng chỗ trên khuông) không chung thân được: viết ở bè riêng, cùng trường độ với hợp âm
-        result = addVoiceNote(doc, head.id, pitch, choiceOf(head.element) ?? choice, small);
+        result = addVoiceNote(doc, head.id, pitch, choiceOf(head.element) ?? choice);
         if (result.ok) flash(t('editor.flash.unisonVoice', { pitch: pitchName(pitch) }));
       }
       commit(result, true);

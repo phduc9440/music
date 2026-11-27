@@ -9,7 +9,6 @@ import { History } from './history';
 import { checkMeasures } from '../structure/measureCheck';
 import { selectionGroups } from '../audio/playback';
 import { loadPreviewTonePref, playPreviewGroups, savePreviewTonePref } from '../audio/previewTone';
-import { loadSmallHarmonyPref, saveSmallHarmonyPref } from '../notes/voices';
 import { t } from '../../../i18n/core';
 import type { EditorCore, Notice, ScoreEditor, UseScoreEditorOptions } from './scoreEditorTypes';
 import { useDraftGuard } from './useDraftGuard';
@@ -59,7 +58,6 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [inputDuration, setInputDuration] = useState<DurationChoice>({ type: 'quarter', dots: 0 });
   const [previewTone, setPreviewToneState] = useState(loadPreviewTonePref);
-  const [smallHarmony, setSmallHarmonyState] = useState(loadSmallHarmonyPref);
   const selector = useEditorSelection(doc);
   const { selection, setSelection, select, clearSelection } = selector;
 
@@ -107,11 +105,6 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     savePreviewTonePref(enabled);
   }, []);
 
-  const setSmallHarmony = useCallback((enabled: boolean) => {
-    setSmallHarmonyState(enabled);
-    saveSmallHarmonyPref(enabled);
-  }, []);
-
   /**
    * Chạy một lệnh sửa: báo lỗi nếu thất bại; thành công thì ghi lịch sử, bỏ khỏi vùng chọn những nốt không còn tồn
    * tại (sau khi xóa) và phát âm xem trước cho cả vùng vừa sửa.
@@ -150,8 +143,8 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
   const core: EditorCore = { doc, canEdit, selection, setSelection, commit, flash };
   const modes = useInputModes(core);
   const { inputMode } = modes;
-  const notes = useNoteCommands(core, { inputMode, inputDuration, setInputDuration, smallHarmony });
-  const structure = useStructureCommands(core, setInputDuration, smallHarmony);
+  const notes = useNoteCommands(core, { inputMode, inputDuration, setInputDuration });
+  const structure = useStructureCommands(core, setInputDuration);
 
   const undo = useCallback(() => {
     if (!canEdit || !historyRef.current.canUndo || heldByOther(historyRef.current.nextUndo)) return;
@@ -250,8 +243,6 @@ export function useScoreEditor(options: UseScoreEditorOptions): ScoreEditor {
     notice,
     previewTone,
     setPreviewTone,
-    smallHarmony,
-    setSmallHarmony,
     select,
     clearSelection,
     inputDuration,

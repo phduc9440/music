@@ -25,8 +25,6 @@ interface Props {
   left: number;
   top: number;
   initialDuration: DurationChoice;
-  /** Nốt bè (bấm vào cột nốt có sẵn): mặc định có vẽ nhỏ không (tùy chọn "Bè phụ nốt nhỏ"). */
-  defaultSmall?: boolean;
   /** Thêm nốt; trả về true nếu thành công (khung sẽ đóng). */
   onAdd: (target: InsertTarget, choice: DurationChoice, accidental: AccidentalChoice) => boolean;
   onClose: () => void;
@@ -52,23 +50,14 @@ const ACCIDENTALS: { value: AccidentalChoice; icon?: ReactNode }[] = [
 /**
  * Khung nhỏ hiện khi bấm vào khuông ở chế độ Nhập nốt: chọn trường độ, dấu hóa, chỉnh cao độ rồi bấm "Thêm". Bấm ngay
  * trên/dưới một nốt có sẵn (`target.chordOf`) thì là "Thêm nốt bè": cùng thân (trường độ theo hợp âm) hoặc bè riêng
- * (chọn trường độ khác), có thể vẽ nốt nhỏ.
+ * (chọn trường độ khác).
  */
-export default function NoteInsertPopover({
-  target,
-  left,
-  top,
-  initialDuration,
-  defaultSmall = false,
-  onAdd,
-  onClose,
-}: Props) {
+export default function NoteInsertPopover({ target, left, top, initialDuration, onAdd, onClose }: Props) {
   const [duration, setDuration] = useState<DurationChoice>(initialDuration);
   const [accidental, setAccidental] = useState<AccidentalChoice>('auto');
   const [shift, setShift] = useState(0);
   const harmony = !!target.chordOf;
   const [separate, setSeparate] = useState(false);
-  const [small, setSmall] = useState(defaultSmall);
   // Cùng thân: trường độ theo hợp âm, các nút trường độ không dùng tới
   const durationLocked = harmony && !separate;
   const addRef = useRef<HTMLButtonElement>(null);
@@ -84,7 +73,7 @@ export default function NoteInsertPopover({
   const name = solfegeName(step, octave);
 
   const add = () => {
-    const extra = harmony ? { separate, small } : {};
+    const extra = harmony ? { separate } : {};
     if (onAdd({ ...target, step, octave, ...extra }, duration, accidental)) onClose();
   };
 
@@ -170,15 +159,6 @@ export default function NoteInsertPopover({
             onClick={() => setSeparate(true)}
           >
             {t('editor.toolbar.insert.ownStem')}
-          </button>
-          <button
-            type="button"
-            className={`ed-pop__btn ed-pop__btn--wide${small ? ' is-active' : ''}`}
-            aria-pressed={small}
-            title={t('editor.toolbar.insert.smallTitle')}
-            onClick={() => setSmall((v) => !v)}
-          >
-            {t('editor.toolbar.insert.small')}
           </button>
         </div>
       )}

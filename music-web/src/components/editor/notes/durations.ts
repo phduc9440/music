@@ -359,11 +359,10 @@ export interface InsertTarget {
   restEntry: number | null;
   /**
    * Thêm nốt bè vào cột của một nốt có sẵn (id nốt đầu của hợp âm đó) thay vì chèn nốt mới: cùng thân (mặc định) hoặc
-   * bè riêng (`separate`), `small` = vẽ nốt nhỏ. Xem `notes/voices.ts`.
+   * bè riêng (`separate`). Xem `notes/voices.ts`.
    */
   chordOf?: string;
   separate?: boolean;
-  small?: boolean;
 }
 
 const ACCIDENTAL_ALTER: Record<Exclude<AccidentalChoice, 'auto'>, number> = { sharp: 1, flat: -1, natural: 0 };

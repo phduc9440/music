@@ -87,9 +87,6 @@ interface Props {
   /** "Nghe khi sửa": phát âm xem trước mỗi khi đổi cao độ. */
   previewTone: boolean;
   onPreviewToneChange: (enabled: boolean) => void;
-  /** "Bè phụ nốt nhỏ": nốt bè mới thêm tự vẽ nhỏ (mặc định tắt). */
-  smallHarmony: boolean;
-  onSmallHarmonyChange: (enabled: boolean) => void;
   /** Hoàn tác / làm lại / lưu: chỉ hiện trong bottom sheet trên Mobile (Desktop và iPad có ở thanh trên). */
   canUndo: boolean;
   canRedo: boolean;
@@ -369,8 +366,6 @@ export default function EditorToolPanel({
   onDot,
   previewTone,
   onPreviewToneChange,
-  smallHarmony,
-  onSmallHarmonyChange,
   canUndo,
   canRedo,
   canSave,
@@ -906,13 +901,6 @@ export default function EditorToolPanel({
               needSelection,
             ),
             textEntry(
-              'cue',
-              t('editor.tool.text.cue.label'),
-              t('editor.tool.text.cue.title'),
-              () => onVoice('cue'),
-              needSelection,
-            ),
-            textEntry(
               'removeVoice',
               t('editor.tool.text.removeVoice.label'),
               t('editor.tool.text.removeVoice.title'),
@@ -922,12 +910,6 @@ export default function EditorToolPanel({
           ],
         },
       ],
-      extra: (
-        <label className="sv-tools__check" title={t('editor.tool.text.smallHarmony.title')}>
-          <input type="checkbox" checked={smallHarmony} onChange={(e) => onSmallHarmonyChange(e.target.checked)} />
-          {t('editor.tool.text.smallHarmony.label')}
-        </label>
-      ),
     },
   ];
 

@@ -1,7 +1,5 @@
 /**
- * Viết bè:
- * - **nốt nhỏ** theo từng nốt (bè chính to, nốt bè nhỏ; nốt bè ở trên hay ở dưới đều được), ghi bằng
- *   `<type size="cue">` nên nốt vẫn phát tiếng (`<cue/>` của file cũ vẫn đọc được);
+ * Viết bè (mọi nốt bè cùng cỡ với nốt thường và được phát như nốt thường):
  * - **bè thân**: thêm nốt vào hợp âm của nốt đang chọn (cùng thân, cùng trường độ), chồng dưới nốt thấp nhất / trên nốt
  *   cao nhất, ưu tiên nốt thuộc hợp âm ghi trên bản (Am, G7...) nếu có; thêm đúng một cao độ (bấm vào cột nốt ở chế độ
  *   Nhập nốt) hoặc theo chữ cái (Shift + A–G);
@@ -32,7 +30,7 @@ import type { NoteInfo, ScoreDocument } from '../core/ScoreDocument';
 import { t } from '../../../i18n/core';
 
 /** Thao tác viết bè trên bảng công cụ. */
-export type VoiceOp = 'chordBelow' | 'chordAbove' | 'addBelow' | 'addAbove' | 'blank' | 'cue' | 'remove';
+export type VoiceOp = 'chordBelow' | 'chordAbove' | 'addBelow' | 'addAbove' | 'blank' | 'remove';
 
 const num = (parent: Element, tag: string): number => Number(childOf(parent, tag)?.textContent) || 0;
 
@@ -80,62 +78,11 @@ const shifted = (pitch: Pitch, steps: number, fifths: number): Pitch => {
 const mod12 = (value: number): number => ((value % 12) + 12) % 12;
 const sameSpot = (a: Pitch, b: Pitch): boolean => a.step === b.step && a.octave === b.octave;
 
-// ====================================================================== nốt nhỏ
-
-/** Nốt vẽ nhỏ: `<type size="cue">` hoặc `<cue/>` (cách ghi cũ; nốt cue của MusicXML không phát tiếng). */
-export const isSmall = (note: Element): boolean =>
-  hasChild(note, 'cue') || childOf(note, 'type')?.getAttribute('size') === 'cue';
-
-/** Đặt / bỏ nốt nhỏ cho một thẻ <note>; luôn ghi bằng `<type size="cue">` để nốt vẫn phát tiếng. */
-export const setSmall = (note: Element, small: boolean): void => {
+/** Bỏ dấu "nốt nhỏ" (`<cue/>`, `<type size="cue">`) của nốt sao từ nốt khác: nốt bè luôn vẽ cùng cỡ nốt thường. */
+const fullSize = (note: Element): void => {
   childOf(note, 'cue')?.remove();
-  const type = childOf(note, 'type');
-  if (type) {
-    if (small) type.setAttribute('size', 'cue');
-    else type.removeAttribute('size');
-  } else if (small) {
-    note.insertBefore(make(note.ownerDocument, 'cue'), note.firstChild); // nốt thiếu <type>: chỉ còn cách ghi cũ
-  }
+  childOf(note, 'type')?.removeAttribute('size');
 };
-
-const SMALL_HARMONY_KEY = 'editor-small-harmony';
-
-/** Tùy chọn "Bè phụ nốt nhỏ": nốt bè mới thêm (bè thân, bè riêng, chép bè) tự vẽ nhỏ. Mặc định tắt. */
-export const loadSmallHarmonyPref = (): boolean => {
-  try {
-    return localStorage.getItem(SMALL_HARMONY_KEY) === 'on';
-  } catch {
-    return false;
-  }
-};
-
-export const saveSmallHarmonyPref = (enabled: boolean): void => {
-  try {
-    localStorage.setItem(SMALL_HARMONY_KEY, enabled ? 'on' : 'off');
-  } catch {
-    // không lưu được thì lần sau dùng mặc định
-  }
-};
-
-/**
- * Bật / tắt nốt nhỏ cho đúng các nốt đang chọn (không kéo theo cả hợp âm): chọn riêng một đầu nốt trong hợp âm thì chỉ
- * nốt đó nhỏ. Tất cả đã nhỏ thì trả về nốt thường.
- */
-export function toggleCue(doc: ScoreDocument, ids: readonly string[]): EditResult {
-  const targets = ids.map((id) => doc.getInfo(id)).filter((n): n is NoteInfo => !!n && !n.isGrace && !n.isRest);
-  if (targets.length === 0) return { ok: false, reason: 'empty' };
-  const allSmall = targets.every((n) => isSmall(n.element));
-  const touched: Touched = new Map();
-  targets.forEach((n) => touch(touched, n));
-  const command = commitEdit(
-    doc,
-    t(allSmall ? 'editor.cmd.voice.normal' : 'editor.cmd.voice.cue'),
-    touched,
-    targets.map((n) => n.id),
-    () => targets.forEach((n) => setSmall(n.element, !allSmall)),
-  );
-  return { ok: true, command };
-}
 
 // ====================================================================== hợp âm ghi trên bản
 
@@ -216,16 +163,16 @@ const chordOf = (doc: ScoreDocument, info: NoteInfo): NoteInfo[] => {
   return doc.notes.filter((n) => !n.isGrace && !n.isRest && chordKey(n) === key);
 };
 
-/** Nốt mới trong hợp âm: sao nốt đầu (trường độ, chùm, khuông, bè), bỏ phần chỉ thuộc nốt đầu, đặt cao độ và cỡ nốt. */
-const chordMember = (head: Element, pitch: Pitch, small: boolean): Element => {
+/** Nốt mới trong hợp âm: sao nốt đầu (trường độ, chùm, khuông, bè), bỏ phần chỉ thuộc nốt đầu, đặt cao độ. */
+const chordMember = (head: Element, pitch: Pitch): Element => {
   const copy = head.cloneNode(true) as Element;
   removeChildren(copy, ['tie', 'notations', 'lyric', 'accidental', 'chord', 'beam', 'stem']);
+  fullSize(copy);
   const chordEl = make(copy.ownerDocument, 'chord');
-  const lead = childOf(copy, 'cue') ?? childOf(copy, 'grace');
-  if (lead) lead.after(chordEl);
+  const grace = childOf(copy, 'grace');
+  if (grace) grace.after(chordEl);
   else copy.insertBefore(chordEl, copy.firstChild);
   writePitch(copy, pitch);
-  setSmall(copy, small);
   return copy;
 };
 
@@ -256,7 +203,7 @@ const pitchLabel = (pitch: Pitch): string => pitchName(pitch);
  * Thêm đúng cao độ `pitch` vào hợp âm chứa nốt `id` (cùng thân, cùng trường độ). Từ chối nốt trùng (`duplicate`) và
  * nốt cùng chỗ khác dấu hóa (`unison`, phải viết ở bè riêng).
  */
-export function addChordPitch(doc: ScoreDocument, id: string, pitch: Pitch, small: boolean): EditResult {
+export function addChordPitch(doc: ScoreDocument, id: string, pitch: Pitch): EditResult {
   const info = doc.getInfo(id);
   if (!info || info.isRest || info.isGrace) return { ok: false, reason: 'voiceNone' };
   if (!inRange(pitchToMidi(pitch))) return { ok: false, reason: 'range' };
@@ -267,7 +214,7 @@ export function addChordPitch(doc: ScoreDocument, id: string, pitch: Pitch, smal
   touch(touched, info);
   let created: Element | null = null;
   const command = commitEdit(doc, t('editor.cmd.voice.addNote', { pitch: pitchLabel(pitch) }), touched, [], () => {
-    created = chordMember(members[0].element, pitch, small);
+    created = chordMember(members[0].element, pitch);
     members[members.length - 1].element.after(created);
   });
   command.selectAfter = doc.notes.filter((n) => n.element === created).map((n) => n.id);
@@ -280,7 +227,7 @@ export function addChordPitch(doc: ScoreDocument, id: string, pitch: Pitch, smal
  * (`direction` = −1) hoặc trên nốt CAO nhất (+1) nên bấm hai lần ra hợp âm ba nốt. Cách bao xa: theo
  * {@link harmonyPitch} (quãng ba, hoặc nốt thuộc hợp âm ghi trên bản).
  */
-export function addChordNote(doc: ScoreDocument, ids: readonly string[], direction: 1 | -1, small = false): EditResult {
+export function addChordNote(doc: ScoreDocument, ids: readonly string[], direction: 1 | -1): EditResult {
   const selected = ids.map((id) => doc.getInfo(id)).filter((n): n is NoteInfo => !!n && !n.isGrace && !n.isRest);
   if (selected.length === 0) return { ok: false, reason: 'voiceNone' };
   const chords = new Map<string, NoteInfo[]>();
@@ -305,7 +252,7 @@ export function addChordNote(doc: ScoreDocument, ids: readonly string[], directi
   const created: Element[] = [];
   const result = commitEdit(doc, t('editor.cmd.voice.writeSame'), touched, [], () => {
     for (const { members, pitch } of plans) {
-      const copy = chordMember(members[0].element, pitch, small);
+      const copy = chordMember(members[0].element, pitch);
       members[members.length - 1].element.after(copy);
       created.push(copy);
     }
@@ -318,13 +265,7 @@ export function addChordNote(doc: ScoreDocument, ids: readonly string[], directi
  * Shift + chữ cái: thêm nốt tên `letter` (theo dấu hóa của khóa nhạc) vào hợp âm chứa `id`, ở chỗ gần nhất phía trên
  * nốt cao nhất (`direction` = +1) hoặc phía dưới nốt thấp nhất (−1), như MuseScore.
  */
-export function addChordLetter(
-  doc: ScoreDocument,
-  id: string,
-  letter: string,
-  direction: 1 | -1,
-  small = false,
-): EditResult {
+export function addChordLetter(doc: ScoreDocument, id: string, letter: string, direction: 1 | -1): EditResult {
   const info = doc.getInfo(id);
   const step = letter.toUpperCase();
   if (!info || info.isRest || info.isGrace || !isStep(step)) return { ok: false, reason: 'voiceNone' };
@@ -342,7 +283,7 @@ export function addChordLetter(
     if (!best || gap < (pitchToMidi(best) - pitchToMidi(base)) * direction) best = candidate;
   }
   if (!best) return { ok: false, reason: 'range' };
-  return addChordPitch(doc, members[0].id, best, small);
+  return addChordPitch(doc, members[0].id, best);
 }
 
 // ====================================================================== bè riêng (hai thân)
@@ -435,7 +376,6 @@ const voiceNote = (
   choice: DurationChoice,
   voice: number,
   staff: number | null,
-  small: boolean,
 ): Element => {
   const note = make(owner, 'note');
   const p = make(owner, 'pitch');
@@ -448,7 +388,6 @@ const voiceNote = (
   note.appendChild(make(owner, 'type', choice.type));
   for (let i = 0; i < choice.dots; i++) note.appendChild(make(owner, 'dot'));
   if (staff !== null) note.appendChild(make(owner, 'staff', String(staff)));
-  setSmall(note, small);
   return note;
 };
 
@@ -467,13 +406,7 @@ const isPlainRest = (entry: Entry): boolean =>
  * Thêm một nốt vào bè thứ hai của khuông, đúng thời điểm của nốt `id` (bấm vào cột nốt, chọn "Bè riêng"). Bè thứ hai
  * chưa có trong ô thì tạo (dấu lặng ẩn trước và sau nốt); đã có thì nốt mới thay chỗ các dấu lặng ở thời điểm đó.
  */
-function addVoiceNoteOnce(
-  doc: ScoreDocument,
-  id: string,
-  pitch: Pitch,
-  choice: DurationChoice,
-  small: boolean,
-): EditResult {
+function addVoiceNoteOnce(doc: ScoreDocument, id: string, pitch: Pitch, choice: DurationChoice): EditResult {
   const info = doc.getInfo(id);
   if (!info || info.isGrace) return { ok: false, reason: 'voiceNone' };
   if (!inRange(pitchToMidi(pitch))) return { ok: false, reason: 'range' };
@@ -492,7 +425,7 @@ function addVoiceNoteOnce(
   const voice = secondVoice(doc, info.partIndex, info.staff, info.voice);
   const staffTag = hasChild(info.element, 'staff') || info.staff > 1 ? info.staff : null;
   const owner = measure.ownerDocument;
-  const note = voiceNote(owner, pitch, length, choice, voice, staffTag, small);
+  const note = voiceNote(owner, pitch, length, choice, voice, staffTag);
   const existing = voiceEntries(measure, info.staff, voice);
   if (existing === null) return { ok: false, reason: 'unsupported' };
 
@@ -558,19 +491,13 @@ function addVoiceNoteOnce(
 }
 
 /** {@link addVoiceNoteOnce}, tự chia nhỏ divisions của part khi cần. */
-export function addVoiceNote(
-  doc: ScoreDocument,
-  id: string,
-  pitch: Pitch,
-  choice: DurationChoice,
-  small = false,
-): EditResult {
+export function addVoiceNote(doc: ScoreDocument, id: string, pitch: Pitch, choice: DurationChoice): EditResult {
   const part = doc.getInfo(id)?.partIndex ?? 0;
   const element = doc.getInfo(id)?.element;
   // Chia lại divisions làm đổi id: tìm lại nốt theo thẻ sau mỗi lần thử
   return withRescale(doc, part, () => {
     const current = doc.notes.find((n) => n.element === element);
-    return current ? addVoiceNoteOnce(doc, current.id, pitch, choice, small) : { ok: false, reason: 'empty' };
+    return current ? addVoiceNoteOnce(doc, current.id, pitch, choice) : { ok: false, reason: 'empty' };
   });
 }
 
@@ -584,13 +511,7 @@ const inTuplet = (entry: Entry): boolean => entry.members.some((m) => hasChild(m
  * lại của ô là dấu lặng ẩn. Mọi ô dùng chung một số bè. Ô có chùm (liên ba...) chép cả ô để chùm không bị cắt.
  * `blank`: bè trống (một dấu lặng cả ô) để bấm vào nhập nốt với nhịp điệu riêng.
  */
-export function addHarmonyVoice(
-  doc: ScoreDocument,
-  ids: readonly string[],
-  steps: number,
-  blank = false,
-  small = false,
-): EditResult {
+export function addHarmonyVoice(doc: ScoreDocument, ids: readonly string[], steps: number, blank = false): EditResult {
   const selected = ids
     .map((id) => doc.getInfo(id))
     .filter((n): n is NoteInfo => !!n && !n.isGrace && (blank || !n.isRest));
@@ -683,6 +604,7 @@ export function addHarmonyVoice(
               tuplets.forEach((tuplet) => notations.appendChild(tuplet.cloneNode(true)));
               copy.appendChild(notations);
             }
+            fullSize(copy);
             const voiceEl = childOf(copy, 'voice');
             if (voiceEl) voiceEl.textContent = String(voice);
             else childOf(copy, 'duration')?.after(make(owner, 'voice', String(voice)));
@@ -694,7 +616,6 @@ export function addHarmonyVoice(
                 copy,
                 single ? harmonyPitch(pitch, direction, fifths, harmony) : shifted(pitch, steps, fifths),
               );
-              setSmall(copy, small);
             }
             copies.push(copy);
           }

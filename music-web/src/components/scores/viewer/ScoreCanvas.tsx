@@ -8,9 +8,8 @@ import {
   SELECTED_CLASS,
   applySelection,
   bindNoteIds,
-  drawSmallHeads,
   noteIdsFromEvent,
-  prepareSmallNotes,
+  normalizeNoteSizes,
 } from '../../editor/core/osmdBridge';
 import { DURATION_QUARTERS } from '../../editor/notes/durations';
 import type { AccidentalChoice, DurationChoice, DurationType, InsertTarget } from '../../editor/notes/durations';
@@ -75,8 +74,6 @@ interface Props {
   inputMode?: boolean;
   /** Trường độ đang chọn, dùng làm mặc định cho khung thêm nốt. */
   inputDuration?: DurationChoice;
-  /** Tùy chọn "Bè phụ nốt nhỏ": khung thêm nốt bè bật sẵn "Nốt nhỏ". */
-  smallHarmony?: boolean;
   /** Sửa tiêu đề / tác giả: chữ trên đầu bản nhạc trở thành bấm để sửa. */
   onEditHeader?: (field: HeaderField, text: string, style: TextStyle) => boolean;
   /** Sửa chỉ số nhịp (tempo) hiện ở đầu bản nhạc. */
@@ -517,7 +514,6 @@ export default function ScoreCanvas({
   onDragPitch,
   inputMode = false,
   inputDuration,
-  smallHarmony = false,
   onInsertNote,
   onConfirmMeasure,
   onEditHeader,
@@ -651,11 +647,6 @@ export default function ScoreCanvas({
     const host = hostRef.current;
     const current = latest.current.doc;
     playheadMapRef.current = null;
-    try {
-      drawSmallHeads(osmd); // nốt bè nhỏ trong hợp âm có nốt to (OSMD vẽ cả hợp âm một cỡ)
-    } catch {
-      // chỉ mất phần thu nhỏ nốt bè
-    }
     if (!host || !current) return;
     try {
       bindNoteIds(osmd, current, host);
@@ -754,7 +745,7 @@ export default function ScoreCanvas({
         osmd.setOptions(breakOptions(text));
         await osmd.load(text);
         if (cancelled) return;
-        prepareSmallNotes(osmd);
+        normalizeNoteSizes(osmd);
         osmdRef.current = osmd;
         setLoadId((n) => n + 1);
       } catch {
@@ -846,7 +837,7 @@ export default function ScoreCanvas({
         osmd.setOptions(breakOptions(text));
         await osmd.load(text);
         if (cancelled) return;
-        prepareSmallNotes(osmd);
+        normalizeNoteSizes(osmd);
         applyHeaderStyle(osmd, readHeader(doc), shownOf(doc, latest.current.headerFallback));
         syncTranspose(osmd, latest.current.transpose);
         osmd.render();
@@ -1295,7 +1286,6 @@ export default function ScoreCanvas({
               : activePopover.spot.y + 18,
           )}
           initialDuration={inputDuration ?? { type: 'quarter', dots: 0 }}
-          defaultSmall={smallHarmony}
           onAdd={(target, choice, accidental) => onInsertNote?.(target, choice, accidental) ?? false}
           onClose={() => setPopover(null)}
         />

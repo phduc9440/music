@@ -243,7 +243,6 @@ export function buildEditorMenu(ctx: EditorMenuContext): MenuItem[] {
               onSelect: () => editor.editVoice('addBelow'),
             },
             { id: 'blank', label: t('editor.tool.text.blank.label'), onSelect: () => editor.editVoice('blank') },
-            { id: 'cue', label: t('editor.tool.text.cue.label'), onSelect: () => editor.editVoice('cue') },
             { type: 'separator', id: 'v-sep2' },
             {
               id: 'removeVoice',

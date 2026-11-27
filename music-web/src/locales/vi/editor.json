@@ -86,8 +86,6 @@
     "voice": {
       "write": "Viết bè",
       "writeSame": "Viết bè cùng thân",
-      "cue": "Nốt nhỏ",
-      "normal": "Về nốt thường",
       "remove": "Xóa bè",
       "addNote": "Thêm nốt bè {pitch}",
       "addVoiceNote": "Thêm nốt bè riêng {pitch}"
@@ -496,9 +494,7 @@
       "sameStem": "Cùng thân",
       "sameStemTitle": "Nốt bè chung thân với hợp âm, cùng trường độ (nốt sát nhau tự đặt lệch sang bên)",
       "ownStem": "Bè riêng",
-      "ownStemTitle": "Nốt bè có thân riêng (bè thứ hai của khuông), chọn được trường độ khác",
-      "small": "Nốt nhỏ",
-      "smallTitle": "Vẽ nốt bè nhỏ (vẫn phát tiếng)"
+      "ownStemTitle": "Nốt bè có thân riêng (bè thứ hai của khuông), chọn được trường độ khác"
     },
     "notation": {
       "title": "Khóa nhạc, dấu hóa & nhịp",
@@ -764,14 +760,6 @@
       "addAbove": {
         "label": "Chép bè ↑",
         "title": "Chép các nốt đang chọn sang bè riêng cao hơn (quãng ba, hoặc theo hợp âm ghi trên bản)"
-      },
-      "cue": {
-        "label": "Nốt nhỏ",
-        "title": "Bật/tắt nốt nhỏ cho đúng các nốt đang chọn (bấm vào đầu nốt để chọn riêng một nốt trong hợp âm); nốt nhỏ vẫn phát tiếng"
-      },
-      "smallHarmony": {
-        "label": "Bè phụ nốt nhỏ",
-        "title": "Bật: nốt bè mới thêm (bè thân, bè riêng, chép bè, nhập nốt bè) tự vẽ nhỏ. Mặc định tắt"
       },
       "removeVoice": {
         "label": "Xóa bè",
@@ -1041,7 +1029,7 @@
       },
       "clickChord": {
         "keys": "Bấm trên/dưới một nốt có sẵn (chế độ Nhập nốt)",
-        "desc": "Thêm nốt bè ở đúng cột đó: cùng thân (mặc định) hoặc bè riêng, chọn được nốt nhỏ"
+        "desc": "Thêm nốt bè ở đúng cột đó: cùng thân (mặc định) hoặc bè riêng"
       },
       "dragDuration": {
         "keys": "Kéo nút trường độ vào khuông",
@@ -1076,7 +1064,7 @@
       },
       "voices": {
         "keys": "Nhóm Viết bè",
-        "desc": "Bè thân: thêm nốt chung thân (chồng dưới/trên hợp âm). Bè riêng: bè mới nhịp điệu riêng (bấm vào dấu lặng để nhập). Chép bè: chép các nốt đang chọn sang bè riêng. Nốt nhỏ: chỉ các nốt đang chọn"
+        "desc": "Bè thân: thêm nốt chung thân (chồng dưới/trên hợp âm). Bè riêng: bè mới nhịp điệu riêng (bấm vào dấu lặng để nhập). Chép bè: chép các nốt đang chọn sang bè riêng"
       },
       "dynamics": {
         "keys": "Nhóm Sắc thái",
@@ -1141,8 +1129,8 @@
     "tie": "Dấu nối",
     "slur": "Dấu luyến",
     "voices": "Hợp âm và bè",
-    "chordAboveHint": "Thêm nốt cao hơn một quãng ba, chung thân",
-    "chordBelowHint": "Thêm nốt thấp hơn một quãng ba, chung thân",
+    "chordAboveHint": "Thêm nốt chung thân trên nốt cao nhất (quãng ba, hoặc theo hợp âm ghi trên bản)",
+    "chordBelowHint": "Thêm nốt chung thân dưới nốt thấp nhất (quãng ba, hoặc theo hợp âm ghi trên bản)",
     "attachedHeader": "Ký hiệu trên nốt",
     "attachedMenu": "Xóa ký hiệu ({count})",
     "removeAttachment": "Xóa {name}",

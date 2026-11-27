@@ -86,8 +86,6 @@
     "voice": {
       "write": "Write voice",
       "writeSame": "Write voice with same stem",
-      "cue": "Cue notes",
-      "normal": "Back to normal notes",
       "remove": "Remove voice",
       "addNote": "Add harmony note {pitch}",
       "addVoiceNote": "Add separate-voice note {pitch}"
@@ -496,9 +494,7 @@
       "sameStem": "Same stem",
       "sameStemTitle": "The harmony note shares the chord's stem and duration (adjacent notes are offset automatically)",
       "ownStem": "Separate voice",
-      "ownStemTitle": "The harmony note gets its own stem (second voice of the staff) and can have another duration",
-      "small": "Small note",
-      "smallTitle": "Draw the harmony note small (it still sounds)"
+      "ownStemTitle": "The harmony note gets its own stem (second voice of the staff) and can have another duration"
     },
     "notation": {
       "title": "Clef, key signature & time",
@@ -764,14 +760,6 @@
       "addAbove": {
         "label": "Copy voice ↑",
         "title": "Copy the selected notes to a separate higher voice (a third, or following the written chord symbols)"
-      },
-      "cue": {
-        "label": "Cue notes",
-        "title": "Toggle small note heads for exactly the selected notes (click a note head to select a single note in a chord); small notes still sound"
-      },
-      "smallHarmony": {
-        "label": "Small harmony notes",
-        "title": "On: newly added harmony notes (stacked, separate, copied, entered) are drawn small. Off by default"
       },
       "removeVoice": {
         "label": "Delete voice",
@@ -1041,7 +1029,7 @@
       },
       "clickChord": {
         "keys": "Click above/below an existing note (Enter notes mode)",
-        "desc": "Add a harmony note in that column: same stem (default) or separate voice, optionally small"
+        "desc": "Add a harmony note in that column: same stem (default) or separate voice"
       },
       "dragDuration": {
         "keys": "Drag a duration button onto the staff",
@@ -1076,7 +1064,7 @@
       },
       "voices": {
         "keys": "Voices group",
-        "desc": "Stacked voice: add notes sharing one stem (below/above the chord). Separate voice: a new voice with its own rhythm (click a rest to enter notes). Copy voice: copy the selected notes to a separate voice. Small notes: only the selected notes"
+        "desc": "Stacked voice: add notes sharing one stem (below/above the chord). Separate voice: a new voice with its own rhythm (click a rest to enter notes). Copy voice: copy the selected notes to a separate voice"
       },
       "dynamics": {
         "keys": "Dynamics group",
@@ -1141,8 +1129,8 @@
     "tie": "Tie",
     "slur": "Slur",
     "voices": "Chords and voices",
-    "chordAboveHint": "Add a note a third higher on the same stem",
-    "chordBelowHint": "Add a note a third lower on the same stem",
+    "chordAboveHint": "Add a note on the same stem above the highest note (a third, or following the written chord symbol)",
+    "chordBelowHint": "Add a note on the same stem below the lowest note (a third, or following the written chord symbol)",
     "attachedHeader": "Marks on this note",
     "attachedMenu": "Remove marks ({count})",
     "removeAttachment": "Remove {name}",

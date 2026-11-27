@@ -65,9 +65,6 @@ export interface ScoreEditor {
   notice: Notice | null;
   previewTone: boolean;
   setPreviewTone: (enabled: boolean) => void;
-  /** Tùy chọn "Bè phụ nốt nhỏ" (mặc định tắt): nốt bè mới thêm tự vẽ nhỏ. */
-  smallHarmony: boolean;
-  setSmallHarmony: (enabled: boolean) => void;
   /** Khác null khi BE báo lỗi 2014: phiên bản mới nhất ở máy chủ (0 nếu không rõ). */
   conflict: { latestVersion: number } | null;
   /** Bản nháp chờ người dùng quyết định khôi phục hay bỏ. */
@@ -99,7 +96,7 @@ export interface ScoreEditor {
   editStaves: (op: 'addBass' | 'addG' | 'addF' | 'addTenor' | 'remove') => void;
   /** Đổi khóa nhạc, dấu hóa đầu khuông hoặc nhịp tại vùng chọn. */
   editNotation: (change: NotationChange) => void;
-  /** Viết bè (sao nốt sang bè mới, nốt nhỏ), bật/tắt nốt nhỏ, hoặc xóa bè phụ. */
+  /** Viết bè: bè thân, bè riêng, chép bè, hoặc xóa bè phụ. */
   editVoice: (op: VoiceOp) => void;
   /** Tạo chùm (chùm ba, chùm năm...) từ nốt đang chọn, hoặc gộp chùm đang chọn về một nốt. */
   editTuplet: (op: TupletOp) => void;

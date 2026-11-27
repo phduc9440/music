@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { buildPlayback } from '../../src/components/editor/audio/playback.ts';
 import { ScoreDocument } from '../../src/components/editor/core/ScoreDocument.ts';
 import {
   addChordLetter,
@@ -9,9 +10,7 @@ import {
   addHarmonyVoice,
   addVoiceNote,
   harmonyPitch,
-  isSmall,
   removeVoice,
-  toggleCue,
 } from '../../src/components/editor/notes/voices.ts';
 import { checkMeasures } from '../../src/components/editor/structure/measureCheck.ts';
 import { measureSummary, nameOf, note, quarters, score } from './support/score.mjs';
@@ -37,32 +36,6 @@ const stems = (doc, voice) =>
   doc.notes
     .filter((n) => n.voice === voice && !n.isRest)
     .map((n) => n.element.querySelector('stem')?.textContent ?? '');
-
-test('nốt nhỏ chỉ áp cho nốt được chọn trong hợp âm, ghi bằng type size="cue" (vẫn phát tiếng)', () => {
-  const doc = ScoreDocument.parse(score([note('E4') + note('C4', { chord: true }) + quarters('D4', 'E4', 'F4')]));
-  const harmony = doc.notes.find((n) => n.chordIndex === 1);
-  const result = toggleCue(doc, [harmony.id]);
-  assert.ok(result.ok);
-  const [main, member] = doc.notes.filter((n) => n.entryIndex === 0);
-  assert.equal(isSmall(main.element), false);
-  assert.equal(isSmall(member.element), true);
-  assert.equal(member.element.querySelector('type').getAttribute('size'), 'cue');
-  assert.equal(member.element.querySelector('cue'), null);
-  // bấm lần nữa: về nốt thường
-  assert.ok(toggleCue(doc, [member.id]).ok);
-  assert.equal(isSmall(doc.notes.find((n) => n.chordIndex === 1).element), false);
-});
-
-test('nốt nhỏ kiểu cũ <cue/> vẫn đọc được và được ghi lại bằng type size', () => {
-  const xml = score([quarters('C4', 'D4', 'E4', 'F4')]).replace('<note><pitch><step>C', '<note><cue/><pitch><step>C');
-  const doc = ScoreDocument.parse(xml);
-  const first = doc.notes[0];
-  assert.equal(isSmall(first.element), true);
-  assert.ok(toggleCue(doc, [first.id, doc.notes[1].id]).ok); // chưa phải tất cả đều nhỏ: làm nhỏ cả hai
-  assert.equal(doc.notes[0].element.querySelector('cue'), null);
-  assert.equal(doc.notes[0].element.querySelector('type').getAttribute('size'), 'cue');
-  assert.equal(isSmall(doc.notes[1].element), true);
-});
 
 test('bè thân chồng dưới nốt thấp nhất / trên nốt cao nhất: bấm hai lần ra hợp âm ba nốt', () => {
   const doc = ScoreDocument.parse(score([quarters('G4', 'A4', 'B4', 'C5')]));
@@ -104,12 +77,10 @@ test('thêm đúng cao độ vào hợp âm: quãng hai chung thân được, tr
   const doc = ScoreDocument.parse(score([quarters('E4', 'D4', 'E4', 'F4')]));
   const head = doc.notes[0].id;
   // Mi - Fa cách nửa cung (dòng kẻ và khe kế bên): chung thân, bộ vẽ tự đặt lệch
-  const added = addChordPitch(doc, head, P('F', 4), true);
+  const added = addChordPitch(doc, head, P('F', 4));
   assert.ok(added.ok);
   assert.deepEqual(chordNames(doc, head), ['E4', 'F4']);
-  const member = doc.getInfo(added.command.selectAfter[0]);
-  assert.equal(nameOf(doc, member.id), 'F4');
-  assert.ok(isSmall(member.element) && !isSmall(doc.getInfo(head).element));
+  assert.equal(nameOf(doc, added.command.selectAfter[0]), 'F4');
   assert.deepEqual(addChordPitch(doc, head, P('E', 4)), { ok: false, reason: 'duplicate' });
   assert.deepEqual(addChordPitch(doc, head, P('F', 4, 1)), { ok: false, reason: 'unison' });
 });
@@ -159,7 +130,7 @@ test('bè riêng tại một cột: nốt vào bè hai đúng thời điểm, d�
 test('chép bè chỉ chép các nốt đang chọn, các ô dùng chung một số bè, xóa bè thì bỏ hướng thân đã ép', () => {
   const doc = ScoreDocument.parse(score([quarters('E5', 'F5', 'G5', 'A5'), quarters('G5', 'F5', 'E5', 'D5')]));
   const pick = [doc.notes[1].id, doc.notes[2].id, doc.notes[4].id];
-  const result = addHarmonyVoice(doc, pick, -2, false, true);
+  const result = addHarmonyVoice(doc, pick, -2);
   assert.ok(result.ok);
   const second = doc.notes.filter((n) => n.voice !== 1);
   assert.equal(new Set(second.map((n) => n.voice)).size, 1);
@@ -172,7 +143,6 @@ test('chép bè chỉ chép các nốt đang chọn, các ô dùng chung một s
     ['E5', 'rest'],
   );
   assert.ok(second.filter((n) => n.isRest).every((n) => n.element.getAttribute('print-object') === 'no'));
-  assert.ok(second.filter((n) => !n.isRest).every((n) => isSmall(n.element)));
   assert.deepEqual(result.command.selectAfter.length, 3);
   assert.equal(checkMeasures(doc).length, 0);
   assert.ok(stems(doc, 1).every((s) => s === 'up'));
@@ -189,4 +159,36 @@ test('bè trống vẫn là một dấu lặng cả ô để bấm vào nhập n
   const rest = doc.getInfo(result.command.selectAfter[0]);
   assert.ok(rest.isRest && rest.voice === 2);
   assert.equal(rest.element.getAttribute('print-object'), null);
+});
+
+test('nốt bè (bè thân, bè riêng, chép bè) được phát như nốt thường, đúng thời điểm', () => {
+  const doc = ScoreDocument.parse(score([quarters('E5', 'D5', 'C5', 'D5'), quarters('E5', 'F5', 'G5', 'A5')]));
+  const at = (m, e) =>
+    doc.notes.find((n) => n.measureIndex === m && n.entryIndex === e && n.voice === 1 && n.chordIndex === 0);
+  assert.ok(addChordPitch(doc, at(0, 0).id, P('C', 5)).ok); // bè thân ở phách 1
+  assert.ok(addVoiceNote(doc, at(0, 2).id, P('A', 4), { type: 'half', dots: 0 }).ok); // bè riêng từ phách 3
+  assert.ok(addHarmonyVoice(doc, [at(1, 1).id], -2).ok); // chép bè: D5 dưới F5 ở phách 2 ô 2
+  const plan = buildPlayback(doc, 60); // 60 BPM: một phách đen = 1 giây
+  const sounding = plan.notes.map((n) => `${n.measure}:${n.time}:${n.midi}`);
+  assert.ok(sounding.includes('0:0:72')); // C5 cùng lúc E5
+  assert.ok(sounding.includes('0:0:76'));
+  assert.ok(sounding.includes('0:2:69')); // A4 ở phách 3
+  assert.ok(Math.abs(plan.notes.find((n) => n.midi === 69).duration - 2 * 0.9) < 1e-9); // nốt trắng, phát legato 90%
+  assert.ok(sounding.includes('1:5:74')); // D5 ở phách 2 ô 2 (giây thứ 5)
+  // dấu lặng ẩn của bè hai không phát gì, không làm lệch nốt khác
+  assert.equal(plan.notes.length, 8 + 1 + 1 + 1);
+});
+
+test('nốt ghi kiểu nốt nhỏ trong file nhập vào vẫn được phát; nốt bè sao từ nó vẽ cỡ thường', () => {
+  const xml = score([quarters('C5', 'D5', 'E5', 'F5')])
+    .replace('<note><pitch><step>C', '<note><cue/><pitch><step>C')
+    .replace('<type>quarter</type>', '<type size="cue">quarter</type>');
+  const doc = ScoreDocument.parse(xml);
+  const plan = buildPlayback(doc, 60);
+  assert.ok(plan.notes.some((n) => n.midi === 72 && n.time === 0));
+  const added = addChordPitch(doc, doc.notes[0].id, P('A', 4));
+  assert.ok(added.ok);
+  const member = doc.getInfo(added.command.selectAfter[0]).element;
+  assert.equal(member.querySelector('cue'), null);
+  assert.equal(member.querySelector('type').getAttribute('size'), null);
 });
