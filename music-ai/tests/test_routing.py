@@ -664,3 +664,35 @@ def test_context_for_a_single_staff_system_is_the_first_single_staff_system():
     assert routing.context_index(layout, 1) == 0
     assert routing.context_index(layout, 2) is None  # không có hệ 1 khuông nào trước nó
     assert routing.context_index(layout, 4) == 2
+
+
+def test_short_last_measure_with_every_notehead_read_is_half_of_a_split_measure():
+    # Cuối phiên khúc rơi đúng chỗ xuống dòng: ô cuối hệ chỉ có một nốt trắng (2 phách của ô 4/4, nửa kia ở đầu hệ sau)
+    layout = _bar_layout(2)
+    gray = np.full((TARGET_H, TARGET_W), 255, dtype=np.uint8)
+    page = _page_of("*clefG2\n*M4/4\n4a\n4b\n4a\n4g\n=\n2a\n=\n")
+
+    def recognize(img, index, beams, tag=None):
+        raise AssertionError("ô đọc đủ số đầu nốt trên ảnh: không đọc lại")
+
+    judge = routing.Judge(False, False, "*M4/4", 2, (), (4, 1))
+    assert routing._is_good(page, 1, judge)
+    assert routing.reread_by_measures(1, 0, gray, layout, (0, 200), page, recognize, lambda: True, 24, judge) == (page, 0)
+    # thiếu đầu nốt (ảnh có 2 nốt, kern chỉ 1) hoặc không biết số đầu nốt: vẫn là ô sai như trước
+    assert not routing._is_good(page, 1, routing.Judge(False, False, "*M4/4", 2, (), (4, 2)))
+    assert not routing._is_good(page, 1, routing.Judge(False, False, "*M4/4", 2))
+    # ô ngắn ở giữa hệ không được nới
+    middle = _page_of("*clefG2\n*M4/4\n4a\n4b\n4a\n4g\n=\n2a\n=\n1g\n=\n")
+    assert not routing._is_good(middle, 1, routing.Judge(False, False, "*M4/4", 3, (), (4, 1)))
+
+
+def test_judge_takes_the_edge_noteheads_of_its_own_system():
+    from types import SimpleNamespace
+
+    staff = SimpleNamespace(role="SINGLE")
+    systems = [SimpleNamespace(staves=[staff], measures=2, bars_closed=True) for _ in range(2)]
+    layout = SimpleNamespace(systems=systems, confident=True)
+    heads = [(0, 6), (0, 1), (1, 2), (1, 8)]
+    assert routing._judge(1, 1, layout, None, True, heads).edge_heads == (2, 8)
+    assert routing._judge(1, 1, layout, None, False, heads).edge_heads == (None, None)
+    assert routing._judge(1, 1, layout, None, True, [(0, 6), (1, 2)]).edge_heads == (None, None)  # lệch số ô

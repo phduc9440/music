@@ -33,7 +33,7 @@ from typing import Callable, Optional
 
 import numpy as np
 
-from app.omr import combine, merge
+from app.omr import combine, measure_map, merge, pitch_check
 from app.omr.layout import ROLE_PIANO, ROLE_SINGLE, PageLayout
 from app.omr.preprocess import TARGET_H, TARGET_W
 
@@ -552,8 +552,9 @@ def recognize_by_systems(
     warnings: list[str] = []
     results: list[SystemResult] = []
     judges: list[Judge] = []
+    heads = image_heads(gray, layout) if use_bars else None
     for index, (system, band) in enumerate(zip(layout.systems, system_bands(layout))):
-        judge = _judge(number, index, layout, meter, use_bars)
+        judge = _judge(number, index, layout, meter, use_bars, heads)
         judges.append(judge)
         result = _recognize_one(
             number, index, gray, layout, band, recognize, retry_beams, can_retry, max_repeat, judge, roles_first
@@ -604,6 +605,12 @@ class Judge:
     voice: tuple[int, ...] = ()
     """Cột kern của khuông giọng (:func:`voice_columns`), để chấm khuông giọng có phải giai điệu không."""
 
+    edge_heads: tuple[Optional[int], Optional[int]] = (None, None)
+    """Số đầu nốt trên ảnh của ô đầu và ô cuối hệ (None nếu không đếm được). Ô đầu/cuối hệ ngắn hơn số chỉ nhịp mà đọc
+    đủ đúng số đầu nốt đó thường là một nửa của ô bị vạch nhịp chia đôi ở chỗ xuống dòng (cuối phiên khúc, đầu điệp
+    khúc), không phải ô đọc thiếu nốt: được nới như ô lấy đà, khỏi tốn lượt đọc lại (đọc lại còn có thể "lấp" ô đó cho đủ
+    nhịp bằng nốt bịa). Khi ghép cả bài, :func:`merge.incomplete_roles` mới xác nhận hai nửa có bù nhau không."""
+
 
 def page_meter(page: Optional[merge.PageKern]) -> Optional[str]:
     """Token ``*M n/d`` đầu tiên của kern, hoặc None."""
@@ -617,13 +624,71 @@ def page_meter(page: Optional[merge.PageKern]) -> Optional[str]:
     return None
 
 
-def _judge(number: int, index: int, layout: PageLayout, meter: Optional[str], use_bars: bool = True) -> Judge:
+def _judge(
+    number: int,
+    index: int,
+    layout: PageLayout,
+    meter: Optional[str],
+    use_bars: bool = True,
+    heads: Optional[list[tuple[int, int]]] = None,
+) -> Judge:
     """Chỉ nới ô nhịp đầu bài (hệ đầu trang 1, có thể là ô lấy đà) và ô cuối trang (hệ cuối, có thể là ô cuối bài). Mọi
-    ô khác phải đủ trường độ. Số ô trên ảnh chỉ dùng khi hệ kết thúc bằng vạch nhịp."""
+    ô khác phải đủ trường độ, trừ ô đầu/cuối hệ đọc đủ số đầu nốt trên ảnh (:attr:`Judge.edge_heads`). Số ô trên ảnh chỉ
+    dùng khi hệ kết thúc bằng vạch nhịp. ``heads``: ``(chỉ số hệ, số đầu nốt)`` từng ô trên ảnh
+    (:func:`measure_map.image_measure_heads`)."""
     system = layout.systems[index]
     trusted = use_bars and layout.confident and system.bars_closed and system.measures
     measures = system.measures if trusted else None
-    return Judge(number == 1 and index == 0, index == len(layout.systems) - 1, meter, measures, voice_columns(system.staves))
+    edge: tuple[Optional[int], Optional[int]] = (None, None)
+    own = [count for at, count in heads or [] if at == index]
+    if trusted and own and len(own) == measures:
+        edge = (own[0], own[-1])
+    return Judge(
+        number == 1 and index == 0,
+        index == len(layout.systems) - 1,
+        meter,
+        measures,
+        voice_columns(system.staves),
+        edge,
+    )
+
+
+def _note_count(chunk: list[str]) -> int:
+    """Số nốt có cao độ (tính từng nốt trong hợp âm, không tính dấu lặng) của một ô, như :func:`measure_map.kern_note_counts`."""
+    return sum(
+        1
+        for line in chunk
+        if merge.is_data_line(line)
+        for cell in line.split(merge.TAB)
+        for token in cell.split(" ")
+        if token and token != "." and "r" not in token and any(c in "abcdefgABCDEFG" for c in token)
+    )
+
+
+def _edges_lenient(page: Optional[merge.PageKern], judge: Judge) -> tuple[bool, bool]:
+    """``(nới ô đầu, nới ô cuối)`` của ``page`` theo :class:`Judge`, thêm bằng chứng đầu nốt trên ảnh ở hai đầu hệ."""
+    first, last = judge.lenient_first, judge.lenient_last
+    if page is None or judge.edge_heads == (None, None):
+        return first, last
+    chunks = [chunk for chunk in merge.split_measures(page.body) if any(merge.is_data_line(ln) for ln in chunk)]
+    if not chunks or len(chunks) != judge.measures:
+        return first, last  # số ô lệch ảnh: không biết ô đầu/cuối kern ứng với ô nào trên ảnh
+    head_first, head_last = judge.edge_heads
+    first = first or (head_first is not None and head_first > 0 and _note_count(chunks[0]) == head_first)
+    last = last or (head_last is not None and head_last > 0 and _note_count(chunks[-1]) == head_last)
+    return first, last
+
+
+def image_heads(gray: np.ndarray, layout: PageLayout) -> Optional[list[tuple[int, int]]]:
+    """``(chỉ số hệ, số đầu nốt)`` từng ô trên ảnh của trang; None nếu bố cục chưa đếm chắc vạch nhịp hoặc dò lỗi."""
+    if not layout.bars_confident:
+        return None
+    try:
+        heads = pitch_check.find_heads(gray, layout)
+        return measure_map.image_measure_heads(layout, [(h.system, h.x) for h in heads])
+    except Exception:  # noqa: BLE001 - chỉ là bằng chứng thêm để chấm, không được làm hỏng việc nhận diện
+        log.exception("Không đếm được đầu nốt từng ô để chấm ô đầu/cuối hệ")
+        return None
 
 
 def _with_meter(page: Optional[merge.PageKern], meter: Optional[str]) -> Optional[merge.PageKern]:
@@ -635,11 +700,12 @@ def _with_meter(page: Optional[merge.PageKern], meter: Optional[str]) -> Optiona
 
 
 def _score(page: Optional[merge.PageKern], target: int, judge: Judge) -> Score:
+    lenient_first, lenient_last = _edges_lenient(page, judge)
     return score_page(
         _with_meter(page, judge.meter),
         target,
-        lenient_first=judge.lenient_first,
-        lenient_last=judge.lenient_last,
+        lenient_first=lenient_first,
+        lenient_last=lenient_last,
         measures_expected=judge.measures,
         voice=judge.voice if page is not None and page.spines == target else (),
     )
@@ -870,8 +936,10 @@ def reread_by_measures(
     original = merge.split_measures(page.body)
     aligned = len(original) == count and page_measures(page) == count
 
+    first_ok, last_ok = _edges_lenient(page, judge) if aligned else (judge.lenient_first, judge.lenient_last)
+
     def lenient(position: int) -> bool:
-        return (judge.lenient_first and position == 1) or (judge.lenient_last and position == count)
+        return (first_ok and position == 1) or (last_ok and position == count)
 
     first_bad = next(
         (k for k in range(1, min(len(original), count) + 1) if not _chunk_ok(original[k - 1], meter, lenient(k))),
