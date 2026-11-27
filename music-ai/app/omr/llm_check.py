@@ -32,6 +32,7 @@ from typing import Callable, Optional
 import cv2
 import numpy as np
 
+from app.convert import incomplete_measures
 from app.omr import merge, review
 from app.omr.merge import TAB
 
@@ -173,8 +174,13 @@ def build_prompt(
     lines = [
         f"Measure {piece.ordinal}. Time signature (as a fraction of a whole note): {meter}.",
         "Staves top to bottom: " + "; ".join(keys) + ".",
-        "Candidates (staff 1 = top staff):",
     ]
+    if piece.role in incomplete_measures.SPLIT_ROLES and piece.target is not None:
+        lines.append(
+            "This measure is one half of a measure split by a barline (for example the end of a verse and the start of "
+            f"the refrain), so it lasts only {piece.target.numerator}/{piece.target.denominator} of a whole note."
+        )
+    lines.append("Candidates (staff 1 = top staff):")
     for number, candidate in enumerate(candidates):
         lines.append(f"[{number}] {review.describe_lines(candidate, spines, roles)}")
     return "\n".join(lines)
@@ -254,7 +260,7 @@ def verify(
             continue
         if verdict == "candidate" and choice is not None:
             chosen = candidates[choice]
-            if piece.regular and review.chunk_duration_ok(chosen, result.spines, piece.meter) is not False and all(
+            if piece.regular and review.chunk_duration_ok(chosen, result.spines, piece.target) is not False and all(
                 len(line.split(TAB)) == result.spines for line in chosen
             ):
                 result = review.replace_measure(result, piece, chosen)

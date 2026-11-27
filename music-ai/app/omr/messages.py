@@ -52,6 +52,14 @@ def scanned_page_message(page: int) -> str:
     return f"Trang {page}: là ảnh scan nằm trong PDF (không phải PDF xuất từ phần mềm), đã xử lý như bản scan"
 
 
+def split_measure_note(first: int, second: int) -> str:
+    """Ghi chú (không phải cờ) cho hai phần của một ô bị vạch nhịp chia đôi, ``first``/``second`` là số thứ tự hai ô."""
+    return (
+        f"Ô {first} và ô {second} là hai phần của cùng một ô nhịp bị vạch nhịp chia đôi (thường ở chỗ chuyển đoạn hoặc "
+        "xuống dòng), cộng lại vừa đủ số chỉ nhịp nên không tính là lỗi trường độ; khi phát, hai phần được nối liền"
+    )
+
+
 def tempo_default_message(bpm: int) -> str:
     """Câu cảnh báo OMR-13: không đọc được nhịp độ nên dùng mặc định."""
     return f"Không đọc được nhịp độ trên bản gốc, đang dùng {bpm} BPM; hãy sửa lại cho đúng bản gốc"

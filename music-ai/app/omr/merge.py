@@ -18,6 +18,8 @@ from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import Optional
 
+from app.convert import incomplete_measures
+
 TAB = "\t"
 
 # Dòng diễn giải mà khi sang trang mới có thể phải kế thừa từ trang trước (đặc tả: khóa/nhịp/dấu hóa)
@@ -1301,11 +1303,114 @@ def _meter_fraction(token: str) -> Optional[Fraction]:
     return Fraction(int(match.group(1)), int(match.group(2)))
 
 
+@dataclass
+class _Timeline:
+    """Kết quả chạy trục thời gian Humdrum qua một đoạn kern (:func:`_timeline`)."""
+
+    times: list[Optional[Fraction]]
+    """Thời điểm bắt đầu của từng dòng (None với dòng không phải dữ liệu)."""
+    groups: list[int]
+    """Spine gốc của từng cột sau dòng cuối."""
+    ends: list[Fraction]
+    """Thời điểm nốt cuối của từng cột kết thúc."""
+    used: list[bool]
+    """Cột có nốt/dấu lặng nào không."""
+
+
+def _timeline(lines: list[str], width: int) -> Optional[_Timeline]:
+    """Chạy trục thời gian Humdrum qua ``lines`` (bắt đầu với ``width`` cột): dòng dữ liệu sau bắt đầu khi nốt sớm nhất
+    đang vang ở bất kỳ cột nào kết thúc. Theo được ``*^``/``*v``; trả None khi số cột không khớp, gặp ``*+``/``*x``/``*-``
+    hoặc ``*v`` gộp hai spine gốc khác nhau."""
+    groups = list(range(width))  # spine gốc của từng cột
+    ends = [Fraction(0)] * width  # thời điểm nốt đang vang ở từng cột kết thúc
+    used = [False] * width
+    times: list[Optional[Fraction]] = []
+    now = Fraction(0)
+    for line in lines:
+        if not line or line.startswith("!") or is_barline(line):
+            times.append(None)
+            continue
+        fields = line.split(TAB)
+        if len(fields) != len(groups):
+            return None
+        if line.startswith("*"):
+            times.append(None)
+            new_groups: list[int] = []
+            new_ends: list[Fraction] = []
+            new_used: list[bool] = []
+            column = 0
+            while column < len(fields):
+                token = fields[column]
+                if token == "*^":
+                    new_groups += [groups[column]] * 2
+                    new_ends += [ends[column]] * 2
+                    new_used += [used[column]] * 2
+                    column += 1
+                elif token == "*v":
+                    stop = column
+                    while stop < len(fields) and fields[stop] == "*v":
+                        stop += 1
+                    if stop - column < 2 or len(set(groups[column:stop])) != 1:
+                        return None
+                    new_groups.append(groups[column])
+                    new_ends.append(max(ends[column:stop]))
+                    new_used.append(any(used[column:stop]))
+                    column = stop
+                elif token in ("*+", "*x", "*-"):
+                    return None
+                else:
+                    new_groups.append(groups[column])
+                    new_ends.append(ends[column])
+                    new_used.append(used[column])
+                    column += 1
+            groups, ends, used = new_groups, new_ends, new_used
+            continue
+        times.append(now)
+        for column, token in enumerate(fields):
+            if token == ".":
+                continue
+            duration = token_duration(token)
+            if duration is None:
+                continue  # nốt hoa mỹ: không chiếm thời gian
+            ends[column] = now + duration
+            used[column] = True
+        later = [end for end in ends if end > now]
+        if later:
+            now = min(later)
+    return _Timeline(times=times, groups=groups, ends=ends, used=used)
+
+
+def measure_length(lines: list[str], width: int) -> Optional[Fraction]:
+    """Độ dài (nốt tròn) của một ô theo trục thời gian Humdrum, tính được cả ô có tách/gộp spine (``*^``/``*v``).
+
+    ``width``: số cột ở đầu ô. Mọi spine gốc (khuông) có nốt phải kết thúc cùng một lúc. Trả None khi không tính được
+    (xem :func:`_timeline`), khi các khuông dài khác nhau hoặc ô không có nốt nào.
+    """
+    timeline = _timeline(lines, width)
+    if timeline is None:
+        return None
+    totals: dict[int, Fraction] = {}
+    for column, group in enumerate(timeline.groups):
+        if timeline.used[column]:
+            totals[group] = max(totals.get(group, Fraction(0)), timeline.ends[column])
+    values = set(totals.values())
+    return values.pop() if len(values) == 1 else None
+
+
+def incomplete_roles(result: MergeResult) -> dict[int, str]:
+    """Ô nhịp thiếu hợp lệ (:mod:`app.convert.incomplete_measures`) theo số thứ tự ô (từ 1, cùng cách đánh số với
+    :func:`page_measure_ranges`): ô lấy đà, ô cuối bù cho ô lấy đà và hai phần của ô bị vạch nhịp chia đôi."""
+    ordered = [s for s in _measure_segments(result) if s["any"]]
+    roles = _classify_segments(ordered, result.spines)
+    return {position + 1: role for position, role in roles.items()}
+
+
 def check_measures(result: MergeResult) -> list[str]:
     """Cảnh báo ô nhịp có tổng trường độ khác số chỉ nhịp (đặc tả: không làm FAILED).
 
     Chỉ kiểm tra các ô nhịp không tách/gộp spine. Ô nhịp đầu tiên (nhịp lấy đà) và ô nhịp cuối cùng được phép ngắn
-    hơn. Mỗi cảnh báo ghi số trang và số ô nhịp; chỉ nêu tối đa :data:`MAX_WARNINGS_PER_KIND` ô.
+    hơn; hai phần của một ô bị vạch nhịp chia đôi (cộng lại vừa đủ số chỉ nhịp, :func:`incomplete_roles`) cũng không bị
+    báo. Mỗi cảnh báo ghi số trang và số ô nhịp; chỉ nêu tối đa :data:`MAX_WARNINGS_PER_KIND` ô.
     """
     _, problems, _ = _measure_report(result)
     if len(problems) > MAX_WARNINGS_PER_KIND:
@@ -1330,13 +1435,11 @@ def bad_measures(result: MergeResult) -> list[int]:
     return positions
 
 
-def _measure_report(
-    result: MergeResult, lenient_first: bool = True, lenient_last: bool = True
-) -> tuple[int, list[str], list[int]]:
-    """Đếm ô nhịp kiểm được, liệt kê mọi ô sai trường độ (không giới hạn số cảnh báo) và số thứ tự (từ 1, trong các ô
-    có dữ liệu) của các ô đó."""
+def _measure_segments(result: MergeResult) -> list[dict]:
+    """Các đoạn giữa hai vạch nhịp của kern đã ghép, theo thứ tự. Mỗi đoạn: số ô (theo vạch nhịp), trang, tổng trường độ
+    từng spine, số chỉ nhịp, ``ok`` (không tách/gộp spine), số dòng dữ liệu đủ cột, ``any`` (có dữ liệu: ô này có số thứ
+    tự) và ``lines`` (dòng diễn giải và dữ liệu của đoạn)."""
     base = result.spines
-    problems: list[str] = []
     meter: Optional[Fraction] = None
 
     def open_segment(number: int, page_no: int) -> dict:
@@ -1348,6 +1451,7 @@ def _measure_report(
             "ok": True,
             "data": 0,
             "any": False,
+            "lines": [],
         }
 
     # Dữ liệu nằm trước vạch nhịp đầu tiên (nếu có) là ô nhịp lấy đà, mang số (số đầu - 1)
@@ -1365,6 +1469,7 @@ def _measure_report(
             current = open_segment(number, page_no)
             continue
         if _is_interpretation(line):
+            current["lines"].append(line)
             fields = line.split(TAB)
             if len(fields) == base:
                 for token in fields:
@@ -1376,6 +1481,7 @@ def _measure_report(
             continue
         if not is_data_line(line):
             continue
+        current["lines"].append(line)
         current["any"] = True  # có dữ liệu (kể cả dòng đang tách spine): ô này có số thứ tự
         fields = line.split(TAB)
         if len(fields) != base:
@@ -1389,15 +1495,44 @@ def _measure_report(
             if duration is not None:
                 current["sums"][index] += duration
     segments.append(current)
+    return segments
 
+
+def _segment_length(segment: dict, width: int) -> Optional[Fraction]:
+    """Độ dài chung của mọi khuông có nốt trong một đoạn (None nếu các khuông lệch nhau hoặc không tính được)."""
+    if not segment["ok"]:
+        return measure_length(segment["lines"], width)
+    values = {total for total in segment["sums"] if total > 0}
+    return values.pop() if len(values) == 1 else None
+
+
+def _classify_segments(ordered: list[dict], width: int) -> dict[int, str]:
+    """Vai trò ô thiếu hợp lệ của các đoạn có dữ liệu ``ordered`` (theo thứ tự), khóa là vị trí trong ``ordered``."""
+    lengths = [_segment_length(segment, width) for segment in ordered]
+    meters = [segment["meter"] for segment in ordered]
+    return incomplete_measures.classify(lengths, meters)
+
+
+def _measure_report(
+    result: MergeResult, lenient_first: bool = True, lenient_last: bool = True
+) -> tuple[int, list[str], list[int]]:
+    """Đếm ô nhịp kiểm được, liệt kê mọi ô sai trường độ (không giới hạn số cảnh báo) và số thứ tự (từ 1, trong các ô
+    có dữ liệu) của các ô đó. Hai phần của ô bị vạch nhịp chia đôi là ô đúng."""
+    problems: list[str] = []
+    segments = _measure_segments(result)
+    ordered = [s for s in segments if s["any"]]
+    ordinals = {id(s): k for k, s in enumerate(ordered, start=1)}
+    roles = _classify_segments(ordered, result.spines)
+    split = {id(ordered[k]) for k, role in roles.items() if role in incomplete_measures.SPLIT_ROLES}
     with_data = [s for s in segments if s["data"] > 0]
-    ordinals = {id(s): k for k, s in enumerate((s for s in segments if s["any"]), start=1)}
     checked = 0
     positions: list[int] = []
     for position, segment in enumerate(with_data):
         if not segment["ok"] or segment["meter"] is None:
             continue
         checked += 1
+        if id(segment) in split:
+            continue
         is_edge = (lenient_first and position == 0) or (lenient_last and position == len(with_data) - 1)
         for index, total in enumerate(segment["sums"]):
             if total == 0:

@@ -8,7 +8,9 @@
 2. **Nốt thừa trong hợp âm**: một nốt con của hợp âm dài hơn cả ô nhịp (``2c 1a`` trong 2/4) là nốt model bịa ra, bỏ nó
    nếu hợp âm còn nốt khác.
 
-Chỉ sửa khi kết quả chắc chắn đúng hơn (ô thành đúng trường độ); ô đúng sẵn thì không đụng tới.
+Chỉ sửa khi kết quả chắc chắn đúng hơn (ô thành đúng trường độ); ô đúng sẵn thì không đụng tới. Hai phần của một ô bị
+vạch nhịp chia đôi (cuối phiên khúc + đầu điệp khúc...) ngắn hơn số chỉ nhịp nhưng cộng lại vừa đủ: đó là ô đúng, không
+thêm chấm dôi hay đổi nhịp ba để "lấp" chúng.
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import Optional
 
+from app.convert import incomplete_measures
 from app.omr import merge, messages
 from app.omr.review import slice_measures
 
@@ -122,6 +125,7 @@ def fix_lines(lines: list[str], spines: int) -> tuple[list[str], int, int, list[
         meter = measure.meter
         if meter is None or not measure.regular:
             continue
+        target = measure.target if measure.target is not None else meter  # phần của ô chia đôi: độ dài của chính nó
         changed = False
         for index in measure.data_lines:  # quy tắc 2 trước: nó không đổi tổng trường độ (token_duration lấy nốt đầu)
             cells = out[index].split(TAB)
@@ -134,14 +138,14 @@ def fix_lines(lines: list[str], spines: int) -> tuple[list[str], int, int, list[
             out[index] = TAB.join(cells)
         for column in range(spines):
             cells = [out[i].split(TAB)[column] for i in measure.data_lines]
-            if _spine_total(cells) in (Fraction(0), meter) or not any(_is_triplet(c) for c in cells if c != "."):
+            if _spine_total(cells) in (Fraction(0), target) or not any(_is_triplet(c) for c in cells if c != "."):
                 continue
             straight = [_straighten(c) if c != "." else c for c in cells]
-            if _spine_total(straight) != meter:
+            if _spine_total(straight) != target:
                 # Ngược lại: cả ô là chùm liên ba nhưng model đọc mất số "3" ở vài chùm (8 8 8 thay vì 12 12 12)
                 straight = [_tripletize(c) if c != "." else c for c in cells]
                 notes = [c for c in straight if c != "." and merge.token_duration(c) is not None]
-                if _spine_total(straight) != meter or sum(1 for c in notes if _is_triplet(c)) % 3 != 0:
+                if _spine_total(straight) != target or sum(1 for c in notes if _is_triplet(c)) % 3 != 0:
                     continue
             for i, new in zip(measure.data_lines, straight):
                 row = out[i].split(TAB)
@@ -165,6 +169,8 @@ def fix_dots(lines: list[str], spines: int) -> tuple[list[str], int, list[int]]:
         meter = measure.meter
         if meter is None or not measure.regular or position == 0 or position == len(measures) - 1:
             continue  # ô đầu/cuối bài có thể là ô lấy đà/ô thiếu hợp lệ
+        if measure.role in incomplete_measures.SPLIT_ROLES:
+            continue  # hai phần của ô bị vạch nhịp chia đôi ngắn hơn số chỉ nhịp là đúng
         for column in range(spines):
             cells = [(i, out[i].split(TAB)[column]) for i in measure.data_lines]
             total = _spine_total([c for _i, c in cells])

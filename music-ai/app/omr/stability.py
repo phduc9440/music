@@ -220,8 +220,8 @@ def _vote(
                 f"Đọc lại hệ này {len(keys) + 1} lần cho kết quả khác nhau ở ô {entry['measure']}"
             )
             continue
-        old_ok = review.chunk_duration_ok(original, result.spines, piece.meter)
-        new_ok = review.chunk_duration_ok(variants[0], result.spines, piece.meter)
+        old_ok = review.chunk_duration_ok(original, result.spines, piece.target)
+        new_ok = review.chunk_duration_ok(variants[0], result.spines, piece.target)
         soft = {review.FLAG_RANGE, review.FLAG_LEAP} & set(flags)
         better = (new_ok is True and old_ok is False) or (
             bool(soft) and new_ok is not False and _clears_soft(result, piece, variants[0], soft, roles_top_down)
