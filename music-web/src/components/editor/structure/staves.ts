@@ -394,6 +394,51 @@ export function addPart(doc: ScoreDocument, clefKey: ClefSign): EditResult {
   return result;
 }
 
+const durationOf = (el: Element): number => Number(childOf(el, 'duration')?.textContent) || 0;
+
+/**
+ * Trước khi bỏ khuông `staff` của đàn: hợp âm ghi dưới khuông đó không mất mà chuyển lên các khuông còn lại, đặt trước nốt
+ * vào đúng lúc đó (lệch thì ghi `<offset>`). Đã có hợp âm ở đúng lúc đó thì bỏ bản trùng.
+ */
+function keepStaffHarmonies(measure: Element, staff: number): void {
+  // Thời điểm (divisions) của từng hợp âm trên khuông bị bỏ, và các nốt đầu hợp âm của khuông còn lại
+  const moving: { el: Element; at: number }[] = [];
+  const kept: { el: Element; at: number }[] = [];
+  const existing = new Set<number>();
+  let cursor = 0;
+  for (const c of Array.from(measure.children)) {
+    if (c.tagName === 'backup') cursor -= durationOf(c);
+    else if (c.tagName === 'forward') cursor += durationOf(c);
+    else if (c.tagName === 'harmony') {
+      const at = cursor + (Number(childOf(c, 'offset')?.textContent) || 0);
+      if (Number(childOf(c, 'staff')?.textContent) === staff) moving.push({ el: c, at });
+      else existing.add(at);
+    } else if (c.tagName === 'note' && !childOf(c, 'chord')) {
+      if (Number(childOf(c, 'staff')?.textContent || 1) !== staff && !childOf(c, 'grace'))
+        kept.push({ el: c, at: cursor });
+      if (!childOf(c, 'grace')) cursor += durationOf(c);
+    }
+  }
+  for (const { el, at } of moving) {
+    el.remove();
+    if (existing.has(at)) continue;
+    // Nốt cuối cùng vào trước hoặc đúng lúc hợp âm (không có thì nốt đầu ô)
+    const host = [...kept].reverse().find((k) => k.at <= at) ?? kept[0];
+    if (!host) continue;
+    childOf(el, 'staff')?.remove();
+    childOf(el, 'offset')?.remove();
+    const shift = at - host.at;
+    if (shift !== 0) {
+      const offset = el.ownerDocument.createElement('offset');
+      offset.textContent = String(shift);
+      // <offset> đứng sau phần nội dung hợp âm, trước <staff> (theo MusicXML)
+      el.appendChild(offset);
+    }
+    host.el.before(el);
+    existing.add(at);
+  }
+}
+
 /**
  * Xóa khuông của nốt đang chọn: khuông thứ hai của đàn thì bỏ khuông đó; khuông của một phần nhạc riêng thì xóa phần
  * nhạc. Bản nhạc phải còn ít nhất một khuông.
@@ -405,6 +450,7 @@ export function removeStaff(doc: ScoreDocument, partIndex: number, staff: number
     const measures = doc.getMeasures(partIndex);
     return runStructural(doc, t('editor.cmd.staff.removeBass'), () => {
       for (const measure of measures) {
+        keepStaffHarmonies(measure, staff);
         for (const child of Array.from(measure.children)) {
           const inStaff = Number(childOf(child, 'staff')?.textContent) === staff;
           if (child.tagName === 'note' && inStaff) {
