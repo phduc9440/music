@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { OpenSheetMusicDisplay, VexFlowGraphicalNote } from 'opensheetmusicdisplay';
 import { t } from '../../../i18n/core';
 import { normalizeNoteSizes } from '../../editor/core/osmdBridge';
+import { measureRangeRules } from './measureRange';
 
 interface Props {
   /** Nội dung MusicXML cần vẽ. */
@@ -55,10 +56,11 @@ export default function MusicXmlViewer({ xml, firstMeasure, lastMeasure, playhea
         });
         osmd = instance;
         osmdRef.current = instance;
-        if (firstMeasure != null) instance.setOptions({ drawFromMeasureNumber: firstMeasure });
-        if (lastMeasure != null) instance.setOptions({ drawUpToMeasureNumber: lastMeasure });
         await instance.load(xml);
         if (cancelled) return;
+        // "Ô n" đếm từ 1 kể cả ô lấy đà; OSMD đánh số ô lấy đà là 0 nên phải đổi trước khi vẽ (xem measureRange.ts)
+        const pickup = Boolean(instance.Sheet?.SourceMeasures?.[0]?.ImplicitMeasure);
+        Object.assign(instance.EngravingRules, measureRangeRules(firstMeasure, lastMeasure, pickup));
         normalizeNoteSizes(instance);
         instance.zoom = 0.8;
         instance.render();
