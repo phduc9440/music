@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { downloadFile, fetchFileBlob } from '../../services';
+import { downloadFile, fetchFileBlob, saveBlob } from '../../services';
 import type { ExportFileInfo, MeasureNumbers, PdfOptions, PdfOrientation, PdfPageSize } from '../../types/export';
 import { renderPdfPageToUrl } from '../../utils/pdfRender';
 import { scoreDownloadName } from '../../utils/score';
@@ -8,6 +8,10 @@ import Modal from '../scores/common/Modal';
 import ExportRunningView from './ExportRunningView';
 import { translateTaskError, validatePdfOptions } from './exportUtils';
 import { useExportFlow } from './useExportFlow';
+import PreviewBlock from './PreviewBlock';
+import { useClickPreview } from './local/useClickPreview';
+import { loadScoreXml, makeLocalPdf, previewFirstPage, safeBaseName, svgBlob } from './local/localExport';
+import type { LocalPdf } from './local/localExport';
 import { t } from '../../i18n/core';
 import './export.css';
 
@@ -35,23 +39,40 @@ const MEASURE_NUMBERS: MeasureNumbers[] = ['SYSTEM', 'EVERY', 'NONE'];
 
 /**
  * Hộp thoại "Xuất PDF" (mục 1.30): chọn khổ giấy, hướng, cỡ khuông, lề, tiêu đề, đánh số ô nhịp, hợp âm; chạy nền;
- * xong thì xem trước trang 1 và tải về. Luôn được gắn khi trang còn mở để đóng hộp thoại không dừng theo dõi tác vụ.
+ * xong thì bấm để xem trước trang 1 rồi tải về. Máy chủ chưa cài MuseScore thì tạo PDF ngay trên trình duyệt. Luôn được
+ * gắn khi trang còn mở để đóng hộp thoại không dừng theo dõi tác vụ.
  */
 export default function ExportPdfDialog({ scoreId, title, open, onOpen, onClose }: Props) {
   const flow = useExportFlow({ scoreId, isOpen: open, readyMessage: t('export.pdf.ready'), reopen: onOpen });
+  /** Tùy chọn của lần xuất đang làm trên trình duyệt (máy chủ chưa cài MuseScore). */
+  const [local, setLocal] = useState<PdfOptions | null>(null);
+  // Đóng hộp thoại thì bỏ kết quả tạo trên trình duyệt (không có tác vụ nền nào để theo dõi)
+  const close = () => {
+    setLocal(null);
+    onClose();
+  };
   if (!open) return null;
 
   const file = flow.results?.[0] ?? null;
   return (
-    <Modal title={t('export.pdf.title')} onClose={onClose}>
-      {file ? (
-        <PdfResultView key={file.id} file={file} title={title} onAgain={flow.again} onClose={onClose} />
+    <Modal title={t('export.pdf.title')} onClose={close}>
+      {local ? (
+        <LocalPdfView
+          key={JSON.stringify(local)}
+          scoreId={scoreId}
+          title={title}
+          options={local}
+          onAgain={() => setLocal(null)}
+          onClose={close}
+        />
+      ) : file ? (
+        <PdfResultView key={file.id} file={file} title={title} onAgain={flow.again} onClose={close} />
       ) : flow.running && flow.task ? (
         <ExportRunningView
           task={flow.task}
           cancelling={flow.cancelling}
           onCancel={() => void flow.cancel()}
-          onClose={onClose}
+          onClose={close}
         />
       ) : flow.failed && flow.task ? (
         <div className="ex-body">
@@ -68,23 +89,39 @@ export default function ExportPdfDialog({ scoreId, title, open, onOpen, onClose 
           </div>
         </div>
       ) : (
-        <PdfForm onSubmit={(options) => flow.submit('PDF', options)} onClose={onClose} />
+        <PdfForm
+          scoreId={scoreId}
+          title={title}
+          onSubmit={(options) => flow.submit('PDF', options, () => setLocal(options))}
+          onClose={close}
+        />
       )}
     </Modal>
   );
 }
 
 function PdfForm({
+  scoreId,
+  title,
   onSubmit,
   onClose,
 }: {
+  scoreId: string;
+  title: string;
   onSubmit: (options: PdfOptions) => Promise<string | null>;
   onClose: () => void;
 }) {
   const [options, setOptions] = useState<PdfOptions>(DEFAULT_OPTIONS);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pages, setPages] = useState<number | null>(null);
   const patch = (change: Partial<PdfOptions>) => setOptions((prev) => ({ ...prev, ...change }));
+  // Xem trước trang 1 theo tùy chọn đang chọn: chỉ dựng khi bấm, đang mở thì đổi tùy chọn sẽ dựng lại
+  const preview = useClickPreview(async () => {
+    const made = await previewFirstPage(await loadScoreXml(scoreId), options, { title });
+    setPages(made.pages);
+    return svgBlob(made.svg);
+  }, JSON.stringify(options));
 
   const submit = async () => {
     const invalid = validatePdfOptions(options);
@@ -180,6 +217,13 @@ function PdfForm({
         {t('export.pdf.showChords')}
       </label>
 
+      <PreviewBlock
+        state={preview.state}
+        url={preview.url}
+        kind="image"
+        alt={t('export.pdf.previewAlt')}
+        note={pages ? t('export.preview.pages', { count: pages }) : null}
+      />
       {error && (
         <p className="ex-error" role="alert">
           {error}
@@ -188,6 +232,9 @@ function PdfForm({
       <div className="sc-modal__actions">
         <button className="sc-btn" onClick={onClose} disabled={busy}>
           {t('common.cancel')}
+        </button>
+        <button className="sc-btn" onClick={preview.toggle} aria-pressed={preview.state !== 'idle'}>
+          {preview.state === 'idle' ? t('export.preview.show') : t('export.preview.hide')}
         </button>
         <button className="sc-btn sc-btn--primary" onClick={() => void submit()} disabled={busy}>
           {busy ? t('export.sending') : t('export.pdf.submit')}
@@ -208,30 +255,10 @@ function PdfResultView({
   onAgain: () => void;
   onClose: () => void;
 }) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewFailed, setPreviewFailed] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const name = scoreDownloadName(title, file, 'pdf');
-
-  // Tải PDF về dạng blob rồi vẽ trang 1 bằng pdf.js làm ảnh xem trước (API cần cookie đăng nhập)
-  useEffect(() => {
-    let cancelled = false;
-    let url: string | undefined;
-    fetchFileBlob(file.downloadUrl)
-      .then((blob) => renderPdfPageToUrl(blob, 1, 700))
-      .then((made) => {
-        if (cancelled) return URL.revokeObjectURL(made);
-        url = made;
-        setPreviewUrl(made);
-      })
-      .catch(() => {
-        if (!cancelled) setPreviewFailed(true);
-      });
-    return () => {
-      cancelled = true;
-      if (url) URL.revokeObjectURL(url);
-    };
-  }, [file.downloadUrl]);
+  // Bấm "Xem trước" mới tải PDF về dạng blob rồi vẽ trang 1 bằng pdf.js (API cần cookie đăng nhập)
+  const preview = useClickPreview(async () => renderPdfPageToUrl(await fetchFileBlob(file.downloadUrl), 1, 700));
 
   const download = async () => {
     setDownloading(true);
@@ -247,13 +274,7 @@ function PdfResultView({
   return (
     <div className="ex-body">
       <p className="ex-ok">{t('export.pdf.ready')}</p>
-      {previewUrl ? (
-        <img className="ex-preview" src={previewUrl} alt={t('export.pdf.previewAlt')} />
-      ) : previewFailed ? (
-        <p className="ex-hint">{t('export.pdf.noPreview')}</p>
-      ) : (
-        <p className="ex-hint">{t('export.pdf.loadingPreview')}</p>
-      )}
+      <PreviewBlock state={preview.state} url={preview.url} kind="image" alt={t('export.pdf.previewAlt')} />
       <div className="sc-modal__actions">
         <button className="sc-btn" onClick={onAgain}>
           {t('export.again')}
@@ -261,8 +282,113 @@ function PdfResultView({
         <button className="sc-btn" onClick={onClose}>
           {t('common.close')}
         </button>
+        <button className="sc-btn" onClick={preview.toggle} aria-pressed={preview.state !== 'idle'}>
+          {preview.state === 'idle' ? t('export.preview.show') : t('export.preview.hide')}
+        </button>
         <button className="sc-btn sc-btn--primary" onClick={() => void download()} disabled={downloading}>
           {downloading ? t('export.downloading') : t('export.download')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Tạo PDF ngay trên trình duyệt (máy chủ chưa cài MuseScore), báo tiến độ theo trang, xong thì xem trước / tải về. */
+function LocalPdfView({
+  scoreId,
+  title,
+  options,
+  onAgain,
+  onClose,
+}: {
+  scoreId: string;
+  title: string;
+  options: PdfOptions;
+  onAgain: () => void;
+  onClose: () => void;
+}) {
+  const [result, setResult] = useState<LocalPdf | null>(null);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const preview = useClickPreview(async () => svgBlob(result?.firstPage ?? ''));
+
+  useEffect(() => {
+    let cancelled = false;
+    loadScoreXml(scoreId)
+      .then((xml) =>
+        makeLocalPdf(xml, options, { title }, title, (done, total) => !cancelled && setProgress({ done, total })),
+      )
+      .then((made) => !cancelled && setResult(made))
+      .catch(() => !cancelled && setFailed(true));
+    return () => {
+      cancelled = true;
+    };
+  }, [scoreId, title, options, attempt]);
+
+  if (failed)
+    return (
+      <div className="ex-body">
+        <p className="ex-error" role="alert">
+          {t('export.local.failed')}
+        </p>
+        <div className="sc-modal__actions">
+          <button className="sc-btn" onClick={onClose}>
+            {t('common.close')}
+          </button>
+          <button
+            className="sc-btn sc-btn--primary"
+            onClick={() => {
+              setFailed(false);
+              setProgress(null);
+              setAttempt((n) => n + 1);
+            }}
+          >
+            {t('common.retry')}
+          </button>
+        </div>
+      </div>
+    );
+
+  if (!result)
+    return (
+      <div className="ex-body">
+        <p className="ex-hint">{t('export.local.notice')}</p>
+        <p className="ex-step" role="status">
+          {progress && progress.total > 0
+            ? t('export.local.pdfProgress', {
+                done: Math.min(progress.done + 1, progress.total),
+                total: progress.total,
+              })
+            : t('export.local.making')}
+        </p>
+        <div className="sc-modal__actions">
+          <button className="sc-btn" onClick={onClose}>
+            {t('common.cancel')}
+          </button>
+        </div>
+      </div>
+    );
+
+  return (
+    <div className="ex-body">
+      <p className="ex-ok">{t('export.pdf.ready')}</p>
+      <p className="ex-hint">
+        {t('export.preview.pages', { count: result.pages })} · {t('export.local.notice')}
+      </p>
+      <PreviewBlock state={preview.state} url={preview.url} kind="image" alt={t('export.pdf.previewAlt')} />
+      <div className="sc-modal__actions">
+        <button className="sc-btn" onClick={onAgain}>
+          {t('export.again')}
+        </button>
+        <button className="sc-btn" onClick={onClose}>
+          {t('common.close')}
+        </button>
+        <button className="sc-btn" onClick={preview.toggle} aria-pressed={preview.state !== 'idle'}>
+          {preview.state === 'idle' ? t('export.preview.show') : t('export.preview.hide')}
+        </button>
+        <button className="sc-btn sc-btn--primary" onClick={() => saveBlob(result.blob, `${safeBaseName(title)}.pdf`)}>
+          {t('export.download')}
         </button>
       </div>
     </div>

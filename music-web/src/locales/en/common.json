@@ -52,7 +52,8 @@
     "planTitle": "{plan} plan: see limits and renew",
     "clickSound": "Click sounds",
     "soundStateOn": "On",
-    "soundStateOff": "Off"
+    "soundStateOff": "Off",
+    "soundFabHint": "drag up or down to move it"
   },
   "theme": {
     "label": "Theme: {name}",

@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 import ChangePasswordModal from '../ChangePasswordModal';
 import NotificationBell from '../NotificationBell';
 import ThemeToggle from '../../theme/ThemeToggle';
-import SoundToggle from '../ui/SoundToggle';
+import SoundFab from '../ui/SoundFab';
 import { useClickMusic } from '../ui/clickMusic';
 import { adoptServerLocale, t } from '../../i18n/core';
 import LanguageToggle from '../../i18n/LanguageToggle';
@@ -197,7 +197,6 @@ export default function AdminLayout() {
                     {t('common.header.changePassword')}
                   </button>
                 )}
-                <SoundToggle className="adm-usermenu__item" />
                 <button
                   type="button"
                   role="menuitem"
@@ -297,6 +296,7 @@ export default function AdminLayout() {
             <Outlet context={{ admin } satisfies AdminOutletContext} />
           </div>
         </main>
+        <SoundFab />
       </div>
 
       <ChangePasswordModal isOpen={passwordOpen} onClose={() => setPasswordOpen(false)} />

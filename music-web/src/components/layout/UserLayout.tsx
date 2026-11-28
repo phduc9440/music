@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import AmbientNotes from '../ui/AmbientNotes';
-import SoundToggle from '../ui/SoundToggle';
+import SoundFab from '../ui/SoundFab';
 import { useClickMusic } from '../ui/clickMusic';
 import { useCardSpotlight } from '../ui/cardSpotlight';
 import { Link } from '../../routes/transition-nav';
@@ -212,7 +212,6 @@ export default function UserLayout() {
                       {t('common.header.changePassword')}
                     </button>
                   )}
-                  <SoundToggle className="app-usermenu__item" />
                   <button
                     type="button"
                     role="menuitem"
@@ -235,6 +234,7 @@ export default function UserLayout() {
       </main>
 
       <MobileTabBar activePath={navPath} />
+      <SoundFab />
       {searchOpen && <CommandPalette onClose={() => setSearchOpen(false)} />}
       <ChangePasswordModal isOpen={passwordOpen} onClose={() => setPasswordOpen(false)} />
     </div>

@@ -21,7 +21,7 @@
     "2701": "Tùy chọn xuất file không hợp lệ",
     "2702": "Bản nhạc quá dài để xuất âm thanh (tối đa 20 phút), hãy tăng tempo",
     "2703": "Bạn đang xuất quá nhiều file, vui lòng đợi các tác vụ đang chạy hoàn tất",
-    "2704": "Máy chủ chưa sẵn sàng xuất file, vui lòng liên hệ quản trị viên"
+    "2704": "Máy chủ chưa cài MuseScore nên chưa xuất được file này"
   },
   "validation": {
     "tempo": "Tempo phải từ 20% đến 200%",
@@ -53,9 +53,7 @@
     "quality": "Chất lượng",
     "transpose": "Chuyển giọng",
     "semitones": "nửa cung",
-    "submit": "Xuất file",
-    "noPreview": "Không nghe thử được, bạn vẫn có thể tải về.",
-    "loadingPreview": "Đang tải để nghe thử..."
+    "submit": "Xuất file"
   },
   "hands": {
     "BOTH": "Cả hai tay",
@@ -80,9 +78,7 @@
     "showTitle": "Hiện tiêu đề và tác giả",
     "showChords": "Hiện hợp âm",
     "submit": "Xuất PDF",
-    "previewAlt": "Xem trước trang 1 của file PDF",
-    "noPreview": "Không xem trước được, bạn vẫn có thể tải về.",
-    "loadingPreview": "Đang dựng bản xem trước trang 1..."
+    "previewAlt": "Xem trước trang 1 của file PDF"
   },
   "svg": {
     "title": "Xuất SVG",
@@ -107,5 +103,28 @@
     "title": "Đổi file MIDI đã nhập thành bản nhạc để mở trong trình chỉnh sửa và trình phát",
     "running": "Đang chuyển... {progress}%",
     "button": "Chuyển MIDI thành bản nhạc"
+  },
+  "preview": {
+    "show": "Xem trước",
+    "hide": "Ẩn xem trước",
+    "loading": "Đang dựng bản xem trước...",
+    "rendering": "Đang tổng hợp để nghe thử...",
+    "failed": "Không xem trước được, bạn vẫn có thể xuất và tải về.",
+    "pages": "{count} trang",
+    "pageOf": "Trang {page}/{count}",
+    "showPage": "Xem trước trang {page}",
+    "listen": "Nghe thử {seconds} giây",
+    "listenFile": "Nghe thử",
+    "stop": "Tắt nghe thử"
+  },
+  "local": {
+    "notice": "Máy chủ chưa cài MuseScore nên file được tạo ngay trên trình duyệt của bạn.",
+    "making": "Đang tạo file trên trình duyệt...",
+    "pdfProgress": "Đang dựng trang {done}/{total}...",
+    "synthesizing": "Đang tổng hợp âm thanh trên trình duyệt...",
+    "failed": "Không tạo được file trên trình duyệt, vui lòng thử lại",
+    "mp3": "Máy chủ chưa cài MuseScore nên chưa xuất được MP3. Trình duyệt có thể tạo ngay file WAV với cùng tùy chọn (chất lượng gốc, dung lượng lớn hơn).",
+    "useWav": "Xuất WAV",
+    "tooLong": "Bản nhạc dài hơn 15 phút nên trình duyệt không tổng hợp được, hãy tăng tempo"
   }
 }

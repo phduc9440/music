@@ -106,3 +106,16 @@
   width: 5.5rem;
   padding: 0.3rem 0.5rem;
 }
+.ex-page {
+  display: inline-flex;
+  gap: 2px;
+}
+.ex-page-eye {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.ex-page-eye.is-active {
+  background: var(--sc-accent);
+  color: var(--ui-on-accent);
+}

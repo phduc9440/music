@@ -4,6 +4,7 @@
  * tắt cho trang /play. Vị trí chi tiết theo từng khung hình do {@link useEnginePosition} đọc riêng để cả trang không
  * phải vẽ lại liên tục.
  */
+import type { AccompanimentStyle } from '../../editor/audio/accompaniment';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { detectInstrument, partLabel } from '../../editor/audio/instruments';
 import { readStartingKey } from '../../editor/notes/transpose';
@@ -19,7 +20,7 @@ import { isLoopComplete, loopSegments, NO_LOOP } from '../state/loop';
 import type { LoopSegment, LoopSettings } from '../state/loop';
 import { EMPTY_MIXER, silentTracks } from '../state/mixer';
 import type { MixerState, TrackMix } from '../state/mixer';
-import { loadPlayerSettings, loadScoreSettings, saveScoreSettings } from '../state/settings';
+import { loadPlayerSettings, loadScoreSettings, savePlayerSettings, saveScoreSettings } from '../state/settings';
 import { trackOfNoteId } from '../engine/highlight';
 import { activeNoteIds, buildTimeline, firstOrderOfMeasure, measureOrderAt } from '../engine/timeline';
 import { countOutOfRange } from '../state/transposeRange';
@@ -100,6 +101,10 @@ export interface PlayerApi {
   chordCarry: boolean;
   /** Bật/tắt việc đánh lại hợp âm ở ô không ghi ký hiệu hợp âm; có hiệu lực ngay và được nhớ theo từng bản nhạc. */
   setChordCarry: (on: boolean) => void;
+  /** Kiểu đệm hợp âm người nghe chọn (không phụ thuộc bản nhạc). */
+  chordStyle: AccompanimentStyle;
+  /** Đổi kiểu đệm; đang phát thì phát tiếp từ chỗ đang nghe. Được nhớ cho mọi bản nhạc. */
+  setChordStyle: (style: AccompanimentStyle) => void;
   /** Phát hoặc tạm dừng. */
   toggle: () => void;
   /** Phát; đang dừng ở đầu bài và có `ids` thì phát từ nốt đầu của vùng chọn. */
@@ -193,11 +198,14 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
   }, [overrides, doc]);
 
   // Dựng dòng thời gian khi bật và mỗi lần sửa; không dựng khi thanh Player đang ẩn để Editor không tốn công
+  const [chordStyle, setChordStyleState] = useState<AccompanimentStyle>(() => loadPlayerSettings().chordStyle);
   const timeline = useMemo(
-    () => (enabled ? buildTimeline(doc, fallbackBpm) : null),
+    () => (enabled ? buildTimeline(doc, fallbackBpm, chordStyle) : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `revision` báo `doc` (đối tượng giữ nguyên) đã đổi nội dung
-    [enabled, doc, revision, fallbackBpm],
+    [enabled, doc, revision, fallbackBpm, chordStyle],
   );
+  /** Lần dựng lại dòng thời gian kế tiếp chỉ do đổi kiểu đệm: đang phát thì phát tiếp từ vị trí này. */
+  const resumeAt = useRef<number | null>(null);
 
   const [view, setView] = useState<{ order: number; active: ReadonlySet<string> }>({ order: 0, active: EMPTY_IDS });
   const refresh = useCallback(() => {
@@ -220,8 +228,12 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
 
   useEffect(() => {
     if (!engine) return;
-    if (timeline) engine.setTimeline(timeline, (part) => instrumentRef.current(part));
-    else engine.stop();
+    const resume = resumeAt.current;
+    resumeAt.current = null;
+    if (timeline) {
+      engine.setTimeline(timeline, (part) => instrumentRef.current(part));
+      if (resume !== null) engine.play(resume);
+    } else engine.stop();
   }, [engine, timeline]);
 
   // Đang phát: theo dõi ô nhịp và nốt đang vang theo khung hình (chỉ setState khi giá trị đổi)
@@ -412,6 +424,16 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
     [engine, scoreId],
   );
 
+  const setChordStyle = useCallback(
+    (style: AccompanimentStyle) => {
+      if (style === chordStyle) return;
+      if (engine?.getStatus() === 'playing') resumeAt.current = engine.position();
+      setChordStyleState(style);
+      savePlayerSettings({ chordStyle: style });
+    },
+    [engine, chordStyle],
+  );
+
   const outOfRange = useMemo(() => (timeline ? countOutOfRange(timeline, transpose) : 0), [timeline, transpose]);
   const startKey = useMemo(
     () => readStartingKey(doc),
@@ -492,6 +514,8 @@ export function usePlayer(doc: ScoreDocument, options: UsePlayerOptions): Player
     startKey,
     chordCarry,
     setChordCarry,
+    chordStyle,
+    setChordStyle,
     mutedStaves,
     setTrackMix,
     resetMixer,

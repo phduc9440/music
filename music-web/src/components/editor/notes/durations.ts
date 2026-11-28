@@ -399,6 +399,27 @@ const makePitched = (
 const isPlainRest = (entry: Entry | undefined): boolean =>
   !!entry && entry.isRest && entry.members.length === 1 && !hasChild(entry.members[0], 'time-modification');
 
+/** Thẻ gắn vào nốt (đứng ngay trước nó trong file): hợp âm ghi trên bản và chỉ dẫn (to nhỏ, chữ, tempo...). */
+const ATTACHED_TAGS = new Set(['harmony', 'direction']);
+
+/**
+ * Phần tử đầu tiên của nhóm "nốt `note` cùng các thẻ gắn ngay trước nó" (chỉ tính thẻ không ghi khuông hoặc ghi đúng
+ * khuông `staff`); không có thẻ nào thì là chính nốt.
+ */
+const attachedBefore = (note: Element, staff: number): Element => {
+  let first = note;
+  for (
+    let prev = note.previousElementSibling;
+    prev && ATTACHED_TAGS.has(prev.tagName);
+    prev = prev.previousElementSibling
+  ) {
+    const own = childOf(prev, 'staff')?.textContent;
+    if (own && Number(own) !== staff) break;
+    first = prev;
+  }
+  return first;
+};
+
 /** Tổng độ dài chuỗi dấu lặng liền nhau bắt đầu từ mục `from`. */
 const restsAfter = (entries: Entry[], from: number): number => {
   let sum = 0;
@@ -502,7 +523,9 @@ function insertNoteOnce(
   const created = makePitched(measure.ownerDocument, pitch, length, choice, target.voice, staffTag);
   const command = commitEdit(doc, label, touched, [], () => {
     stripBeams(entries);
-    if (next) next.members[0].before(created);
+    // Hợp âm / dấu (to nhỏ, chữ...) đứng ngay trước nốt kế tiếp là của nốt đó: chèn nốt mới trước chúng để chúng lùi
+    // theo nốt của mình, không bị nốt mới "cướp"
+    if (next) attachedBefore(next.members[0], target.staff).before(created);
     else prev.members[prev.members.length - 1].after(created);
     absorbed.forEach((e) => e.members.forEach((m) => m.remove()));
     let anchor = created;

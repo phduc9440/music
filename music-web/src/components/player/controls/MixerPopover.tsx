@@ -1,5 +1,8 @@
 import { PlayerPopover } from './PlayerPopover';
 import { IconMixer } from './PlayerIcons';
+import { PlayerSwitch } from './PlayerSwitch';
+import { ACCOMPANIMENT_STYLES } from '../../editor/audio/accompaniment';
+import type { AccompanimentStyle } from '../../editor/audio/accompaniment';
 import { DEFAULT_TRACK_MIX, hasSolo, mixOf, silentTracks } from '../state/mixer';
 import type { MixerState, TrackMix } from '../state/mixer';
 import type { TimelineTrack } from '../engine/timeline';
@@ -13,13 +16,25 @@ interface Props {
   disabled?: boolean;
   /** Chỉ vẽ nội dung, dùng trong bottom sheet trên điện thoại. */
   inline?: boolean;
+  /**
+   * Bản nhạc có đệm hợp âm: ô không ghi hợp âm có đánh lại hợp âm đang hiệu lực không. Bật/tắt và nghe riêng phần đệm
+   * dùng nút M / S ở hàng "Hợp âm".
+   */
+  chordCarry?: { on: boolean; disabled?: boolean; onChange: (on: boolean) => void };
+  /** Bản nhạc có đệm hợp âm: kiểu đệm người nghe chọn và hàm đổi. */
+  chordStyle?: {
+    value: AccompanimentStyle;
+    disabled?: boolean;
+    onChange: (style: AccompanimentStyle) => void;
+  };
 }
 
 /**
  * Mixer theo khuông: mỗi hàng một track có nút M (tắt tiếng), S (chỉ nghe track này) và âm lượng 0–100%. Có Solo thì
- * chỉ track Solo phát. Bản nhạc chỉ có một khuông thì nút bị khóa kèm gợi ý.
+ * chỉ track Solo phát. Bản nhạc chỉ có một khuông thì nút bị khóa kèm gợi ý. Có đệm hợp âm thì thêm công tắc "Đánh lại ở ô
+ * không ghi hợp âm".
  */
-export function MixerPopover({ tracks, mixer, onChange, onReset, disabled, inline }: Props) {
+export function MixerPopover({ tracks, mixer, onChange, onReset, disabled, inline, chordCarry, chordStyle }: Props) {
   const single = tracks.length < 2;
   const ids = tracks.map((t) => t.id);
   const silent = silentTracks(mixer, ids);
@@ -92,6 +107,35 @@ export function MixerPopover({ tracks, mixer, onChange, onReset, disabled, inlin
             </div>
           );
         })}
+        {chordStyle && (
+          <label className="pl-mix__style">
+            <span className="pl-switch__text">
+              <span className="pl-switch__label">{t('player.chords.style.label')}</span>
+              <span className="pl-switch__hint">{t('player.chords.style.hint')}</span>
+            </span>
+            <select
+              className="pl-mix__select"
+              value={chordStyle.value}
+              disabled={chordStyle.disabled}
+              onChange={(e) => chordStyle.onChange(e.target.value as AccompanimentStyle)}
+            >
+              {ACCOMPANIMENT_STYLES.map((style) => (
+                <option key={style} value={style}>
+                  {t(`player.chords.style.${style}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {chordCarry && (
+          <PlayerSwitch
+            label={t('player.chords.carry')}
+            hint={chordCarry.on ? t('player.chords.carryOn') : t('player.chords.carryOff')}
+            checked={chordCarry.on}
+            disabled={chordCarry.disabled}
+            onChange={() => chordCarry.onChange(!chordCarry.on)}
+          />
+        )}
         {allSilent && (
           <p className="pl-mix__note" role="status">
             {t('player.mixer.allSilent')}

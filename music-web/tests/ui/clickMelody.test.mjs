@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createClickMelody, readSoundOn, writeSoundOn } from '../../src/components/ui/clickMelody.ts';
+import {
+  DEFAULT_SOUND_FAB_Y,
+  clickMusicAllowedAt,
+  createClickMelody,
+  readFabY,
+  readSoundOn,
+  writeFabY,
+  writeSoundOn,
+} from '../../src/components/ui/clickMelody.ts';
 
 const songA = {
   notes: [
@@ -51,4 +59,44 @@ test('blocked storage falls back to sound on without throwing', () => {
   };
   assert.equal(readSoundOn(broken), true);
   assert.doesNotThrow(() => writeSoundOn(broken, false));
+});
+
+test('pages with their own audio or focused work stay quiet', () => {
+  for (const path of [
+    '/scores/abc/edit',
+    '/scores/abc/play',
+    '/scores/abc/review',
+    '/scores/abc/suggestions/s1',
+    '/admin/scores/abc/edit',
+    '/admin/scores/abc/play',
+    '/studio/scores/abc/play',
+    '/studio/sessions/s1/report',
+    '/practice-history',
+    '/practice-stats',
+    '/teams/t1/shows/s1/perform',
+  ])
+    assert.equal(clickMusicAllowedAt(path), false, path);
+  for (const path of [
+    '/',
+    '/scores',
+    '/scores/abc',
+    '/explore',
+    '/playlists/p1',
+    '/teams/t1/shows/s1',
+    '/admin/scores',
+  ])
+    assert.equal(clickMusicAllowedAt(path), true, path);
+});
+
+test('the floating button position is a clamped ratio with a default', () => {
+  const store = new Map();
+  const storage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
+  assert.equal(readFabY(storage), DEFAULT_SOUND_FAB_Y);
+  writeFabY(storage, 0.25);
+  assert.equal(readFabY(storage), 0.25);
+  writeFabY(storage, 3);
+  assert.equal(readFabY(storage), 1);
+  store.set('ui.soundFabY', 'abc');
+  assert.equal(readFabY(storage), DEFAULT_SOUND_FAB_Y);
+  assert.equal(readFabY(null), DEFAULT_SOUND_FAB_Y);
 });

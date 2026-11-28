@@ -1,3 +1,5 @@
+import { DEFAULT_ACCOMPANIMENT, isAccompanimentStyle } from '../../editor/audio/accompaniment';
+import type { AccompanimentStyle } from '../../editor/audio/accompaniment';
 import { NO_LOOP, sanitizeLoop } from './loop';
 import type { LoopSettings } from './loop';
 import { EMPTY_MIXER, sanitizeMixer } from './mixer';
@@ -11,19 +13,33 @@ export type SoundQuality = 'high' | 'light';
 export interface PlayerSettings {
   /** Chất lượng mẫu âm piano: "high" (2 lớp lực, đủ nốt) hoặc "light" (cho mạng chậm). */
   quality: SoundQuality;
+  /** Kiểu đệm hợp âm người nghe chọn; dùng cho mọi bản nhạc (không phụ thuộc bản nhạc). */
+  chordStyle: AccompanimentStyle;
 }
 
 const KEY = 'player:settings';
-const DEFAULTS: PlayerSettings = { quality: 'high' };
+const DEFAULTS: PlayerSettings = { quality: 'high', chordStyle: DEFAULT_ACCOMPANIMENT };
 
 export function loadPlayerSettings(): PlayerSettings {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return { ...DEFAULTS };
     const parsed = JSON.parse(raw) as Partial<PlayerSettings>;
-    return { quality: parsed.quality === 'light' ? 'light' : 'high' };
+    return {
+      quality: parsed.quality === 'light' ? 'light' : 'high',
+      chordStyle: isAccompanimentStyle(parsed.chordStyle) ? parsed.chordStyle : DEFAULT_ACCOMPANIMENT,
+    };
   } catch {
     return { ...DEFAULTS };
+  }
+}
+
+/** Ghi đè các trường trong `patch` của cài đặt chung, giữ nguyên các trường khác. */
+export function savePlayerSettings(patch: Partial<PlayerSettings>): void {
+  try {
+    localStorage.setItem(KEY, JSON.stringify({ ...loadPlayerSettings(), ...patch }));
+  } catch {
+    // không lưu được thì lần sau dùng mặc định
   }
 }
 
@@ -65,7 +81,13 @@ const readScoreRecord = (scoreId: string | number): Record<string, unknown> => {
 
 export function loadScoreSettings(scoreId: string | number | null | undefined): ScorePlayerSettings {
   if (scoreId === null || scoreId === undefined)
-    return { tempoPercent: DEFAULT_TEMPO_PERCENT, mixer: EMPTY_MIXER, loop: NO_LOOP, transpose: 0, chordCarry: true };
+    return {
+      tempoPercent: DEFAULT_TEMPO_PERCENT,
+      mixer: EMPTY_MIXER,
+      loop: NO_LOOP,
+      transpose: 0,
+      chordCarry: true,
+    };
   const record = readScoreRecord(scoreId);
   return {
     tempoPercent:

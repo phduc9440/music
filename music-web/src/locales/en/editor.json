@@ -218,13 +218,30 @@
   },
   "instruments": {
     "piano": "Piano",
-    "strings": "Strings",
-    "flute": "Flute / woodwinds",
+    "epiano": "Electric piano",
     "organ": "Organ",
-    "guitar": "Guitar / plucked strings",
-    "choir": "Voice / choir",
+    "accordion": "Accordion",
+    "strings": "Strings",
+    "guitar": "Guitar / plucked",
+    "harp": "Harp",
+    "zither": "Zither (đàn tranh)",
+    "bass": "Bass guitar",
+    "flute": "Flute / woodwinds",
+    "clarinet": "Clarinet",
+    "sax": "Saxophone",
     "brass": "Brass",
-    "bells": "Bells / glockenspiel"
+    "bells": "Bells / glockenspiel",
+    "marimba": "Marimba / xylophone",
+    "musicbox": "Music box",
+    "choir": "Voice / choir",
+    "synth": "Synth pad"
+  },
+  "instrumentFamilies": {
+    "keys": "Keyboards",
+    "strings": "Strings",
+    "winds": "Winds",
+    "percussion": "Percussion",
+    "other": "Other"
   },
   "flash": {
     "inputDuration": "Input duration: {duration}",

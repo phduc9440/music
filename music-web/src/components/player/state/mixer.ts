@@ -78,39 +78,3 @@ export function sanitizeMixer(raw: unknown): MixerState {
   }
   return out;
 }
-
-/** Nghe phần nào khi bản nhạc có đệm hợp âm: cả hai, chỉ giai điệu (tắt đệm) hoặc chỉ hợp âm (tay trái). */
-export type ChordListenMode = 'both' | 'melody' | 'chords';
-
-/** Chế độ nghe hiện tại suy từ Mute / Solo của các track (track hợp âm là `chordId`). */
-export function chordListenMode(mixer: MixerState, trackIds: readonly string[], chordId: string): ChordListenMode {
-  const others = trackIds.filter((id) => id !== chordId);
-  const chordHeard = trackGain(mixer, trackIds, chordId) > 0;
-  const othersHeard = others.some((id) => trackGain(mixer, trackIds, id) > 0);
-  if (chordHeard && !othersHeard) return 'chords';
-  if (!chordHeard && othersHeard) return 'melody';
-  return 'both';
-}
-
-/**
- * Các thay đổi Mute / Solo cần áp để chuyển sang chế độ nghe `mode` (âm lượng giữ nguyên). "Chỉ hợp âm" là Solo track hợp
- * âm và bỏ Solo các track khác; "Chỉ giai điệu" là tắt tiếng track hợp âm; "Cả hai" bỏ mọi Mute / Solo.
- */
-export function chordListenPatches(
-  mode: ChordListenMode,
-  trackIds: readonly string[],
-  chordId: string,
-): [string, Partial<TrackMix>][] {
-  const others = trackIds.filter((id) => id !== chordId);
-  if (mode === 'chords')
-    return [
-      [chordId, { solo: true, mute: false }],
-      ...others.map((id) => [id, { solo: false }] as [string, Partial<TrackMix>]),
-    ];
-  if (mode === 'melody')
-    return [
-      [chordId, { mute: true, solo: false }],
-      ...others.map((id) => [id, { solo: false }] as [string, Partial<TrackMix>]),
-    ];
-  return trackIds.map((id) => [id, { mute: false, solo: false }]);
-}

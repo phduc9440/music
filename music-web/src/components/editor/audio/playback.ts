@@ -11,7 +11,9 @@
  *   rải hợp âm lệch nhẹ thời điểm vào của từng nốt từ dưới lên; pedal giữ nốt ngân cho tới khi nhả; dấu ngắt nghỉ (caesura)
  *   chèn một quãng lặng chung cho mọi part (như fermata nhưng sau nốt).
  */
-import { DEFAULT_GAIN, DEFAULT_VELOCITY, velocityGain } from './loudness';
+import { DEFAULT_GAIN, DEFAULT_VELOCITY, levelDriveDb, levelWithDriveOffset, velocityGain } from './loudness';
+import { accompanimentHits, DEFAULT_ACCOMPANIMENT } from './accompaniment';
+import type { AccompanimentStyle } from './accompaniment';
 import { chordNotes } from '../notation/chordNotes';
 import type { ChordNotes } from '../notation/chordNotes';
 import { keyAlter, pitchToMidi, STEPS } from '../notes/pitch';
@@ -90,14 +92,54 @@ export interface PlaybackPlan {
   total: number;
 }
 
+export interface PlaybackOptions {
+  /** Kiểu đệm hợp âm (người nghe chọn); mặc định hợp âm ngân. */
+  chordStyle?: AccompanimentStyle;
+}
+
+/** Rải nhẹ các nốt của một lần dập hợp âm (giây giữa hai nốt) cho tiếng đỡ "dập". */
+const CHORD_ROLL_S = 0.012;
+
 /** Âm lượng mặc định (mf) và vận tốc MIDI tương ứng: xem loudness.ts, nơi cũng định nghĩa mức to nhỏ → dB. */
 export { DEFAULT_GAIN, DEFAULT_VELOCITY, velocityGain };
 /**
- * Âm lượng nốt đệm hợp âm (nhỏ hơn giai điệu mf chừng 6 dB để không át), nốt bass to hơn một chút, và phần ngân (≤ 1) trước
- * khi nhả.
+ * Âm lượng nốt đệm hợp âm khi giai điệu ở mf (nhỏ hơn chừng 6 dB để không át), nốt bass to hơn một chút, và phần ngân (≤ 1)
+ * trước khi nhả. Ở mức to nhỏ khác, phần đệm nhỏ / to theo đúng bằng chừng ấy dB như giai điệu (xem `chordGainAt`).
  */
 export const CHORD_GAIN = 0.68;
 export const CHORD_BASS_GAIN = 0.72;
+const CHORD_OFFSET_DB = levelDriveDb(CHORD_GAIN) - levelDriveDb(DEFAULT_GAIN);
+const CHORD_BASS_OFFSET_DB = levelDriveDb(CHORD_BASS_GAIN) - levelDriveDb(DEFAULT_GAIN);
+
+/** Âm lượng một nốt đã xếp lịch của part (để phần đệm hợp âm theo mức to nhỏ của part đó). */
+interface PartLevel {
+  start: number;
+  gain: number;
+}
+
+/**
+ * Mức to nhỏ của part tại một hợp âm bắt đầu ở `start` và kéo tới `end`: trung vị âm lượng các nốt vào trong khoảng đó
+ * (trung vị để một nốt có dấu nhấn không kéo cả hợp âm lên); không có nốt nào thì lấy nốt gần nhất trước đó, chưa có nốt
+ * nào thì mf. `levels` đã xếp theo thời gian.
+ */
+export function partLevelAt(levels: readonly PartLevel[], start: number, end: number): number {
+  const inside = levels.filter((l) => l.start >= start - EPS && l.start < end - EPS).map((l) => l.gain);
+  if (inside.length > 0) {
+    inside.sort((a, b) => a - b);
+    const mid = Math.floor(inside.length / 2);
+    return inside.length % 2 ? inside[mid] : (inside[mid - 1] + inside[mid]) / 2;
+  }
+  let before: number | null = null;
+  for (const l of levels) {
+    if (l.start > start + EPS) break;
+    before = l.gain;
+  }
+  return before ?? DEFAULT_GAIN;
+}
+
+/** Âm lượng nốt đệm (bass hay nốt hợp âm) khi part đang ở mức `level`: nhỏ hơn giai điệu một khoảng dB cố định. */
+export const chordGainAt = (level: number, bass: boolean): number =>
+  levelWithDriveOffset(level, bass ? CHORD_BASS_OFFSET_DB : CHORD_OFFSET_DB);
 const CHORD_HOLD = 0.92;
 /** Nốt ngân bình thường chỉ vang 90% độ dài để hai nốt liền nhau không dính. */
 const LEGATO_FACTOR = 0.9;
@@ -702,7 +744,7 @@ const onsetsByPitch = (notes: Building[]): { next: (note: Building) => number | 
  * @param doc tài liệu MusicXML
  * @param fallbackBpm tempo dùng khi file không có <sound tempo>
  */
-export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): PlaybackPlan {
+export function buildPlayback(doc: ScoreDocument, fallbackBpm: number, options: PlaybackOptions = {}): PlaybackPlan {
   const infoOf = new Map<Element, NoteInfo>();
   for (const info of doc.notes) infoOf.set(info.element, info);
 
@@ -785,6 +827,8 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
 
   // Lượt 2: nốt của từng part trên đồng hồ chung
   const result: PlayNote[] = [];
+  /** Âm lượng các nốt từng part theo thời gian, để phần đệm hợp âm theo mức to nhỏ của part ghi hợp âm. */
+  const partLevels: PartLevel[][] = [];
   parts.forEach((measures, p) => {
     const building: Building[] = [];
     const events: Event[] = [];
@@ -944,6 +988,7 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
       }
     });
     const gains = assignGains(building, events);
+    partLevels[p] = building.map((n) => ({ start: n.start, gain: gains.get(n) ?? DEFAULT_GAIN }));
     spreadArpeggios(building);
     linkGlissandi(building);
     const sustain = pedalSustain(pedals);
@@ -1014,8 +1059,10 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
   const chordPart = parts.findIndex((measures) =>
     measures.some((m) => scanOf(m).items.some((i) => i.kind === 'harmony')),
   );
+  const chordStyle = options.chordStyle ?? DEFAULT_ACCOMPANIMENT;
   if (chordPart >= 0) {
     const chordMeasures = parts[chordPart];
+    const levels = [...(partLevels[chordPart] ?? [])].sort((a, b) => a.start - b.start);
     const harmoniesOf = (m: Element) =>
       scanOf(m)
         .items.flatMap((i) => (i.kind === 'harmony' ? [i] : []))
@@ -1043,23 +1090,32 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number): Playback
         if (!point.notes || q1 - point.q <= EPS) return;
         const start = timeAt(mt, point.q);
         const end = timeAt(mt, q1);
-        const duration = (end - start) * CHORD_HOLD;
-        const make = (midi: number, gain: number): PlayNote => ({
-          id: `chord-${k}-${i}-${midi}`,
-          part: chordPart,
-          time: start,
-          duration,
-          midi,
-          gain,
-          measure: measureIndex,
-          order: k,
-          staff: 0,
-          beat: mt.startBeat + point.q,
-          beatEnd: mt.startBeat + q1,
-          ...(point.carried ? { carried: true } : {}),
+        // Phần đệm nhỏ / to theo mức to nhỏ (p, pp, f, cresc....) của part ghi hợp âm tại chỗ đó
+        const level = partLevelAt(levels, start, end);
+        const meter = doc.timeAt(measureIndex);
+        const style = meter.free ? 'sustain' : chordStyle;
+        const bpm = bpmAt(mt.segments, point.q);
+        const hits = accompanimentHits(point.notes, point.q, q1, meter, style, bpm);
+        hits.forEach((hit, h) => {
+          const at = timeAt(mt, hit.q) + hit.roll * CHORD_ROLL_S;
+          const until = timeAt(mt, hit.q + hit.length, true);
+          // Hợp âm ngân (kiểu cũ) nhả sớm một chút để hai hợp âm liền nhau không dính; các kiểu khác đã tự tính độ ngắt
+          const held = style === 'sustain' ? (until - at) * CHORD_HOLD : until - at;
+          chords.push({
+            id: `chord-${k}-${i}-${h}-${hit.midi}`,
+            part: chordPart,
+            time: at,
+            duration: Math.max(0.05, held),
+            midi: hit.midi,
+            gain: Math.min(1, chordGainAt(level, hit.bass) * hit.weight),
+            measure: measureIndex,
+            order: k,
+            staff: 0,
+            beat: mt.startBeat + hit.q,
+            beatEnd: mt.startBeat + hit.q + hit.length,
+            ...(point.carried ? { carried: true } : {}),
+          });
         });
-        chords.push(make(point.notes.bass, CHORD_BASS_GAIN));
-        for (const tone of point.notes.tones) chords.push(make(tone, CHORD_GAIN));
       });
     });
     chords.sort((a, b) => a.time - b.time || a.midi - b.midi);

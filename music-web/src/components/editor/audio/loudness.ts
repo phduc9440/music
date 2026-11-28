@@ -56,3 +56,21 @@ export function levelDriveDb(level: number): number {
 
 /** Hệ số biên độ tương ứng với `levelDriveDb` (mf = 1). */
 export const levelAmplitude = (level: number): number => Math.pow(10, levelDriveDb(level) / 20);
+
+/**
+ * Âm lượng có độ lớn tín hiệu bằng `levelDriveDb(level) + offsetDb`: dùng cho phần đệm hợp âm để luôn nhỏ hơn giai điệu
+ * đúng bấy nhiêu dB ở mọi mức to nhỏ (pp, mf, ff...). Tìm bằng chia đôi vì `levelDriveDb` tăng đơn điệu theo âm lượng.
+ */
+export function levelWithDriveOffset(level: number, offsetDb: number): number {
+  const target = levelDriveDb(level) + offsetDb;
+  let low = 1e-3;
+  let high = 1;
+  if (levelDriveDb(low) >= target) return low;
+  if (levelDriveDb(high) <= target) return high;
+  for (let i = 0; i < 40; i++) {
+    const mid = (low + high) / 2;
+    if (levelDriveDb(mid) < target) low = mid;
+    else high = mid;
+  }
+  return (low + high) / 2;
+}
