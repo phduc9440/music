@@ -42,6 +42,7 @@ export const editShortcuts = (): [string, string][] => [
 
 /** Phím tắt xếp cuối hộp thoại, sau các phím tắt Góp ý: dựng lúc hiển thị để đổi ngôn ngữ có hiệu lực ngay. */
 export const endShortcuts = (): [string, string][] => [
+  ['Space', t('editor.view.help.play.desc')],
   ['Esc', t('editor.view.help.esc.desc')],
   ['+  /  -  /  0', t('editor.view.help.zoom.desc')],
   ['?', t('editor.view.help.help.desc')],
