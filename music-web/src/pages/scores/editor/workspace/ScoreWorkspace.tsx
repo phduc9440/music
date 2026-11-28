@@ -77,6 +77,8 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
   const [searchParams] = useSearchParams();
   const omrCheck = useOmrCheck(score);
   const [checkOpen, setCheckOpen] = useState(() => searchParams.get('check') === '1');
+  /** Số ô "Cần kiểm tra" chưa được đánh dấu đã kiểm. */
+  const uncheckedCount = omrCheck.flagged.filter((m) => !omrCheck.checked.has(m.measure)).length;
 
   const openHelp = useCallback(() => setHelpOpen(true), []);
   const view = useViewerChrome(rootRef, canEdit, openHelp);
@@ -238,10 +240,11 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
             : null
         }
         checkToggle={
-          omrCheck.available
+          // Đã kiểm hết các ô (còn 0) thì ẩn nút; đang mở bảng thì giữ nút để đóng lại được
+          omrCheck.available && (uncheckedCount > 0 || checkOpen)
             ? {
                 shown: checkOpen && !ai.shown,
-                count: omrCheck.flagged.filter((m) => !omrCheck.checked.has(m.measure)).length,
+                count: uncheckedCount,
                 onClick: () => {
                   if (!checkOpen) {
                     comments.closeComments();
