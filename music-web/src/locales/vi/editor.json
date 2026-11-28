@@ -1083,6 +1083,9 @@
       "delete": {
         "desc": "Xóa nốt đang chọn (hợp âm còn nốt khác thì giữ lại)"
       },
+      "play": {
+        "desc": "Phát / tạm dừng (có nốt đang chọn thì phát từ nốt đó); khi đang nhập lời hay hợp âm thì Space là sang nốt kế"
+      },
       "esc": {
         "desc": "Bỏ chọn"
       },

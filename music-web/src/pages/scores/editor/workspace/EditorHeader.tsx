@@ -188,13 +188,13 @@ export default function EditorHeader(p: Props) {
           className="sc-btn"
           onClick={p.onPlay}
           aria-pressed={player.status === 'playing'}
-          title={
+          title={`${
             player.status === 'playing'
               ? t('editor.view.play.pause')
               : editor.selection.size > 0
                 ? t('editor.view.play.fromSelection')
                 : t('editor.view.play.all')
-          }
+          } (Space)`}
         >
           {player.status === 'playing' ? <IconStop /> : <IconPlay />}{' '}
           {player.status === 'playing' ? t('editor.view.play.pause') : t('editor.view.play.play')}

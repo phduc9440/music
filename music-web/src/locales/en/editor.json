@@ -1083,6 +1083,9 @@
       "delete": {
         "desc": "Delete the selected note (a chord with other notes keeps them)"
       },
+      "play": {
+        "desc": "Play / pause (plays from the selected note if any); while entering lyrics or chords, Space moves to the next note"
+      },
       "esc": {
         "desc": "Deselect"
       },

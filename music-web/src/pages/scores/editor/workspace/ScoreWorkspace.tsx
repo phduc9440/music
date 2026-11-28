@@ -138,6 +138,7 @@ export default function ScoreWorkspace({ score, xml, info, doc, xmlVersion }: Pr
     score,
     editor.revision,
     selectionRef,
+    !editor.lyricMode && !editor.chordMode,
   );
   // Tên bài / tác giả của bản nhạc: file chưa ghi thì vẽ các chữ này (vẫn trống thì "Blank") lên bản nhạc
   const headerFallback = useMemo(
