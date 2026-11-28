@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { accompanimentHits, beatGrid } from '../../src/components/editor/audio/accompaniment.ts';
+import { accompanimentHits, beatGrid, voiceChord } from '../../src/components/editor/audio/accompaniment.ts';
 import { buildPlayback } from '../../src/components/editor/audio/playback.ts';
 import { ScoreDocument } from '../../src/components/editor/core/ScoreDocument.ts';
 import { quarters, score } from './support/score.mjs';
@@ -29,20 +29,34 @@ test('held chords strike once, rolled from the bass up', () => {
   );
 });
 
-test('broken chords move in eighths, bass first, notes ring to the end of the chord', () => {
-  const hits = accompanimentHits(C, 0, 2, { beats: 4, beatType: 4 }, 'arpeggio', 90);
+test('broken chords go up and down an open 1–5–8–10 shape in eighths, each note ringing like a pedal', () => {
+  const hits = accompanimentHits(C, 0, 4, { beats: 4, beatType: 4 }, 'arpeggio', 90);
   assert.deepEqual(
-    hits.map((h) => [h.q, h.midi]),
-    [
-      [0, 36],
-      [0.5, 52],
-      [1, 55],
-      [1.5, 60],
-    ],
+    hits.map((h) => h.midi),
+    [36, 43, 48, 52, 55, 52, 48, 43],
   );
-  assert.ok(hits.every((h) => Math.abs(h.q + h.length - 2) < 1e-9));
+  assert.deepEqual(at(hits), [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5]);
+  // E4 (52) vang tới khi được đánh lại ở phách 3,5; G4 (55) ở đỉnh vang tới hết hợp âm
+  assert.equal(hits[3].length, 1);
+  assert.equal(hits[4].q + hits[4].length, 4);
+  assert.ok(hits[0].bass && hits[0].weight > hits[1].weight);
   // bài nhanh: mỗi phách một nốt
   assert.deepEqual(at(accompanimentHits(C, 0, 2, { beats: 4, beatType: 4 }, 'arpeggio', 140)), [0, 1]);
+});
+
+test('voicing moves smoothly from chord to chord and stays under the melody', () => {
+  const c = voiceChord({ bass: 36, tones: [52, 55, 60] }, null, 67);
+  const f = voiceChord({ bass: 41, tones: [53, 57, 60] }, c, 67);
+  const g = voiceChord({ bass: 43, tones: [55, 59, 62] }, f, 67);
+  for (const v of [c, f, g]) assert.ok(Math.max(...v.tones) <= 67 && Math.min(...v.tones) >= 50, JSON.stringify(v));
+  // F giữ nốt chung C với hợp âm C, mỗi bè đi không quá một quãng ba
+  const moves = (a, b) => a.tones.map((t, i) => Math.abs(t - b.tones[i]));
+  assert.ok(f.tones.includes(60) && c.tones.includes(60));
+  assert.ok(moves(c, f).every((m) => m <= 4) && moves(f, g).every((m) => m <= 4), JSON.stringify([c, f, g]));
+  // bass gần bass trước, không nhảy quãng tám
+  assert.ok(Math.abs(f.bass - c.bass) <= 7 && Math.abs(g.bass - f.bass) <= 7);
+  // giai điệu thấp thì hợp âm hạ xuống dưới nó
+  assert.ok(Math.max(...voiceChord({ bass: 36, tones: [52, 55, 60] }, null, 61).tones) <= 61);
 });
 
 test('bass–chord gives a waltz in 3/4 and bass on 1 and 3 in 4/4', () => {
@@ -67,10 +81,19 @@ test('bass–chord gives a waltz in 3/4 and bass on 1 and 3 in 4/4', () => {
   assert.deepEqual(at(six), [0, 0.5, 1, 1.5, 2, 2.5]);
 });
 
-test('march strikes every beat with the downbeat accented', () => {
+test('march strikes every beat, with bass octave on 1 and the fifth on 3, offbeats lighter', () => {
   const hits = accompanimentHits(C, 0, 4, { beats: 4, beatType: 4 }, 'march', 110);
   assert.deepEqual(at(hits), [0, 1, 2, 3]);
-  assert.ok(hits.filter((h) => h.q === 0).every((h) => h.weight > 1));
+  assert.deepEqual(
+    hits.filter((h) => h.bass).map((h) => [h.q, h.midi]),
+    [
+      [0, 36],
+      [0, 48],
+      [2, 43],
+    ],
+  );
+  const loudest = (q) => Math.max(...hits.filter((h) => h.q === q).map((h) => h.weight));
+  assert.ok(loudest(0) > loudest(1) && loudest(2) > loudest(3));
 });
 
 test('a chord starting off the beat is struck where it starts', () => {
@@ -82,9 +105,11 @@ test("the style is the listener's choice: expression text in the score does not 
   const harmony = '<harmony><root><root-step>C</root-step></root><kind>major</kind></harmony>';
   const doc = ScoreDocument.parse(score([`${words}${harmony}${quarters('E4', 'E4', 'E4', 'E4')}`]));
   const times = (style) => [
-    ...new Set(buildPlayback(doc, 60, style ? { chordStyle: style } : {}).chords.map((c) => c.time)),
+    ...new Set(
+      buildPlayback(doc, 60, style ? { chordStyle: style } : {}).chords.map((c) => Math.round(c.time * 20) / 20),
+    ),
   ];
   // mặc định hợp âm ngân: một lần dập (rải vài mili giây), dù bản nhạc ghi "Hào hùng"
-  assert.ok(times().every((t) => t < 0.05));
+  assert.ok(times().every((t) => t <= 0.05));
   assert.deepEqual(times('march'), [0, 1, 2, 3]);
 });

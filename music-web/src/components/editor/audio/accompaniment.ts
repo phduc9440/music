@@ -62,12 +62,97 @@ const gridPoints = (from: number, to: number, step: number): number[] => {
 /** Nốt bass phụ (quãng năm) cho nhịp sau: đi lên nếu còn thấp, không thì xuống quãng bốn. */
 const fifthOf = (bass: number): number => (bass + 7 <= 50 ? bass + 7 : bass - 5);
 
+const pc = (midi: number): number => ((midi % 12) + 12) % 12;
+
+/** Vùng của nốt bass (MIDI): A1–D3; mặc định quanh E2. */
+const BASS_LOW = 33;
+const BASS_HIGH = 50;
+const BASS_HOME = 40;
+/** Vùng của các nốt hợp âm phía trên: nốt thấp nhất từ D3, nốt cao nhất không vượt `ceiling` (dưới giai điệu). */
+const UPPER_LOW = 50;
+/** Nốt cao nhất mặc định của phần hợp âm khi không biết giai điệu ở đâu (khoảng G4). */
+export const DEFAULT_CEILING = 67;
+
 /**
- * Các nốt đệm của hợp âm `chord` vang trong [from, to) (nốt đen từ đầu ô) theo kiểu `style`.
- * - sustain: dập cả hợp âm một lần, rải nhẹ, ngân tới hết.
- * - arpeggio: rải đều từng nốt theo móc đơn (bài nhanh: nốt đen; nhịp ghép: móc đơn chia ba), các nốt ngân chồng lên nhau.
- * - bounce: bass vào phách mạnh, hợp âm ngắn ở các phách còn lại (3/4 thành valse "bùm – chát – chát").
- * - march: hợp âm đầy ở mọi phách, phách 1 nhấn, bass xen gốc – quãng năm, ngắt gọn.
+ * Thế bấm hợp âm cho phần đệm, nối mượt với hợp âm trước (như người đàn): các nốt phía trên chọn thế đảo gần thế trước
+ * nhất và nằm dưới giai điệu (`ceiling`), bass chọn quãng tám gần bass trước. Hợp âm nhiều hơn bốn nốt thì bỏ quãng năm.
+ */
+export function voiceChord(chord: ChordNotes, prev: ChordNotes | null, ceiling = DEFAULT_CEILING): ChordNotes {
+  // Các cao độ (0–11) của hợp âm, nốt gốc đứng đầu (chordNotes xếp từ nốt gốc lên)
+  let classes = [...new Set(chord.tones.map(pc))];
+  if (classes.length > 4) {
+    const fifth = pc(chord.tones[0] + 7);
+    classes = classes.filter((c) => c !== fifth).slice(0, 4);
+  }
+  const top = Math.max(UPPER_LOW + 10, Math.min(79, ceiling));
+  let best: { tones: number[]; score: number } | null = null;
+  for (let low = UPPER_LOW; low <= top; low++) {
+    if (!classes.includes(pc(low))) continue;
+    // Thế đóng bắt đầu từ `low`: mỗi nốt kế tiếp là nốt cao hơn gần nhất thuộc hợp âm
+    const tones = [low];
+    while (tones.length < classes.length) {
+      let next = tones[tones.length - 1] + 1;
+      while (!classes.includes(pc(next)) || tones.some((t) => pc(t) === pc(next))) next++;
+      tones.push(next);
+    }
+    if (tones[tones.length - 1] > top) break;
+    const center = tones.reduce((sum, t) => sum + t, 0) / tones.length;
+    const score = prev?.tones.length
+      ? tones.reduce((sum, t, i) => sum + Math.abs(t - prev.tones[Math.min(i, prev.tones.length - 1)]), 0) +
+        Math.abs(center - 60) * 0.15
+      : Math.abs(tones[tones.length - 1] - (top - 2)) + Math.abs(center - 60) * 0.3;
+    if (!best || score < best.score) best = { tones, score };
+  }
+  const tones = best?.tones ?? chord.tones;
+  // Bass: cùng cao độ với bass của hợp âm, quãng tám gần bass trước (hoặc gần E2)
+  const home = prev ? prev.bass : BASS_HOME;
+  let bass = chord.bass;
+  let bestBass = Infinity;
+  for (let b = BASS_LOW; b <= BASS_HIGH; b++) {
+    if (pc(b) !== pc(chord.bass)) continue;
+    const distance = Math.abs(b - home) + (b > 47 ? 2 : 0);
+    if (distance < bestBass) {
+      bestBass = distance;
+      bass = b;
+    }
+  }
+  return { bass, tones };
+}
+
+/**
+ * Hợp âm rải kiểu "mở" (1 – 5 – 8 – 10...): từ bass đi lên các nốt hợp âm cách xa nhau, nghe thoáng hơn rải sát. Trả về
+ * tối đa 5 nốt tăng dần, bắt đầu bằng bass.
+ */
+export function openArpeggio(chord: ChordNotes): number[] {
+  const classes = new Set([...chord.tones.map(pc), pc(chord.bass)]);
+  const notes = [chord.bass];
+  const gaps = [5, 4, 3, 3];
+  for (const gap of gaps) {
+    let next = notes[notes.length - 1] + gap;
+    while (!classes.has(pc(next))) next++;
+    // tránh trùng cao độ với nốt ngay trước (hợp âm hai nốt)
+    if (next - notes[notes.length - 1] > 12) break;
+    notes.push(next);
+  }
+  return notes;
+}
+
+/** Thứ tự đi lên rồi xuống của hình rải có `slots` nốt trên các nốt `open` (bass đứng đầu). */
+const arpeggioOrder = (open: number[], slots: number): number[] => {
+  const up = open.slice(0, Math.min(open.length, Math.ceil(slots / 2) + 1));
+  const down = up.slice(1, -1).reverse();
+  const cycle = [...up, ...down];
+  return Array.from({ length: slots }, (_, i) => cycle[i % cycle.length]);
+};
+
+/**
+ * Các nốt đệm của hợp âm `chord` (đã chọn thế bằng {@link voiceChord}) vang trong [from, to) (nốt đen từ đầu ô) theo
+ * kiểu `style`, tính theo lưới phách của cả ô nên hình đệm không lệch khi hợp âm đổi giữa ô.
+ * - sustain: bass rồi hợp âm rải nhẹ vài mili giây, ngân tới hết.
+ * - arpeggio: rải "mở" 1 – 5 – 8 – 10 lên rồi xuống theo móc đơn (bài nhanh: nốt đen; nhịp ghép: móc đơn chia ba),
+ *   nốt ngân như giữ pedal tới khi chính nốt đó được đánh lại hoặc hết hợp âm; nốt đầu nhấn hơn.
+ * - bounce: bass ở phách mạnh, hợp âm ngắn nhẹ ở các phách còn lại (3/4 thành valse, 6/8 "bùm – chát – chát").
+ * - march: phách 1 bass quãng tám và hợp âm, phách 3 bass quãng năm, phách 2 – 4 hợp âm nhẹ hơn; ngắt gọn.
  */
 export function accompanimentHits(
   chord: ChordNotes,
@@ -81,29 +166,37 @@ export function accompanimentHits(
   if (span <= EPS) return [];
   const grid = beatGrid(meter);
   const hits: AccompanimentHit[] = [];
-  const block = (q: number, length: number, weight: number, bassMidi: number | null, roll: boolean) => {
-    let order = 0;
-    if (bassMidi !== null) hits.push({ q, length, midi: bassMidi, bass: true, weight, roll: roll ? order++ : 0 });
-    for (const midi of chord.tones) hits.push({ q, length, midi, bass: false, weight, roll: roll ? order++ : 0 });
-  };
+  const upper = (count: number) => chord.tones.slice(Math.max(0, chord.tones.length - count));
+  const block = (q: number, length: number, weight: number, tones: number[], roll = false) =>
+    tones.forEach((midi, i) => hits.push({ q, length, midi, bass: false, weight, roll: roll ? i + 1 : 0 }));
   const beatIndex = (q: number) => Math.round(q / grid.beat);
 
   if (style === 'sustain') {
-    block(from, span, 1, chord.bass, true);
+    hits.push({ q: from, length: span, midi: chord.bass, bass: true, weight: 1, roll: 0 });
+    block(from, span, 0.9, chord.tones, true);
     return hits;
   }
 
   if (style === 'arpeggio') {
-    // Bước rải: nhịp ghép chia ba mỗi phách; nhịp thường chia đôi (bài nhanh thì mỗi phách một nốt)
     const step = grid.compound ? grid.beat / 3 : bpm >= 120 ? grid.beat : grid.beat / 2;
-    const upper = chord.tones;
-    const cycle = [chord.bass, ...upper, ...upper.slice(1, -1).reverse()];
+    const perMeasure = Math.max(1, Math.round((grid.beat * grid.count) / step));
+    const order = arpeggioOrder(openArpeggio(chord), Math.min(perMeasure, 8));
     const points = gridPoints(from, to, step);
     points.forEach((q, i) => {
-      const midi = cycle[i % cycle.length];
-      const bass = i % cycle.length === 0;
-      // Mỗi nốt ngân tới hết hợp âm (như giữ pedal), riêng bass nhắc lại thì ngắt nốt bass trước
-      hits.push({ q, length: to - q, midi, bass, weight: bass ? 1 : 0.85, roll: 0 });
+      const midi = order[i % order.length];
+      const first = i % order.length === 0;
+      // ngân tới khi chính nốt đó được đánh lại (như giữ pedal mà không chồng hai lần một phím) hoặc hết hợp âm
+      const again = points.findIndex((_, j) => j > i && order[j % order.length] === midi);
+      const end = again >= 0 ? points[again] : to;
+      const rising = (i % order.length) / order.length;
+      hits.push({
+        q,
+        length: end - q,
+        midi,
+        bass: first,
+        weight: first ? 0.95 : 0.68 + 0.12 * (1 - Math.abs(rising - 0.5) * 2),
+        roll: 0,
+      });
     });
     return hits;
   }
@@ -114,39 +207,44 @@ export function accompanimentHits(
       const index = beatIndex(q);
       const length = Math.min(grid.beat, to - q);
       if (grid.compound) {
-        // nhịp ghép: bass ở đầu phách, hai móc đơn sau là hợp âm ("bùm – chát – chát"); phách sau bass quãng năm
         hits.push({
           q,
           length: length * 0.95,
           midi: index % 2 ? fifthOf(chord.bass) : chord.bass,
           bass: true,
-          weight: 1,
+          weight: 0.95,
           roll: 0,
         });
         for (const k of [1, 2]) {
           const at = q + (grid.beat / 3) * k;
-          if (at < to - EPS) block(at, (grid.beat / 3) * 0.6, 0.8, null, false);
+          if (at < to - EPS) block(at, (grid.beat / 3) * 0.7, k === 1 ? 0.62 : 0.55, upper(3));
         }
         return;
       }
-      // phách mạnh (phách 1, và phách 3 của 4/4) là bass, các phách khác là hợp âm ngắn: 3/4 thành valse, 2/4 và 4/4
-      // thành "bùm – chát"; hợp âm vào giữa ô thì nốt đầu vẫn là bass
       const strong = index === 0 || (grid.count === 4 && index === 2) || i === 0;
       if (strong) {
         const midi = index === 2 && grid.count === 4 ? fifthOf(chord.bass) : chord.bass;
-        hits.push({ q, length: length * 0.95, midi, bass: true, weight: 1, roll: 0 });
-      } else block(q, length * 0.55, 0.8, null, false);
+        hits.push({ q, length: length * 0.9, midi, bass: true, weight: 0.95, roll: 0 });
+      } else block(q, length * 0.5, 0.6, upper(3));
     });
     return hits;
   }
 
   // march
-  beats.forEach((q) => {
+  beats.forEach((q, i) => {
     const index = beatIndex(q);
-    const length = Math.min(grid.beat, to - q) * 0.75;
-    const strong = index === 0 || (grid.count === 4 && index === 2);
-    const bass = strong ? (index === 2 ? fifthOf(chord.bass) : chord.bass) : null;
-    block(q, length, index === 0 ? 1.05 : strong ? 0.92 : 0.8, bass, false);
+    const length = Math.min(grid.beat, to - q) * 0.6;
+    const downbeat = index === 0 || i === 0;
+    const third = grid.count === 4 && index === 2;
+    if (downbeat) {
+      hits.push({ q, length, midi: chord.bass, bass: true, weight: 1, roll: 0 });
+      if (chord.bass + 12 < chord.tones[0])
+        hits.push({ q, length, midi: chord.bass + 12, bass: true, weight: 0.75, roll: 0 });
+      block(q, length, 0.9, chord.tones);
+    } else if (third) {
+      hits.push({ q, length, midi: fifthOf(chord.bass), bass: true, weight: 0.9, roll: 0 });
+      block(q, length, 0.75, chord.tones);
+    } else block(q, length * 0.8, 0.6, upper(3));
   });
   return hits;
 }

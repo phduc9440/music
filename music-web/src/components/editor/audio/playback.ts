@@ -12,7 +12,7 @@
  *   chèn một quãng lặng chung cho mọi part (như fermata nhưng sau nốt).
  */
 import { DEFAULT_GAIN, DEFAULT_VELOCITY, levelDriveDb, levelWithDriveOffset, velocityGain } from './loudness';
-import { accompanimentHits, DEFAULT_ACCOMPANIMENT } from './accompaniment';
+import { accompanimentHits, DEFAULT_ACCOMPANIMENT, DEFAULT_CEILING, voiceChord } from './accompaniment';
 import type { AccompanimentStyle } from './accompaniment';
 import { chordNotes } from '../notation/chordNotes';
 import type { ChordNotes } from '../notation/chordNotes';
@@ -99,6 +99,16 @@ export interface PlaybackOptions {
 
 /** Rải nhẹ các nốt của một lần dập hợp âm (giây giữa hai nốt) cho tiếng đỡ "dập". */
 const CHORD_ROLL_S = 0.012;
+/** Độ lệch tối đa về thời điểm (giây) và lực đánh (tỉ lệ) của nốt đệm, cho đỡ đều như máy. */
+const HUMAN_TIME_S = 0.008;
+const HUMAN_GAIN = 0.08;
+
+/** Số giả ngẫu nhiên cố định trong [-0,5; 0,5] theo vị trí nốt đệm (cùng bản nhạc luôn nghe như nhau). */
+const humanize = (a: number, b: number, c: number): number => {
+  let x = (a * 73856093) ^ (b * 19349663) ^ (c * 83492791);
+  x = (x ^ (x >>> 13)) * 1274126177;
+  return (((x ^ (x >>> 16)) >>> 0) % 1000) / 1000 - 0.5;
+};
 
 /** Âm lượng mặc định (mf) và vận tốc MIDI tương ứng: xem loudness.ts, nơi cũng định nghĩa mức to nhỏ → dB. */
 export { DEFAULT_GAIN, DEFAULT_VELOCITY, velocityGain };
@@ -1063,6 +1073,14 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number, options: 
   if (chordPart >= 0) {
     const chordMeasures = parts[chordPart];
     const levels = [...(partLevels[chordPart] ?? [])].sort((a, b) => a.start - b.start);
+    // Nốt thấp nhất của giai điệu (khuông trên của part ghi hợp âm) trong khoảng thời gian, để phần hợp âm nằm dưới nó
+    const melody = result.filter((n) => n.part === chordPart && n.staff <= 1 && !n.ornament);
+    const ceilingAt = (from: number, to: number): number => {
+      let low = Infinity;
+      for (const n of melody) if (n.time < to - EPS && n.time + n.duration > from + EPS) low = Math.min(low, n.midi);
+      return Number.isFinite(low) ? Math.max(60, Math.min(DEFAULT_CEILING + 5, low - 1)) : DEFAULT_CEILING;
+    };
+    let previous: ChordNotes | null = null;
     const harmoniesOf = (m: Element) =>
       scanOf(m)
         .items.flatMap((i) => (i.kind === 'harmony' ? [i] : []))
@@ -1095,9 +1113,15 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number, options: 
         const meter = doc.timeAt(measureIndex);
         const style = meter.free ? 'sustain' : chordStyle;
         const bpm = bpmAt(mt.segments, point.q);
-        const hits = accompanimentHits(point.notes, point.q, q1, meter, style, bpm);
+        // Thế hợp âm nối mượt với hợp âm trước và nằm dưới nốt thấp nhất của giai điệu lúc đó
+        const voiced = voiceChord(point.notes, previous, ceilingAt(start, end));
+        previous = voiced;
+        const hits = accompanimentHits(voiced, point.q, q1, meter, style, bpm);
         hits.forEach((hit, h) => {
-          const at = timeAt(mt, hit.q) + hit.roll * CHORD_ROLL_S;
+          // Lệch rất nhỏ về thời điểm và lực đánh (cố định theo vị trí, không ngẫu nhiên) cho đỡ đều như máy
+          const wobble = humanize(k, i, h);
+          const at =
+            timeAt(mt, hit.q) + hit.roll * CHORD_ROLL_S + (hit.roll === 0 && !hit.bass ? wobble * HUMAN_TIME_S : 0);
           const until = timeAt(mt, hit.q + hit.length, true);
           // Hợp âm ngân (kiểu cũ) nhả sớm một chút để hai hợp âm liền nhau không dính; các kiểu khác đã tự tính độ ngắt
           const held = style === 'sustain' ? (until - at) * CHORD_HOLD : until - at;
@@ -1107,7 +1131,7 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number, options: 
             time: at,
             duration: Math.max(0.05, held),
             midi: hit.midi,
-            gain: Math.min(1, chordGainAt(level, hit.bass) * hit.weight),
+            gain: Math.min(1, chordGainAt(level, hit.bass) * hit.weight * (1 + wobble * HUMAN_GAIN)),
             measure: measureIndex,
             order: k,
             staff: 0,
