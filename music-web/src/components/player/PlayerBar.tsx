@@ -8,9 +8,8 @@ import {
   IconPrevMeasure,
   IconStopSmall,
 } from './controls/PlayerIcons';
-import { ChordControl } from './controls/ChordControl';
 import { LoopControl } from './controls/LoopControl';
-import { chordListenMode, chordListenPatches, mixOf } from './state/mixer';
+import { silentTracks } from './state/mixer';
 import { MixerPopover } from './controls/MixerPopover';
 import { PlayerSheet } from './PlayerSheet';
 import type { SheetTab } from './PlayerSheet';
@@ -28,7 +27,7 @@ import './player.css';
 /** Dưới mức này các tùy chọn dồn vào nút "⋯" và bottom sheet (khớp @media trong player.css). */
 const MOBILE_QUERY = '(max-width: 767px)';
 
-type ControlId = 'tempo' | 'loop' | 'transpose' | 'mixer' | 'chords';
+type ControlId = 'tempo' | 'loop' | 'transpose' | 'mixer';
 
 const fmt = (seconds: number): string => {
   const s = Math.max(0, Math.round(seconds));
@@ -106,11 +105,9 @@ function BarBody({
   // Ô đang phát theo chỉ số trong bản nhạc (khác thứ tự lượt phát khi có dấu lặp lại)
   const currentMeasure = timeline.measures[Math.max(0, order < 0 ? timeline.measures.length - 1 : order)]?.index ?? 0;
   const percent = Math.round(player.sampler.progress * 100);
-  /** Đệm hợp âm đang bật (track Hợp âm không bị tắt tiếng); mặc định bật. */
-  const chordsOn = !mixOf(player.mixer, CHORD_TRACK_ID).mute;
   const trackIds = timeline.tracks.map((tr) => tr.id);
-  /** Nghe cả hai / chỉ giai điệu / chỉ hợp âm, suy từ Mute / Solo trong Mixer. */
-  const chordListen = chordListenMode(player.mixer, trackIds, CHORD_TRACK_ID);
+  /** Phần đệm hợp âm đang nghe được (không bị Mute, không bị Solo track khác); tắt thì công tắc "đánh lại" bị khóa. */
+  const chordsHeard = !silentTracks(player.mixer, trackIds).has(CHORD_TRACK_ID);
   // Thời gian hiển thị là giây thật: ở 50% bài dài gấp đôi
   const speed = player.tempoPercent / 100;
 
@@ -128,7 +125,6 @@ function BarBody({
     { id: 'loop', label: t('player.tabs.loop') },
     { id: 'transpose', label: t('player.tabs.transpose') },
     ...(hasMixer ? [{ id: 'mixer', label: 'Mixer' }] : []),
-    ...(hasChords ? [{ id: 'chords', label: t('player.tabs.chords') }] : []),
   ];
   const activeTab = tabs.some((t) => t.id === tab) ? tab : 'tempo';
   /** Có cài đặt khác mặc định (tempo, lặp, chuyển giọng, mixer, hợp âm) thì nút "⋯" có chấm báo. */
@@ -142,21 +138,6 @@ function BarBody({
   /** Một điều khiển: ở desktop là nút + hộp nổi, trong sheet (inline) chỉ là phần nội dung. */
   const control = (id: ControlId, inline: boolean): React.ReactNode => {
     switch (id) {
-      case 'chords':
-        return (
-          <ChordControl
-            on={chordsOn}
-            listen={chordListen}
-            onListen={(mode) =>
-              chordListenPatches(mode, trackIds, CHORD_TRACK_ID).forEach(([id, patch]) => player.setTrackMix(id, patch))
-            }
-            carry={player.chordCarry}
-            onToggle={() => player.setTrackMix(CHORD_TRACK_ID, { mute: chordsOn })}
-            onCarryChange={player.setChordCarry}
-            disabled={!player.canPlay}
-            inline={inline}
-          />
-        );
       case 'tempo':
         return (
           <TempoControl
@@ -205,6 +186,9 @@ function BarBody({
             onReset={player.resetMixer}
             disabled={!player.canPlay}
             inline={inline}
+            chordCarry={
+              hasChords ? { on: player.chordCarry, disabled: !chordsHeard, onChange: player.setChordCarry } : undefined
+            }
           />
         );
     }
@@ -305,7 +289,6 @@ function BarBody({
           </button>
         ) : (
           <>
-            {hasChords && control('chords', false)}
             {control('tempo', false)}
             {control('loop', false)}
             {control('transpose', false)}

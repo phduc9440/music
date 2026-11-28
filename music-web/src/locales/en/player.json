@@ -51,28 +51,12 @@
     "tempo": "Speed",
     "loop": "Loop",
     "transpose": "Key",
-    "chords": "Chords",
     "group": "Option groups"
   },
   "chords": {
-    "label": {
-      "on": "Chord accompaniment: on",
-      "off": "Chord accompaniment: off",
-      "only": "Playing chords only"
-    },
-    "title": "Chord accompaniment",
-    "trigger": "Chords",
     "carry": "Repeat the chord in measures without one",
     "carryOn": "Measures without a chord repeat the chord in effect at the start of the measure.",
-    "carryOff": "Measures without a chord stay silent; chords only play where they are written.",
-    "note": "Adjust each part's volume in the Mixer (\"Chords\" row). On a single-staff score the melody is the right hand and the chords are the left hand.",
-    "triggerOnly": "Chords only",
-    "listen": {
-      "title": "Listen to",
-      "both": "Both",
-      "melody": "Melody only",
-      "chords": "Chords only"
-    }
+    "carryOff": "Measures without a chord stay silent; chords only play where they are written."
   },
   "loop": {
     "summary": "Loop {summary}",

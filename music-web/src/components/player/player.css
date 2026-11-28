@@ -652,43 +652,7 @@
   text-decoration: none;
 }
 
-/* Đệm hợp âm */
-.pl-chords__head {
-  margin-bottom: 8px;
-  font-size: 13px;
-  font-weight: 600;
-}
-.pl-seg {
-  display: flex;
-  gap: 2px;
-  margin-bottom: 8px;
-  padding: 2px;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--ui-shadow-ink) 8%, transparent);
-}
-.pl-seg__opt {
-  flex: 1 1 0;
-  min-width: 0;
-  padding: 6px 8px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 12px;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.pl-seg__opt--on {
-  background: var(--ui-surface);
-  color: var(--sc-primary, var(--ui-primary));
-  font-weight: 600;
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--ui-shadow-ink) 20%, transparent);
-}
-.pl-seg__opt:focus-visible {
-  outline: 2px solid var(--sc-primary, var(--ui-primary));
-  outline-offset: 1px;
-}
+/* Công tắc trong hộp nổi */
 .pl-switch {
   display: flex;
   align-items: flex-start;
@@ -749,11 +713,6 @@
 }
 .pl-switch__track--on .pl-switch__thumb {
   transform: translateX(18px);
-}
-.pl-chords__note {
-  margin: 8px 0 0;
-  font-size: 12px;
-  color: var(--sc-muted, var(--ui-text-2));
 }
 
 /* Nốt đang vang */

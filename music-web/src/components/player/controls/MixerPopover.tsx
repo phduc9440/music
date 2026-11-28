@@ -1,5 +1,6 @@
 import { PlayerPopover } from './PlayerPopover';
 import { IconMixer } from './PlayerIcons';
+import { PlayerSwitch } from './PlayerSwitch';
 import { DEFAULT_TRACK_MIX, hasSolo, mixOf, silentTracks } from '../state/mixer';
 import type { MixerState, TrackMix } from '../state/mixer';
 import type { TimelineTrack } from '../engine/timeline';
@@ -13,13 +14,19 @@ interface Props {
   disabled?: boolean;
   /** Chỉ vẽ nội dung, dùng trong bottom sheet trên điện thoại. */
   inline?: boolean;
+  /**
+   * Bản nhạc có đệm hợp âm: ô không ghi hợp âm có đánh lại hợp âm đang hiệu lực không. Bật/tắt và nghe riêng phần đệm
+   * dùng nút M / S ở hàng "Hợp âm".
+   */
+  chordCarry?: { on: boolean; disabled?: boolean; onChange: (on: boolean) => void };
 }
 
 /**
  * Mixer theo khuông: mỗi hàng một track có nút M (tắt tiếng), S (chỉ nghe track này) và âm lượng 0–100%. Có Solo thì
- * chỉ track Solo phát. Bản nhạc chỉ có một khuông thì nút bị khóa kèm gợi ý.
+ * chỉ track Solo phát. Bản nhạc chỉ có một khuông thì nút bị khóa kèm gợi ý. Có đệm hợp âm thì thêm công tắc "Đánh lại ở ô
+ * không ghi hợp âm".
  */
-export function MixerPopover({ tracks, mixer, onChange, onReset, disabled, inline }: Props) {
+export function MixerPopover({ tracks, mixer, onChange, onReset, disabled, inline, chordCarry }: Props) {
   const single = tracks.length < 2;
   const ids = tracks.map((t) => t.id);
   const silent = silentTracks(mixer, ids);
@@ -92,6 +99,15 @@ export function MixerPopover({ tracks, mixer, onChange, onReset, disabled, inlin
             </div>
           );
         })}
+        {chordCarry && (
+          <PlayerSwitch
+            label={t('player.chords.carry')}
+            hint={chordCarry.on ? t('player.chords.carryOn') : t('player.chords.carryOff')}
+            checked={chordCarry.on}
+            disabled={chordCarry.disabled}
+            onChange={() => chordCarry.onChange(!chordCarry.on)}
+          />
+        )}
         {allSilent && (
           <p className="pl-mix__note" role="status">
             {t('player.mixer.allSilent')}
