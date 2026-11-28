@@ -59,9 +59,7 @@
     "carryOff": "Ô nào không ghi hợp âm sẽ im phần đệm; hợp âm chỉ đánh ở ô có ghi.",
     "style": {
       "label": "Kiểu đệm",
-      "hint": "Tự động: đọc chữ chỉ dẫn đầu bài (Vui tươi, Hào hùng, Trữ tình, Allegro...), không có thì theo tempo.",
-      "auto": "Tự động",
-      "autoIs": "Tự động ({style})",
+      "hint": "Chỉ đổi cách phát phần đệm, áp dụng cho mọi bản nhạc; bản nhạc không thay đổi.",
       "sustain": "Hợp âm ngân",
       "arpeggio": "Rải – trữ tình",
       "bounce": "Bass – hợp âm (vui tươi, valse)",

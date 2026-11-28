@@ -2,7 +2,7 @@ import { PlayerPopover } from './PlayerPopover';
 import { IconMixer } from './PlayerIcons';
 import { PlayerSwitch } from './PlayerSwitch';
 import { ACCOMPANIMENT_STYLES } from '../../editor/audio/accompaniment';
-import type { AccompanimentStyle, ResolvedStyle } from '../../editor/audio/accompaniment';
+import type { AccompanimentStyle } from '../../editor/audio/accompaniment';
 import { DEFAULT_TRACK_MIX, hasSolo, mixOf, silentTracks } from '../state/mixer';
 import type { MixerState, TrackMix } from '../state/mixer';
 import type { TimelineTrack } from '../engine/timeline';
@@ -21,10 +21,9 @@ interface Props {
    * dùng nút M / S ở hàng "Hợp âm".
    */
   chordCarry?: { on: boolean; disabled?: boolean; onChange: (on: boolean) => void };
-  /** Bản nhạc có đệm hợp âm: kiểu đệm đã chọn, kiểu đang dùng (khi tự động) và hàm đổi. */
+  /** Bản nhạc có đệm hợp âm: kiểu đệm người nghe chọn và hàm đổi. */
   chordStyle?: {
     value: AccompanimentStyle;
-    resolved: ResolvedStyle | null;
     disabled?: boolean;
     onChange: (style: AccompanimentStyle) => void;
   };
@@ -122,9 +121,7 @@ export function MixerPopover({ tracks, mixer, onChange, onReset, disabled, inlin
             >
               {ACCOMPANIMENT_STYLES.map((style) => (
                 <option key={style} value={style}>
-                  {style === 'auto' && chordStyle.resolved
-                    ? t('player.chords.style.autoIs', { style: t(`player.chords.style.${chordStyle.resolved}`) })
-                    : t(`player.chords.style.${style}`)}
+                  {t(`player.chords.style.${style}`)}
                 </option>
               ))}
             </select>

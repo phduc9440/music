@@ -1,70 +1,19 @@
 /**
- * Kiểu đệm hợp âm khi phát (chỉ ảnh hưởng tiếng phát, không sửa bản nhạc): thay vì dập cả hợp âm một lần ở mỗi ký hiệu,
- * phần đệm chơi theo một hình đệm hợp với tính chất bài. "Tự động" đọc chữ chỉ dẫn đầu bài (Vui tươi, Hào hùng, Trữ tình,
- * Allegro, Maestoso...), không có thì đoán theo tempo.
+ * Kiểu đệm hợp âm khi phát (chỉ ảnh hưởng tiếng phát, không sửa và không phụ thuộc bản nhạc): người nghe tự chọn trong
+ * Mixer. Thay vì dập cả hợp âm một lần ở mỗi ký hiệu, phần đệm chơi theo một hình đệm.
  *
  * Thuần tính toán (không đụng Web Audio) để kiểm thử bằng node:test. Vị trí tính bằng nốt đen kể từ đầu ô.
  */
 import type { ChordNotes } from '../notation/chordNotes';
 
-export type AccompanimentStyle = 'auto' | 'sustain' | 'arpeggio' | 'bounce' | 'march';
-export type ResolvedStyle = Exclude<AccompanimentStyle, 'auto'>;
+export type AccompanimentStyle = 'sustain' | 'arpeggio' | 'bounce' | 'march';
 
-export const ACCOMPANIMENT_STYLES: readonly AccompanimentStyle[] = ['auto', 'sustain', 'arpeggio', 'bounce', 'march'];
-export const DEFAULT_ACCOMPANIMENT: AccompanimentStyle = 'auto';
+export const ACCOMPANIMENT_STYLES: readonly AccompanimentStyle[] = ['sustain', 'arpeggio', 'bounce', 'march'];
+/** Mặc định: hợp âm ngân (gần với cách đánh cũ nhưng rải nhẹ cho đỡ "dập"). */
+export const DEFAULT_ACCOMPANIMENT: AccompanimentStyle = 'sustain';
 
 export const isAccompanimentStyle = (value: unknown): value is AccompanimentStyle =>
   typeof value === 'string' && (ACCOMPANIMENT_STYLES as readonly string[]).includes(value);
-
-/** Bỏ dấu tiếng Việt và viết thường để so từ khóa ("Vui tươi" → "vui tuoi"). */
-export const plainText = (text: string): string =>
-  text
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\u0111/g, 'd')
-    .replace(/\u0110/g, 'D')
-    .toLowerCase();
-
-/** Từ khóa chỉ tính chất (đã bỏ dấu), theo thứ tự ưu tiên khi cùng xuất hiện. */
-const KEYWORDS: readonly [ResolvedStyle, RegExp][] = [
-  [
-    'march',
-    /hao hung|hung trang|hung manh|manh me|hanh khuc|tien buoc|quyet tam|kien quyet|trang nghiem|maestoso|marcia|march|marziale|energico|con brio|risoluto|eroico|pomposo/,
-  ],
-  [
-    'bounce',
-    /vui|ron rang|hon nhien|nhi nhanh|phan khoi|soi noi|tuoi sang|nhanh|linh hoat|allegr|vivace|presto|giocoso|scherz|leggiero|brillante|animato|valse|waltz|polka/,
-  ],
-  [
-    'arpeggio',
-    /tru tinh|tha thiet|thiet tha|sau lang|nhe nhang|em dem|diu dang|cham|khoan thai|buon|man mac|boi hoi|mo mang|tam tinh|\bru\b|dolce|cantabile|espressivo|lento|adagio|largo|larghetto|andante|ballad|rubato|tranquill|legato|grave|sostenuto/,
-  ],
-];
-
-/** Tempo (nốt đen mỗi phút) chậm hơn mức này thì mặc định đệm rải, nhanh hơn mức kia thì đệm nhún. */
-const SLOW_BPM = 84;
-const FAST_BPM = 132;
-
-/**
- * Kiểu đệm tự động: theo chữ chỉ dẫn (chữ nào đứng trước thì được tính), không có thì theo tempo: nhanh thì đệm nhún
- * (bass – hợp âm), còn lại đệm rải.
- */
-export function detectAccompaniment(texts: readonly string[], bpm: number): ResolvedStyle {
-  let best: { style: ResolvedStyle; at: number } | null = null;
-  const joined = plainText(texts.join(' · '));
-  for (const [style, pattern] of KEYWORDS) {
-    const match = pattern.exec(joined);
-    if (match && (!best || match.index < best.at)) best = { style, at: match.index };
-  }
-  if (best) return best.style;
-  if (bpm >= FAST_BPM) return 'bounce';
-  if (bpm <= SLOW_BPM) return 'arpeggio';
-  return 'arpeggio';
-}
-
-export function resolveAccompaniment(style: AccompanimentStyle, texts: readonly string[], bpm: number): ResolvedStyle {
-  return style === 'auto' ? detectAccompaniment(texts, bpm) : style;
-}
 
 /** Nhịp của ô: số phách, độ dài một phách (nốt đen), nhịp ghép (6/8, 9/8, 12/8) hay không. */
 export interface Meter {
@@ -125,7 +74,7 @@ export function accompanimentHits(
   from: number,
   to: number,
   meter: Meter,
-  style: ResolvedStyle,
+  style: AccompanimentStyle,
   bpm: number,
 ): AccompanimentHit[] {
   const span = to - from;

@@ -59,9 +59,7 @@
     "carryOff": "Measures without a chord stay silent; chords only play where they are written.",
     "style": {
       "label": "Accompaniment style",
-      "hint": "Auto reads the expression text at the start (Allegro, Maestoso, Dolce...), otherwise the tempo.",
-      "auto": "Auto",
-      "autoIs": "Auto ({style})",
+      "hint": "Only changes how the accompaniment is played, for every score; the score itself is not changed.",
       "sustain": "Held chords",
       "arpeggio": "Broken chords – lyrical",
       "bounce": "Bass – chord (lively, waltz)",

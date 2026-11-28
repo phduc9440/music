@@ -1,31 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import {
-  accompanimentHits,
-  beatGrid,
-  detectAccompaniment,
-  plainText,
-} from '../../src/components/editor/audio/accompaniment.ts';
+import { accompanimentHits, beatGrid } from '../../src/components/editor/audio/accompaniment.ts';
 import { buildPlayback } from '../../src/components/editor/audio/playback.ts';
 import { ScoreDocument } from '../../src/components/editor/core/ScoreDocument.ts';
 import { quarters, score } from './support/score.mjs';
 
 const C = { bass: 36, tones: [52, 55, 60] };
 const at = (hits) => [...new Set(hits.map((h) => h.q))];
-
-test('expression text picks the style, Vietnamese with or without diacritics', () => {
-  assert.equal(plainText('Vui Tươi – Đều'), 'vui tuoi – deu');
-  assert.equal(detectAccompaniment(['Vui tươi'], 100), 'bounce');
-  assert.equal(detectAccompaniment(['Hào hùng'], 100), 'march');
-  assert.equal(detectAccompaniment(['Tha thiết, trữ tình'], 100), 'arpeggio');
-  assert.equal(detectAccompaniment(['Allegro con brio'], 100), 'bounce'); // từ đứng trước được tính
-  assert.equal(detectAccompaniment(['Maestoso'], 100), 'march');
-  assert.equal(detectAccompaniment(['Andante cantabile'], 140), 'arpeggio');
-  // không có chữ: theo tempo
-  assert.equal(detectAccompaniment([], 140), 'bounce');
-  assert.equal(detectAccompaniment([], 72), 'arpeggio');
-});
 
 test('beat grid handles simple and compound meters', () => {
   assert.deepEqual(beatGrid({ beats: 4, beatType: 4 }), { beat: 1, count: 4, compound: false });
@@ -95,12 +77,14 @@ test('a chord starting off the beat is struck where it starts', () => {
   assert.deepEqual(at(accompanimentHits(C, 1.5, 4, { beats: 4, beatType: 4 }, 'march', 110)), [1.5, 2, 3]);
 });
 
-test('playback reads the opening expression text in auto mode and honors an explicit style', () => {
+test("the style is the listener's choice: expression text in the score does not change it", () => {
   const words = '<direction placement="above"><direction-type><words>Hào hùng</words></direction-type></direction>';
   const harmony = '<harmony><root><root-step>C</root-step></root><kind>major</kind></harmony>';
   const doc = ScoreDocument.parse(score([`${words}${harmony}${quarters('E4', 'E4', 'E4', 'E4')}`]));
-  assert.equal(buildPlayback(doc, 100).chordStyle, 'march');
-  assert.equal(buildPlayback(doc, 100, { chordStyle: 'sustain' }).chordStyle, 'sustain');
-  const times = [...new Set(buildPlayback(doc, 60).chords.map((c) => c.time))];
-  assert.deepEqual(times, [0, 1, 2, 3]);
+  const times = (style) => [
+    ...new Set(buildPlayback(doc, 60, style ? { chordStyle: style } : {}).chords.map((c) => c.time)),
+  ];
+  // mặc định hợp âm ngân: một lần dập (rải vài mili giây), dù bản nhạc ghi "Hào hùng"
+  assert.ok(times().every((t) => t < 0.05));
+  assert.deepEqual(times('march'), [0, 1, 2, 3]);
 });

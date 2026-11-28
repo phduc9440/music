@@ -53,7 +53,7 @@ export async function renderScoreWav(
 ): Promise<Blob> {
   const doc = ScoreDocument.parse(xml);
   const saved = loadScoreSettings(scoreId);
-  const timeline = buildTimeline(doc, fallbackBpm, saved.chordStyle);
+  const timeline = buildTimeline(doc, fallbackBpm, loadPlayerSettings().chordStyle);
   if (timeline.events.length === 0) throw new Error('empty score');
   const full = audioSeconds(timeline, options.tempoPercent);
   if (!options.limitSeconds && full > MAX_BROWSER_AUDIO_S) throw new AudioTooLongError();

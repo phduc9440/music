@@ -13,19 +13,33 @@ export type SoundQuality = 'high' | 'light';
 export interface PlayerSettings {
   /** Chất lượng mẫu âm piano: "high" (2 lớp lực, đủ nốt) hoặc "light" (cho mạng chậm). */
   quality: SoundQuality;
+  /** Kiểu đệm hợp âm người nghe chọn; dùng cho mọi bản nhạc (không phụ thuộc bản nhạc). */
+  chordStyle: AccompanimentStyle;
 }
 
 const KEY = 'player:settings';
-const DEFAULTS: PlayerSettings = { quality: 'high' };
+const DEFAULTS: PlayerSettings = { quality: 'high', chordStyle: DEFAULT_ACCOMPANIMENT };
 
 export function loadPlayerSettings(): PlayerSettings {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return { ...DEFAULTS };
     const parsed = JSON.parse(raw) as Partial<PlayerSettings>;
-    return { quality: parsed.quality === 'light' ? 'light' : 'high' };
+    return {
+      quality: parsed.quality === 'light' ? 'light' : 'high',
+      chordStyle: isAccompanimentStyle(parsed.chordStyle) ? parsed.chordStyle : DEFAULT_ACCOMPANIMENT,
+    };
   } catch {
     return { ...DEFAULTS };
+  }
+}
+
+/** Ghi đè các trường trong `patch` của cài đặt chung, giữ nguyên các trường khác. */
+export function savePlayerSettings(patch: Partial<PlayerSettings>): void {
+  try {
+    localStorage.setItem(KEY, JSON.stringify({ ...loadPlayerSettings(), ...patch }));
+  } catch {
+    // không lưu được thì lần sau dùng mặc định
   }
 }
 
@@ -51,8 +65,6 @@ export interface ScorePlayerSettings {
   transpose: number;
   /** Ô không ghi hợp âm có đánh lại hợp âm đang hiệu lực không (mặc định có). */
   chordCarry: boolean;
-  /** Kiểu đệm hợp âm khi phát (mặc định tự động theo chữ chỉ dẫn đầu bài / tempo). */
-  chordStyle: AccompanimentStyle;
 }
 
 const scoreKey = (scoreId: string | number): string => `player:${scoreId}`;
@@ -75,7 +87,6 @@ export function loadScoreSettings(scoreId: string | number | null | undefined): 
       loop: NO_LOOP,
       transpose: 0,
       chordCarry: true,
-      chordStyle: DEFAULT_ACCOMPANIMENT,
     };
   const record = readScoreRecord(scoreId);
   return {
@@ -85,7 +96,6 @@ export function loadScoreSettings(scoreId: string | number | null | undefined): 
     loop: sanitizeLoop(record.loop),
     transpose: typeof record.transpose === 'number' ? clampTranspose(record.transpose) : 0,
     chordCarry: record.chordCarry !== false,
-    chordStyle: isAccompanimentStyle(record.chordStyle) ? record.chordStyle : DEFAULT_ACCOMPANIMENT,
   };
 }
 

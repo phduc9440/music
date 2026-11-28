@@ -5,7 +5,7 @@
  * `toScoringNotes` là dữ liệu nốt chuẩn bàn giao cho phần chấm điểm (Scoring).
  */
 import { DEFAULT_ACCOMPANIMENT } from '../../editor/audio/accompaniment';
-import type { AccompanimentStyle, ResolvedStyle } from '../../editor/audio/accompaniment';
+import type { AccompanimentStyle } from '../../editor/audio/accompaniment';
 import { partLabel } from '../../editor/audio/instruments';
 import { buildPlayback } from '../../editor/audio/playback';
 import type { PlayMeasure, PlayNote } from '../../editor/audio/playback';
@@ -44,8 +44,6 @@ export interface Timeline {
   /** Nốt sắp theo thời gian bắt đầu. */
   events: TimelineEvent[];
   tracks: TimelineTrack[];
-  /** Kiểu đệm hợp âm thật sự dùng (đã đoán khi chọn "Tự động"). */
-  chordStyle?: ResolvedStyle;
   /** Độ dài lớn nhất của một nốt (giây), để tra nhanh các nốt đang vang. */
   maxDuration: number;
 }
@@ -108,7 +106,7 @@ const withChordTrack = (tracks: TimelineTrack[], chordEvents: TimelineEvent[]): 
 /**
  * @param doc tài liệu MusicXML
  * @param fallbackBpm tempo của bản nhạc (`scores.tempo_bpm`) khi file không khai báo
- * @param chordStyle kiểu đệm hợp âm (mặc định tự động)
+ * @param chordStyle kiểu đệm hợp âm người nghe chọn (mặc định hợp âm ngân)
  */
 export function buildTimeline(
   doc: ScoreDocument,
@@ -129,7 +127,6 @@ export function buildTimeline(
     measures: plan.measures,
     events,
     tracks: withChordTrack(buildTracks(doc), chordEvents),
-    chordStyle: plan.chordStyle,
     // Chỉ tính nốt trên bản nhạc: nốt đệm hợp âm không tô trên bản nhạc nên không cần tra
     maxDuration: noteEvents.reduce((max, e) => Math.max(max, e.duration), 0),
   };

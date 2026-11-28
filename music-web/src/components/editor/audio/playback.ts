@@ -12,8 +12,8 @@
  *   chèn một quãng lặng chung cho mọi part (như fermata nhưng sau nốt).
  */
 import { DEFAULT_GAIN, DEFAULT_VELOCITY, levelDriveDb, levelWithDriveOffset, velocityGain } from './loudness';
-import { accompanimentHits, resolveAccompaniment } from './accompaniment';
-import type { AccompanimentStyle, ResolvedStyle } from './accompaniment';
+import { accompanimentHits, DEFAULT_ACCOMPANIMENT } from './accompaniment';
+import type { AccompanimentStyle } from './accompaniment';
 import { chordNotes } from '../notation/chordNotes';
 import type { ChordNotes } from '../notation/chordNotes';
 import { keyAlter, pitchToMidi, STEPS } from '../notes/pitch';
@@ -90,25 +90,15 @@ export interface PlaybackPlan {
   measures: PlayMeasure[];
   /** Tổng thời lượng (giây). */
   total: number;
-  /** Kiểu đệm hợp âm đã dùng (khi chọn "Tự động" là kiểu đoán được từ chữ chỉ dẫn / tempo). */
-  chordStyle: ResolvedStyle;
 }
 
 export interface PlaybackOptions {
-  /** Kiểu đệm hợp âm; mặc định tự động. */
+  /** Kiểu đệm hợp âm (người nghe chọn); mặc định hợp âm ngân. */
   chordStyle?: AccompanimentStyle;
 }
 
 /** Rải nhẹ các nốt của một lần dập hợp âm (giây giữa hai nốt) cho tiếng đỡ "dập". */
 const CHORD_ROLL_S = 0.012;
-
-/** Các chữ chỉ dẫn (<words>) ở hai ô đầu của mọi part: "Vui tươi", "Allegro"... để đoán kiểu đệm. */
-const openingWords = (parts: Element[][]): string[] =>
-  parts.flatMap((measures) =>
-    measures
-      .slice(0, 2)
-      .flatMap((m) => Array.from(m.getElementsByTagName('words')).map((w) => w.textContent?.trim() ?? '')),
-  );
 
 /** Âm lượng mặc định (mf) và vận tốc MIDI tương ứng: xem loudness.ts, nơi cũng định nghĩa mức to nhỏ → dB. */
 export { DEFAULT_GAIN, DEFAULT_VELOCITY, velocityGain };
@@ -1069,7 +1059,7 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number, options: 
   const chordPart = parts.findIndex((measures) =>
     measures.some((m) => scanOf(m).items.some((i) => i.kind === 'harmony')),
   );
-  const chordStyle = resolveAccompaniment(options.chordStyle ?? 'auto', openingWords(parts), fallbackBpm);
+  const chordStyle = options.chordStyle ?? DEFAULT_ACCOMPANIMENT;
   if (chordPart >= 0) {
     const chordMeasures = parts[chordPart];
     const levels = [...(partLevels[chordPart] ?? [])].sort((a, b) => a.start - b.start);
@@ -1139,7 +1129,7 @@ export function buildPlayback(doc: ScoreDocument, fallbackBpm: number, options: 
     startBeat: m.startBeat,
     lengthBeats: m.length,
   }));
-  return { notes: result, chords, measures, total: clock, chordStyle };
+  return { notes: result, chords, measures, total: clock };
 }
 
 /**
