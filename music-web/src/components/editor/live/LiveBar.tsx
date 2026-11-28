@@ -21,7 +21,9 @@ const whereOf = (p: LiveParticipant, state: LiveState): { from: number; to: numb
 
 /**
  * Những người đang cùng sửa, như hàng ảnh đại diện trên Google Docs: mỗi người một màu (trùng màu viền ô họ đang ở
- * trên bản nhạc), chấm sáng khi họ đang sửa, rê chuột xem họ đang ở ô nào, bấm vào để cuộn tới chỗ đó.
+ * trên bản nhạc), chấm sáng khi họ đang sửa, rê chuột xem họ đang ở ô nào, bấm vào để cuộn tới chỗ đó. Chỉ hiện
+ * người khác (tài khoản khác) đang mở bài, không hiện chính mình và không hiện chữ trạng thái kết nối; chỉ có mình thì
+ * để trống.
  */
 export default function LiveBar({ state, onJump }: Props) {
   const editingIds = new Set((state.locks?.locks ?? []).map((l) => l.sessionId));
@@ -40,44 +42,32 @@ export default function LiveBar({ state, onJump }: Props) {
       sessions[0];
     return { main, tabs: sessions.length, editing: sessions.some((p) => editingIds.has(p.sessionId)) };
   });
-  // Mình đứng cuối hàng (như Google Docs), người khác theo thứ tự vào phiên
+  // Chỉ hiện người khác (tài khoản khác), theo thứ tự vào phiên; ảnh của chính mình không hiện
   const selfKey = self ? (self.memberId ?? self.sessionId) : null;
-  const ordered = [
-    ...people.filter((x) => (x.main.memberId ?? x.main.sessionId) !== selfKey),
-    ...people.filter((x) => (x.main.memberId ?? x.main.sessionId) === selfKey),
-  ];
-  const shown = ordered.slice(0, MAX_SHOWN);
-  const hidden = ordered.slice(MAX_SHOWN);
-
-  const label =
-    state.status === 'offline'
-      ? t('live.status.offline')
-      : state.status === 'connecting'
-        ? t('live.status.connecting')
-        : state.status === 'syncing'
-          ? t('live.status.syncing', { count: state.pending })
-          : t('live.status.synced');
+  const others = people.filter((x) => (x.main.memberId ?? x.main.sessionId) !== selfKey);
+  const shown = others.slice(0, MAX_SHOWN);
+  const hidden = others.slice(MAX_SHOWN);
+  if (others.length === 0) return null;
 
   return (
     <div className="live-bar" role="status" aria-live="polite">
       <span className="live-avatars">
         {shown.map(({ main: p, tabs, editing }) => {
-          const isSelf = p.sessionId === state.selfSessionId;
           const where = whereOf(p, state);
           const place = where
             ? where.from === where.to
               ? t('live.presence.atMeasure', { n: where.from + 1 })
               : t('live.presence.atMeasures', { from: where.from + 1, to: where.to + 1 })
             : t('live.presence.idle');
-          const base = isSelf ? t('live.you', { name: displayName(p) }) : displayName(p);
+          const base = displayName(p);
           const name = tabs > 1 ? `${base} (${t('live.presence.tabs', { n: tabs })})` : base;
           const title = `${name} · ${editing ? t('live.presence.editing') : place}`;
-          const canJump = !isSelf && !!where && !!onJump;
+          const canJump = !!where && !!onJump;
           return (
             <button
               key={p.sessionId}
               type="button"
-              className={`live-avatar${isSelf ? ' is-self' : ''}${editing ? ' is-editing' : ''}`}
+              className={`live-avatar${editing ? ' is-editing' : ''}`}
               data-color={colorOf(p)}
               title={canJump ? `${title} — ${t('live.presence.jump')}` : title}
               aria-label={title}
@@ -96,10 +86,6 @@ export default function LiveBar({ state, onJump }: Props) {
             +{hidden.length}
           </span>
         )}
-      </span>
-      <span className={`live-status is-${state.status}`}>
-        <span className="live-status__dot" aria-hidden="true" />
-        {label}
       </span>
     </div>
   );

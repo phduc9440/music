@@ -59,12 +59,10 @@ interface Props {
 export default function EditorHeader(p: Props) {
   const { score, editor, live, player, mode, zoom, fullscreen } = p;
   const canEdit = score.canEdit;
-  const saveLabel = editor.saving
-    ? t('editor.view.save.saving')
-    : editor.dirty
-      ? t('editor.view.save.dirty')
-      : t('editor.view.save.saved', { version: editor.version });
-  const saveClass = editor.saving ? ' is-saving' : editor.dirty ? ' is-dirty' : '';
+  // Khi cùng sửa, thay đổi nằm ở phiên chung cho tới khi bấm Lưu (cùng điều kiện với nút Lưu)
+  const unsaved = live.active ? live.state.unsaved || live.state.pending > 0 : editor.dirty;
+  const saveLabel = editor.saving ? t('editor.view.save.saving') : t('editor.view.save.dirty');
+  const saveClass = editor.saving ? ' is-saving' : ' is-dirty';
 
   return (
     <header className="sv-toolbar">
@@ -81,10 +79,13 @@ export default function EditorHeader(p: Props) {
           <h1 title={score.title}>{score.title}</h1>
           <p>{score.composer || t('editor.view.header.unknownComposer')}</p>
         </div>
+        {/* Chấm trạng thái chỉ hiện khi có việc cần biết (chưa lưu / đang lưu); đã lưu thì để trống */}
         {canEdit ? (
-          <span className={`sv-savestate${saveClass}`} role="status" aria-live="polite" title={saveLabel}>
-            <span className="sv-sr">{saveLabel}</span>
-          </span>
+          (unsaved || editor.saving) && (
+            <span className={`sv-savestate${saveClass}`} role="status" aria-live="polite" title={saveLabel}>
+              <span className="sv-sr">{saveLabel}</span>
+            </span>
+          )
         ) : (
           <span className="sv-badge">{t('editor.view.header.readOnly')}</span>
         )}
