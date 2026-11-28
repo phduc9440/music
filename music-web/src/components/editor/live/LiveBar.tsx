@@ -21,7 +21,8 @@ const whereOf = (p: LiveParticipant, state: LiveState): { from: number; to: numb
 
 /**
  * Những người đang cùng sửa, như hàng ảnh đại diện trên Google Docs: mỗi người một màu (trùng màu viền ô họ đang ở
- * trên bản nhạc), chấm sáng khi họ đang sửa, rê chuột xem họ đang ở ô nào, bấm vào để cuộn tới chỗ đó.
+ * trên bản nhạc), chấm sáng khi họ đang sửa, rê chuột xem họ đang ở ô nào, bấm vào để cuộn tới chỗ đó. Chỉ hiện khi có
+ * người khác (tài khoản khác) đang mở bài; chỉ có mình thì để trống, trừ khi mất kết nối.
  */
 export default function LiveBar({ state, onJump }: Props) {
   const editingIds = new Set((state.locks?.locks ?? []).map((l) => l.sessionId));
@@ -48,6 +49,10 @@ export default function LiveBar({ state, onJump }: Props) {
   ];
   const shown = ordered.slice(0, MAX_SHOWN);
   const hidden = ordered.slice(MAX_SHOWN);
+  // Chỉ mình mình (kể cả mở nhiều tab cùng một tài khoản): không có ai cùng xem/sửa nên không hiện gì. Riêng lúc mất
+  // kết nối vẫn báo, vì khi đó thay đổi chưa tới được server.
+  const alone = ordered.every((x) => (x.main.memberId ?? x.main.sessionId) === selfKey);
+  if (alone && state.status !== 'offline') return null;
 
   const label =
     state.status === 'offline'
@@ -60,43 +65,45 @@ export default function LiveBar({ state, onJump }: Props) {
 
   return (
     <div className="live-bar" role="status" aria-live="polite">
-      <span className="live-avatars">
-        {shown.map(({ main: p, tabs, editing }) => {
-          const isSelf = p.sessionId === state.selfSessionId;
-          const where = whereOf(p, state);
-          const place = where
-            ? where.from === where.to
-              ? t('live.presence.atMeasure', { n: where.from + 1 })
-              : t('live.presence.atMeasures', { from: where.from + 1, to: where.to + 1 })
-            : t('live.presence.idle');
-          const base = isSelf ? t('live.you', { name: displayName(p) }) : displayName(p);
-          const name = tabs > 1 ? `${base} (${t('live.presence.tabs', { n: tabs })})` : base;
-          const title = `${name} · ${editing ? t('live.presence.editing') : place}`;
-          const canJump = !isSelf && !!where && !!onJump;
-          return (
-            <button
-              key={p.sessionId}
-              type="button"
-              className={`live-avatar${isSelf ? ' is-self' : ''}${editing ? ' is-editing' : ''}`}
-              data-color={colorOf(p)}
-              title={canJump ? `${title} — ${t('live.presence.jump')}` : title}
-              aria-label={title}
-              disabled={!canJump}
-              onClick={() => where && onJump?.(where.from)}
+      {!alone && (
+        <span className="live-avatars">
+          {shown.map(({ main: p, tabs, editing }) => {
+            const isSelf = p.sessionId === state.selfSessionId;
+            const where = whereOf(p, state);
+            const place = where
+              ? where.from === where.to
+                ? t('live.presence.atMeasure', { n: where.from + 1 })
+                : t('live.presence.atMeasures', { from: where.from + 1, to: where.to + 1 })
+              : t('live.presence.idle');
+            const base = isSelf ? t('live.you', { name: displayName(p) }) : displayName(p);
+            const name = tabs > 1 ? `${base} (${t('live.presence.tabs', { n: tabs })})` : base;
+            const title = `${name} · ${editing ? t('live.presence.editing') : place}`;
+            const canJump = !isSelf && !!where && !!onJump;
+            return (
+              <button
+                key={p.sessionId}
+                type="button"
+                className={`live-avatar${isSelf ? ' is-self' : ''}${editing ? ' is-editing' : ''}`}
+                data-color={colorOf(p)}
+                title={canJump ? `${title} — ${t('live.presence.jump')}` : title}
+                aria-label={title}
+                disabled={!canJump}
+                onClick={() => where && onJump?.(where.from)}
+              >
+                {p.avatarUrl ? <img src={p.avatarUrl} alt="" /> : <span>{initialsOf(displayName(p))}</span>}
+              </button>
+            );
+          })}
+          {hidden.length > 0 && (
+            <span
+              className="live-avatar live-avatar--more"
+              title={hidden.map(({ main }) => displayName(main)).join(', ')}
             >
-              {p.avatarUrl ? <img src={p.avatarUrl} alt="" /> : <span>{initialsOf(displayName(p))}</span>}
-            </button>
-          );
-        })}
-        {hidden.length > 0 && (
-          <span
-            className="live-avatar live-avatar--more"
-            title={hidden.map(({ main }) => displayName(main)).join(', ')}
-          >
-            +{hidden.length}
-          </span>
-        )}
-      </span>
+              +{hidden.length}
+            </span>
+          )}
+        </span>
+      )}
       <span className={`live-status is-${state.status}`}>
         <span className="live-status__dot" aria-hidden="true" />
         {label}
