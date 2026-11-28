@@ -1,3 +1,5 @@
+import { DEFAULT_ACCOMPANIMENT, isAccompanimentStyle } from '../../editor/audio/accompaniment';
+import type { AccompanimentStyle } from '../../editor/audio/accompaniment';
 import { NO_LOOP, sanitizeLoop } from './loop';
 import type { LoopSettings } from './loop';
 import { EMPTY_MIXER, sanitizeMixer } from './mixer';
@@ -49,6 +51,8 @@ export interface ScorePlayerSettings {
   transpose: number;
   /** Ô không ghi hợp âm có đánh lại hợp âm đang hiệu lực không (mặc định có). */
   chordCarry: boolean;
+  /** Kiểu đệm hợp âm khi phát (mặc định tự động theo chữ chỉ dẫn đầu bài / tempo). */
+  chordStyle: AccompanimentStyle;
 }
 
 const scoreKey = (scoreId: string | number): string => `player:${scoreId}`;
@@ -65,7 +69,14 @@ const readScoreRecord = (scoreId: string | number): Record<string, unknown> => {
 
 export function loadScoreSettings(scoreId: string | number | null | undefined): ScorePlayerSettings {
   if (scoreId === null || scoreId === undefined)
-    return { tempoPercent: DEFAULT_TEMPO_PERCENT, mixer: EMPTY_MIXER, loop: NO_LOOP, transpose: 0, chordCarry: true };
+    return {
+      tempoPercent: DEFAULT_TEMPO_PERCENT,
+      mixer: EMPTY_MIXER,
+      loop: NO_LOOP,
+      transpose: 0,
+      chordCarry: true,
+      chordStyle: DEFAULT_ACCOMPANIMENT,
+    };
   const record = readScoreRecord(scoreId);
   return {
     tempoPercent:
@@ -74,6 +85,7 @@ export function loadScoreSettings(scoreId: string | number | null | undefined): 
     loop: sanitizeLoop(record.loop),
     transpose: typeof record.transpose === 'number' ? clampTranspose(record.transpose) : 0,
     chordCarry: record.chordCarry !== false,
+    chordStyle: isAccompanimentStyle(record.chordStyle) ? record.chordStyle : DEFAULT_ACCOMPANIMENT,
   };
 }
 

@@ -1,6 +1,8 @@
 import { PlayerPopover } from './PlayerPopover';
 import { IconMixer } from './PlayerIcons';
 import { PlayerSwitch } from './PlayerSwitch';
+import { ACCOMPANIMENT_STYLES } from '../../editor/audio/accompaniment';
+import type { AccompanimentStyle, ResolvedStyle } from '../../editor/audio/accompaniment';
 import { DEFAULT_TRACK_MIX, hasSolo, mixOf, silentTracks } from '../state/mixer';
 import type { MixerState, TrackMix } from '../state/mixer';
 import type { TimelineTrack } from '../engine/timeline';
@@ -19,6 +21,13 @@ interface Props {
    * dùng nút M / S ở hàng "Hợp âm".
    */
   chordCarry?: { on: boolean; disabled?: boolean; onChange: (on: boolean) => void };
+  /** Bản nhạc có đệm hợp âm: kiểu đệm đã chọn, kiểu đang dùng (khi tự động) và hàm đổi. */
+  chordStyle?: {
+    value: AccompanimentStyle;
+    resolved: ResolvedStyle | null;
+    disabled?: boolean;
+    onChange: (style: AccompanimentStyle) => void;
+  };
 }
 
 /**
@@ -26,7 +35,7 @@ interface Props {
  * chỉ track Solo phát. Bản nhạc chỉ có một khuông thì nút bị khóa kèm gợi ý. Có đệm hợp âm thì thêm công tắc "Đánh lại ở ô
  * không ghi hợp âm".
  */
-export function MixerPopover({ tracks, mixer, onChange, onReset, disabled, inline, chordCarry }: Props) {
+export function MixerPopover({ tracks, mixer, onChange, onReset, disabled, inline, chordCarry, chordStyle }: Props) {
   const single = tracks.length < 2;
   const ids = tracks.map((t) => t.id);
   const silent = silentTracks(mixer, ids);
@@ -99,6 +108,28 @@ export function MixerPopover({ tracks, mixer, onChange, onReset, disabled, inlin
             </div>
           );
         })}
+        {chordStyle && (
+          <label className="pl-mix__style">
+            <span className="pl-switch__text">
+              <span className="pl-switch__label">{t('player.chords.style.label')}</span>
+              <span className="pl-switch__hint">{t('player.chords.style.hint')}</span>
+            </span>
+            <select
+              className="pl-mix__select"
+              value={chordStyle.value}
+              disabled={chordStyle.disabled}
+              onChange={(e) => chordStyle.onChange(e.target.value as AccompanimentStyle)}
+            >
+              {ACCOMPANIMENT_STYLES.map((style) => (
+                <option key={style} value={style}>
+                  {style === 'auto' && chordStyle.resolved
+                    ? t('player.chords.style.autoIs', { style: t(`player.chords.style.${chordStyle.resolved}`) })
+                    : t(`player.chords.style.${style}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         {chordCarry && (
           <PlayerSwitch
             label={t('player.chords.carry')}

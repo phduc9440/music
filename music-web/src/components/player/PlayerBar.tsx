@@ -133,7 +133,7 @@ function BarBody({
     player.loop.enabled ||
     player.transpose !== 0 ||
     Object.keys(player.mixer).length > 0 ||
-    (hasChords && !player.chordCarry);
+    (hasChords && (!player.chordCarry || player.chordStyle !== 'auto'));
 
   /** Một điều khiển: ở desktop là nút + hộp nổi, trong sheet (inline) chỉ là phần nội dung. */
   const control = (id: ControlId, inline: boolean): React.ReactNode => {
@@ -188,6 +188,16 @@ function BarBody({
             inline={inline}
             chordCarry={
               hasChords ? { on: player.chordCarry, disabled: !chordsHeard, onChange: player.setChordCarry } : undefined
+            }
+            chordStyle={
+              hasChords
+                ? {
+                    value: player.chordStyle,
+                    resolved: player.resolvedChordStyle,
+                    disabled: !chordsHeard,
+                    onChange: player.setChordStyle,
+                  }
+                : undefined
             }
           />
         );

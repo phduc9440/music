@@ -56,7 +56,17 @@
   "chords": {
     "carry": "Repeat the chord in measures without one",
     "carryOn": "Measures without a chord repeat the chord in effect at the start of the measure.",
-    "carryOff": "Measures without a chord stay silent; chords only play where they are written."
+    "carryOff": "Measures without a chord stay silent; chords only play where they are written.",
+    "style": {
+      "label": "Accompaniment style",
+      "hint": "Auto reads the expression text at the start (Allegro, Maestoso, Dolce...), otherwise the tempo.",
+      "auto": "Auto",
+      "autoIs": "Auto ({style})",
+      "sustain": "Held chords",
+      "arpeggio": "Broken chords – lyrical",
+      "bounce": "Bass – chord (lively, waltz)",
+      "march": "March – heroic"
+    }
   },
   "loop": {
     "summary": "Loop {summary}",

@@ -52,7 +52,8 @@ export async function renderScoreWav(
   fallbackBpm?: number | null,
 ): Promise<Blob> {
   const doc = ScoreDocument.parse(xml);
-  const timeline = buildTimeline(doc, fallbackBpm);
+  const saved = loadScoreSettings(scoreId);
+  const timeline = buildTimeline(doc, fallbackBpm, saved.chordStyle);
   if (timeline.events.length === 0) throw new Error('empty score');
   const full = audioSeconds(timeline, options.tempoPercent);
   if (!options.limitSeconds && full > MAX_BROWSER_AUDIO_S) throw new AudioTooLongError();
@@ -73,7 +74,7 @@ export async function renderScoreWav(
     tempoPercent: options.tempoPercent,
     transpose: options.transpose,
     mixer: handsMixer(timeline, options.hands),
-    chordCarry: loadScoreSettings(scoreId).chordCarry,
+    chordCarry: saved.chordCarry,
   });
   try {
     engine.setTimeline(timeline, (part) => detectInstrument(doc, part));

@@ -12,10 +12,11 @@ const H = (root, extra = '') =>
   `<harmony><root><root-step>${root}</root-step></root><kind>major</kind>${extra}</harmony>`;
 const dyn = '<direction placement="below"><direction-type><dynamics><p/></dynamics></direction-type></direction>';
 
-/** Hợp âm đang vang theo thời gian (giây ở 60 BPM = phách) kèm tên, từ lịch phát. */
+/** Lúc các hợp âm ghi trên bản được đánh (giây ở 60 BPM = phách), đệm kiểu ngân (bỏ phần rải vài mili giây). */
 const chordTimes = (doc) => {
   const seen = new Map();
-  for (const c of buildPlayback(doc, 60).chords) if (!c.carried) seen.set(`${c.measure + 1}@${c.time}`, true);
+  for (const c of buildPlayback(doc, 60, { chordStyle: 'sustain' }).chords)
+    if (!c.carried) seen.set(`${c.measure + 1}@${Math.floor(c.time * 10) / 10}`, true);
   return [...seen.keys()];
 };
 

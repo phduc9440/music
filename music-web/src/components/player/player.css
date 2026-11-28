@@ -899,3 +899,22 @@
 .pl-playhead[hidden] {
   display: none;
 }
+
+/* Kiểu đệm hợp âm trong Mixer */
+.pl-mix__style {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
+  border-top: 1px solid var(--sc-border, var(--ui-border));
+}
+.pl-mix__select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--sc-border, var(--ui-border));
+  border-radius: 8px;
+  background: var(--ui-surface);
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+}
