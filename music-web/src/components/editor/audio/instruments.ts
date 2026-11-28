@@ -12,10 +12,32 @@ import { midiToFrequency } from '../notes/pitch';
 import type { ScoreDocument } from '../core/ScoreDocument';
 import { t } from '../../../i18n/core';
 
-export type InstrumentId = 'piano' | 'strings' | 'flute' | 'organ' | 'guitar' | 'choir' | 'brass' | 'bells';
+export type InstrumentId =
+  | 'piano'
+  | 'epiano'
+  | 'organ'
+  | 'accordion'
+  | 'strings'
+  | 'guitar'
+  | 'harp'
+  | 'zither'
+  | 'bass'
+  | 'flute'
+  | 'clarinet'
+  | 'sax'
+  | 'brass'
+  | 'bells'
+  | 'marimba'
+  | 'musicbox'
+  | 'choir'
+  | 'synth';
+
+/** Họ nhạc cụ, để nhóm trong menu chọn. */
+export type InstrumentFamily = 'keys' | 'strings' | 'winds' | 'percussion' | 'other';
 
 export interface InstrumentInfo {
   id: InstrumentId;
+  family: InstrumentFamily;
 }
 
 /**
@@ -23,18 +45,46 @@ export interface InstrumentInfo {
  * hát) và đàn dây thì phần đệm do piano chơi.
  */
 export const accompanimentInstrument = (melody: InstrumentId): InstrumentId =>
-  melody === 'organ' || melody === 'guitar' ? melody : 'piano';
+  SELF_ACCOMPANYING.has(melody) ? melody : 'piano';
+
+/** Nhạc cụ đa âm tự đệm hợp âm bằng tiếng của mình. */
+const SELF_ACCOMPANYING: ReadonlySet<InstrumentId> = new Set<InstrumentId>([
+  'organ',
+  'guitar',
+  'epiano',
+  'accordion',
+  'harp',
+  'zither',
+  'marimba',
+  'musicbox',
+  'synth',
+]);
 
 export const INSTRUMENTS: readonly InstrumentInfo[] = [
-  { id: 'piano' },
-  { id: 'strings' },
-  { id: 'flute' },
-  { id: 'organ' },
-  { id: 'guitar' },
-  { id: 'choir' },
-  { id: 'brass' },
-  { id: 'bells' },
+  { id: 'piano', family: 'keys' },
+  { id: 'epiano', family: 'keys' },
+  { id: 'organ', family: 'keys' },
+  { id: 'accordion', family: 'keys' },
+  { id: 'strings', family: 'strings' },
+  { id: 'guitar', family: 'strings' },
+  { id: 'harp', family: 'strings' },
+  { id: 'zither', family: 'strings' },
+  { id: 'bass', family: 'strings' },
+  { id: 'flute', family: 'winds' },
+  { id: 'clarinet', family: 'winds' },
+  { id: 'sax', family: 'winds' },
+  { id: 'brass', family: 'winds' },
+  { id: 'bells', family: 'percussion' },
+  { id: 'marimba', family: 'percussion' },
+  { id: 'musicbox', family: 'percussion' },
+  { id: 'choir', family: 'other' },
+  { id: 'synth', family: 'other' },
 ];
+
+export const INSTRUMENT_FAMILIES: readonly InstrumentFamily[] = ['keys', 'strings', 'winds', 'percussion', 'other'];
+
+/** Tên họ nhạc cụ theo ngôn ngữ hiện tại. */
+export const familyLabel = (family: InstrumentFamily): string => t(`editor.instrumentFamilies.${family}`);
 
 /** Tên hiển thị của nhạc cụ theo ngôn ngữ hiện tại. */
 export const instrumentLabel = (id: InstrumentId): string => t(`editor.instruments.${id}`);
@@ -75,17 +125,29 @@ interface Profile {
   trim: number;
   /** Hằng số thời gian nhả (giây) sau khi hết `duration`. */
   release: number;
+  /** Nhạc cụ gõ vang tự nhiên (không tắt khi nhả phím): số giây còn vang sau lúc nhả. */
+  ring?: number;
 }
 
 const PROFILES: Record<InstrumentId, Profile> = {
   piano: { trim: 0.16, release: 0.2 },
-  strings: { trim: 0.17, release: 0.16 },
-  flute: { trim: 0.14, release: 0.09 },
+  epiano: { trim: 0.2, release: 0.22 },
   organ: { trim: 0.16, release: 0.05 },
+  accordion: { trim: 0.14, release: 0.06 },
+  strings: { trim: 0.17, release: 0.16 },
   guitar: { trim: 0.2, release: 0.12 },
-  choir: { trim: 0.2, release: 0.18 },
+  harp: { trim: 0.145, release: 0.5 },
+  zither: { trim: 0.2, release: 0.35 },
+  bass: { trim: 0.19, release: 0.09 },
+  flute: { trim: 0.14, release: 0.09 },
+  clarinet: { trim: 0.155, release: 0.07 },
+  sax: { trim: 0.145, release: 0.08 },
   brass: { trim: 0.12, release: 0.07 },
-  bells: { trim: 0.14, release: 0.5 },
+  bells: { trim: 0.14, release: 0.5, ring: 3.5 },
+  marimba: { trim: 0.24, release: 0.3, ring: 1.6 },
+  musicbox: { trim: 0.17, release: 0.4, ring: 2.5 },
+  choir: { trim: 0.2, release: 0.18 },
+  synth: { trim: 0.11, release: 0.45 },
 };
 
 const SILENCE = 0.0001;
@@ -172,6 +234,13 @@ const pianoAmps = series(14, (n) => (n === 1 ? 1 : 0.9 / n ** 1.15) * (n % 7 ===
 const guitarAmps = series(12, (n) => 1 / n ** 1.05);
 const organAmps = [1, 0.75, 0.5, 0.42, 0, 0.3, 0, 0.24];
 const fluteAmps = [1, 0.22, 0.07, 0.03];
+const harpAmps = series(10, (n) => 1 / n ** 2);
+const zitherAmps = series(14, (n) => 1 / n ** 1.1);
+const bassAmps = series(8, (n) => 1 / n ** 1.4);
+/** Kèn clarinet: gần như chỉ có họa âm lẻ (ống trụ đóng một đầu). */
+const clarinetAmps = [1, 0.02, 0.75, 0.02, 0.5, 0.02, 0.14, 0.01, 0.45, 0, 0.12, 0, 0.16];
+/** Lưỡi gà của accordion: đủ họa âm, giảm chậm. */
+const reedAmps = series(12, (n) => 1 / n ** 0.9);
 
 /** Nhiễu trắng 1 giây (lặp) cho hơi thở của sáo. */
 const noiseBuffer = (ctx: BaseAudioContext): AudioBuffer => {
@@ -292,20 +361,107 @@ const buildGuitar = (ctx: BaseAudioContext, s: VoiceSpec, f: number, peak: numbe
   return { sources: [osc], env, valueAt };
 };
 
-/** Chuông: họa âm không nguyên, mỗi thành phần tắt với tốc độ riêng (thành phần cao tắt nhanh hơn). Vang tự nhiên. */
-const buildBells = (ctx: BaseAudioContext, s: VoiceSpec, f: number, peak: number): Built => {
+/** Nhạc cụ gảy (harp, đàn tranh, bass): bảng họa âm riêng, bộ lọc khép dần như dây đang tắt. */
+const buildPlucked = (ctx: BaseAudioContext, s: VoiceSpec, f: number, peak: number): Built => {
+  const env = ctx.createGain();
+  const sources: Source[] = [];
+  const stretch = s.sustain ? SUSTAIN_DECAY_FACTOR : 1;
+  let decay: number;
+  let filter: BiquadFilterNode;
+  let osc: OscillatorNode;
+  if (s.instrument === 'harp') {
+    decay = Math.min(2.6, Math.max(0.6, 2.8 - (s.midi - 40) * 0.03)) * stretch;
+    filter = lowpass(ctx, Math.min(f * 6, 8000));
+    filter.frequency.setTargetAtTime(Math.min(f * 2, 4000), s.start + 0.01, 0.4);
+    osc = oscillator(ctx, f, s.start, harmonicWave(ctx, 'harp', harpAmps));
+  } else if (s.instrument === 'zither') {
+    decay = Math.min(2.2, Math.max(0.5, 2.4 - (s.midi - 48) * 0.03)) * stretch;
+    filter = lowpass(ctx, Math.min(f * 12, 10000), 1.4);
+    filter.frequency.setTargetAtTime(Math.min(f * 3, 5000), s.start + 0.005, 0.25);
+    osc = oscillator(ctx, f, s.start, harmonicWave(ctx, 'zither', zitherAmps));
+    // "rung" của đàn tranh: tay trái nhấn dây cho tiếng ngân rung nhẹ sau tiếng gảy
+    sources.push(vibrato(ctx, s.start, [osc], 5.5, 18, 0.22));
+  } else {
+    decay = Math.min(1.6, Math.max(0.5, 1.8 - (s.midi - 28) * 0.02)) * stretch;
+    filter = lowpass(ctx, Math.min(f * 5, 3000), 1.1);
+    filter.frequency.setTargetAtTime(Math.min(f * 2.5, 1500), s.start + 0.01, 0.2);
+    osc = oscillator(ctx, f, s.start, harmonicWave(ctx, 'bass', bassAmps));
+  }
+  const valueAt = decayEnvelope(env, s.start, peak, 0.003, decay);
+  osc.connect(filter);
+  filter.connect(env);
+  sources.push(osc);
+  return { sources, env, valueAt };
+};
+
+/**
+ * Đàn piano điện (kiểu Rhodes): tổng hợp FM, bộ điều chế cùng tần số với độ sâu giảm dần nên tiếng gõ đầu sáng rồi tròn
+ * lại, thêm tiếng "keng" cao rất ngắn của thanh kim loại.
+ */
+const buildElectricPiano = (ctx: BaseAudioContext, s: VoiceSpec, f: number, peak: number): Built => {
+  const env = ctx.createGain();
+  const decay = Math.min(3, Math.max(0.6, 3 - (s.midi - 48) * 0.035)) * (s.sustain ? SUSTAIN_DECAY_FACTOR : 1);
+  const valueAt = decayEnvelope(env, s.start, peak, 0.003, decay);
+  const carrier = oscillator(ctx, f, s.start, 'sine');
+  const modulator = oscillator(ctx, f, s.start, 'sine');
+  const index = ctx.createGain();
+  index.gain.setValueAtTime(f * (1 + 1.6 * s.level), s.start);
+  index.gain.setTargetAtTime(f * 0.15, s.start + 0.005, 0.35);
+  modulator.connect(index);
+  index.connect(carrier.frequency);
+  carrier.connect(env);
+  const sources: Source[] = [carrier, modulator];
+  if (f * 14 < ctx.sampleRate / 2 - 500) {
+    const tine = oscillator(ctx, f * 14, s.start, 'sine');
+    const tineGain = ctx.createGain();
+    decayEnvelope(tineGain, s.start, 0.12, 0.001, 0.03);
+    tine.connect(tineGain);
+    tineGain.connect(env);
+    sources.push(tine);
+  }
+  return { sources, env, valueAt };
+};
+
+/** Các thành phần (tỉ lệ tần số, độ to, thời gian tắt) của nhạc cụ gõ vang tự nhiên. */
+const STRUCK_PARTIALS: Record<
+  'bells' | 'marimba' | 'musicbox',
+  (f: number) => { ratio: number; gain: number; decay: number }[]
+> = {
+  bells: () =>
+    [
+      { ratio: 1, gain: 1 },
+      { ratio: 2.76, gain: 0.45 },
+      { ratio: 5.4, gain: 0.22 },
+      { ratio: 8.93, gain: 0.1 },
+    ].map((p) => ({ ...p, decay: 1.5 / Math.sqrt(p.ratio) })),
+  // Thanh gỗ marimba được gọt để họa âm thứ hai gần gấp 4, thứ ba gần gấp 10; nốt trầm vang lâu hơn
+  marimba: (f) => {
+    const body = Math.min(1, Math.max(0.25, 1.1 - Math.log2(f / 130) * 0.25));
+    return [
+      { ratio: 1, gain: 1, decay: body * 0.55 },
+      { ratio: 3.93, gain: 0.28, decay: 0.09 },
+      { ratio: 9.2, gain: 0.08, decay: 0.04 },
+    ];
+  },
+  // Lá thép của hộp nhạc: trong, vang vừa, họa âm hơi lệch
+  musicbox: () => [
+    { ratio: 1, gain: 1, decay: 0.9 },
+    { ratio: 2, gain: 0.25, decay: 0.45 },
+    { ratio: 4.16, gain: 0.18, decay: 0.2 },
+    { ratio: 6.95, gain: 0.08, decay: 0.1 },
+  ],
+};
+
+/** Nhạc cụ gõ (chuông, marimba, hộp nhạc): mỗi thành phần tắt với tốc độ riêng (thành phần cao tắt nhanh hơn), vang tự nhiên. */
+const buildStruck = (ctx: BaseAudioContext, s: VoiceSpec, f: number, peak: number): Built => {
   const env = ctx.createGain();
   env.gain.value = 1;
   const sources: Source[] = [];
-  for (const { ratio, gain } of [
-    { ratio: 1, gain: 1 },
-    { ratio: 2.76, gain: 0.45 },
-    { ratio: 5.4, gain: 0.22 },
-    { ratio: 8.93, gain: 0.1 },
-  ]) {
+  const kind = s.instrument === 'marimba' || s.instrument === 'musicbox' ? s.instrument : 'bells';
+  for (const { ratio, gain, decay } of STRUCK_PARTIALS[kind](f)) {
     if (f * ratio > ctx.sampleRate / 2 - 500) continue;
     const partial = ctx.createGain();
-    decayEnvelope(partial, s.start, peak * gain, 0.002, 1.5 / Math.sqrt(ratio));
+    decayEnvelope(partial, s.start, peak * gain, 0.002, decay);
     const osc = oscillator(ctx, f * ratio, s.start, 'sine');
     osc.connect(partial);
     partial.connect(env);
@@ -359,6 +515,55 @@ const buildSustained = (ctx: BaseAudioContext, s: VoiceSpec, f: number, peak: nu
       sources.push(breath);
       break;
     }
+    case 'clarinet': {
+      attack = 0.04;
+      const filter = lowpass(ctx, Math.min(f * 5, 6000));
+      const osc = connect(oscillator(ctx, f, s.start, harmonicWave(ctx, 'clarinet', clarinetAmps)), filter);
+      sources.push(vibrato(ctx, s.start, [osc], 4.8, 3, 0.4));
+      filter.connect(env);
+      break;
+    }
+    case 'sax': {
+      // sóng cưa qua bộ lọc mở theo lực thổi, thêm một formant sáng quanh 1,5 kHz; rung rõ hơn kèn đồng
+      attack = 0.05;
+      const filter = lowpass(ctx, f * 2, 1.2);
+      filter.frequency.setValueAtTime(Math.min(f * 2, ctx.sampleRate / 2 - 200), s.start);
+      filter.frequency.linearRampToValueAtTime(Math.min(f * 3 + f * 4 * (0.4 + s.level), 6500), s.start + 0.08);
+      const osc = connect(oscillator(ctx, f, s.start, 'sawtooth'), filter);
+      sources.push(vibrato(ctx, s.start, [osc], 5.2, 12, 0.3));
+      const body = ctx.createBiquadFilter();
+      body.type = 'peaking';
+      body.frequency.value = 1500;
+      body.Q.value = 1.2;
+      body.gain.value = 6;
+      filter.connect(body);
+      body.connect(env);
+      break;
+    }
+    case 'accordion': {
+      // hai lưỡi gà lệch nhau vài cent (tiếng "musette" rung) cộng một lưỡi thấp hơn một quãng tám
+      attack = 0.03;
+      const filter = lowpass(ctx, Math.min(f * 6 + 800, 7000));
+      const reed = harmonicWave(ctx, 'reed', reedAmps);
+      connect(oscillator(ctx, f, s.start, reed, -9), filter);
+      connect(oscillator(ctx, f, s.start, reed, 9), filter);
+      const low = ctx.createGain();
+      low.gain.value = 0.45;
+      connect(oscillator(ctx, f / 2, s.start, reed), low);
+      low.connect(filter);
+      filter.connect(env);
+      break;
+    }
+    case 'synth': {
+      // pad: ba sóng cưa lệch nhau, vào chậm, bộ lọc mở dần
+      attack = 0.35;
+      const filter = lowpass(ctx, f * 1.5, 0.9);
+      filter.frequency.setValueAtTime(Math.min(f * 1.5, ctx.sampleRate / 2 - 200), s.start);
+      filter.frequency.linearRampToValueAtTime(Math.min(f * 6, 8000), s.start + 0.8);
+      for (const c of [-12, 0, 12]) connect(oscillator(ctx, f, s.start, 'sawtooth', c), filter);
+      filter.connect(env);
+      break;
+    }
     case 'brass': {
       attack = 0.045;
       const filter = lowpass(ctx, f * 2, 1.4);
@@ -398,6 +603,29 @@ const buildSustained = (ctx: BaseAudioContext, s: VoiceSpec, f: number, peak: nu
   return { sources, env, valueAt };
 };
 
+type Builder = (ctx: BaseAudioContext, s: VoiceSpec, f: number, peak: number) => Built;
+
+const BUILDERS: Record<InstrumentId, Builder> = {
+  piano: buildPiano,
+  epiano: buildElectricPiano,
+  organ: buildSustained,
+  accordion: buildSustained,
+  strings: buildSustained,
+  guitar: buildGuitar,
+  harp: buildPlucked,
+  zither: buildPlucked,
+  bass: buildPlucked,
+  flute: buildSustained,
+  clarinet: buildSustained,
+  sax: buildSustained,
+  brass: buildSustained,
+  bells: buildStruck,
+  marimba: buildStruck,
+  musicbox: buildStruck,
+  choir: buildSustained,
+  synth: buildSustained,
+};
+
 /**
  * Hẹn giờ một nốt trên `ctx`, nối vào chuỗi chung. Nốt vào ở `start`, giữ đến `start + duration` rồi nhả theo kiểu
  * của nhạc cụ. Trả về giọng để cắt ngay khi cần.
@@ -407,26 +635,18 @@ export function scheduleVoice(ctx: BaseAudioContext, spec: VoiceSpec): Voice {
   const f = midiToFrequency(spec.midi);
   const peak = profile.trim * levelAmplitude(spec.level);
 
-  const built =
-    spec.instrument === 'piano'
-      ? buildPiano(ctx, spec, f, peak)
-      : spec.instrument === 'guitar'
-        ? buildGuitar(ctx, spec, f, peak)
-        : spec.instrument === 'bells'
-          ? buildBells(ctx, spec, f, peak)
-          : buildSustained(ctx, spec, f, peak);
+  const built = BUILDERS[spec.instrument](ctx, spec, f, peak);
   const { env, sources, valueAt } = built;
   env.connect(spec.destination ?? getMaster(ctx));
 
-  // Nhả phím từ đúng mức biên độ tại thời điểm đó rồi tắt dần (chuông thì để vang tự nhiên)
+  // Nhả phím từ đúng mức biên độ tại thời điểm đó rồi tắt dần (nhạc cụ gõ thì để vang tự nhiên)
   const releaseAt = spec.start + Math.max(0.03, spec.duration);
-  const bells = spec.instrument === 'bells';
-  if (!bells) {
+  if (profile.ring === undefined) {
     env.gain.cancelScheduledValues(releaseAt);
     env.gain.setValueAtTime(valueAt(releaseAt), releaseAt);
     env.gain.setTargetAtTime(SILENCE, releaseAt, profile.release);
   }
-  const endsAt = releaseAt + (bells ? 3.5 : profile.release * 7 + 0.05);
+  const endsAt = releaseAt + (profile.ring ?? profile.release * 7 + 0.05);
   for (const source of sources) source.stop(endsAt);
 
   return {
@@ -450,26 +670,53 @@ export function scheduleVoice(ctx: BaseAudioContext, spec: VoiceSpec): Voice {
 
 /** Tên nhạc cụ → InstrumentId (dùng khi file không có chương trình MIDI); quy tắc đứng trước ưu tiên hơn. */
 const NAME_RULES: [RegExp, InstrumentId][] = [
+  [/electric piano|e\.\s?piano|rhodes|wurlitzer|piano điện/i, 'epiano'], // i18n-ignore
+  [/accordion|accordeon|bandoneon|harmonica|melodica|phong cầm|ắc-?coóc/i, 'accordion'], // i18n-ignore
   [/organ/i, 'organ'],
+  [/bass guitar|electric bass|fretless|guitar bass|bass gt/i, 'bass'], // i18n-ignore
+  // trước giọng hát: "Alto Sax", "Bass Clarinet" là kèn, không phải giọng alto / bass
+  [/clarinet/i, 'clarinet'],
+  [/sax/i, 'sax'],
   [/sopran|mezzo|alto|tenor|bariton|\bbass?\b|voice|vocal|choir|chorus|singer|giọng|hát|hợp xướng/i, 'choir'], // i18n-ignore
   [/violin|viola|cello|contrabass|double bass|string|vĩ cầm|đàn dây/i, 'strings'], // i18n-ignore
-  [/flute|piccolo|clarinet|oboe|bassoon|sax|recorder|whistle|sáo|kèn/i, 'flute'], // i18n-ignore
+  [/flute|piccolo|oboe|bassoon|recorder|whistle|sáo|kèn/i, 'flute'], // i18n-ignore
   [/trumpet|horn|trombone|tuba|cornet|brass/i, 'brass'],
-  [/guitar|harp|lute|mandolin|banjo|ukulele|đàn tranh|ghi-?ta/i, 'guitar'], // i18n-ignore
-  [/bell|glock|celesta|marimba|xylophone|vibraphone|chime|chuông/i, 'bells'], // i18n-ignore
+  [/harp|đàn hạc/i, 'harp'], // i18n-ignore
+  [/zither|koto|guzheng|dulcimer|kanun|đàn tranh|đàn bầu/i, 'zither'], // i18n-ignore
+  [/guitar|lute|mandolin|banjo|ukulele|ghi-?ta/i, 'guitar'], // i18n-ignore
+  [/marimba|xylophone|vibraphone|đàn gỗ/i, 'marimba'], // i18n-ignore
+  [/music ?box|kalimba|hộp nhạc/i, 'musicbox'], // i18n-ignore
+  [/bell|glock|celesta|chime|chuông/i, 'bells'], // i18n-ignore
+  [/synth|\bpad\b/i, 'synth'],
   [/piano|keyboard|harpsichord|đàn phím/i, 'piano'], // i18n-ignore
 ];
 
 /** Chương trình MIDI (1–128, như `<midi-program>`) → nhạc cụ gần nhất. */
 export const instrumentForProgram = (program: number): InstrumentId => {
+  if (program <= 4) return 'piano';
+  if (program <= 6) return 'epiano';
   if (program <= 8) return 'piano';
+  if (program === 11) return 'musicbox';
+  if (program >= 12 && program <= 14) return 'marimba';
   if (program <= 16) return 'bells';
-  if (program <= 24) return 'organ';
-  if (program <= 40) return 'guitar';
+  if (program <= 21) return 'organ';
+  if (program <= 24) return 'accordion';
+  if (program <= 32) return 'guitar';
+  if (program <= 40) return 'bass';
+  if (program === 47) return 'harp';
   if (program <= 52) return 'strings';
   if (program <= 56) return 'choir';
   if (program <= 64) return 'brass';
+  if (program <= 68) return 'sax';
+  if (program === 72) return 'clarinet';
   if (program <= 80) return 'flute';
+  if (program <= 104) return 'synth';
+  if (program <= 106) return 'guitar';
+  if (program <= 108) return 'zither';
+  if (program === 109) return 'musicbox';
+  if (program === 111) return 'strings';
+  if (program <= 112) return 'flute';
+  if (program <= 120) return 'bells';
   return 'piano';
 };
 

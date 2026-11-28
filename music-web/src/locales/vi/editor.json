@@ -218,13 +218,30 @@
   },
   "instruments": {
     "piano": "Piano",
-    "strings": "Đàn dây",
-    "flute": "Sáo / kèn gỗ",
+    "epiano": "Piano điện",
     "organ": "Đàn organ",
+    "accordion": "Accordion (phong cầm)",
+    "strings": "Đàn dây",
     "guitar": "Guitar / đàn gảy",
-    "choir": "Giọng hát / hợp xướng",
+    "harp": "Đàn hạc",
+    "zither": "Đàn tranh",
+    "bass": "Guitar bass",
+    "flute": "Sáo / kèn gỗ",
+    "clarinet": "Kèn clarinet",
+    "sax": "Kèn saxophone",
     "brass": "Kèn đồng",
-    "bells": "Chuông / glockenspiel"
+    "bells": "Chuông / glockenspiel",
+    "marimba": "Marimba / đàn gỗ",
+    "musicbox": "Hộp nhạc",
+    "choir": "Giọng hát / hợp xướng",
+    "synth": "Synth pad (đệm điện tử)"
+  },
+  "instrumentFamilies": {
+    "keys": "Phím",
+    "strings": "Dây",
+    "winds": "Hơi",
+    "percussion": "Gõ",
+    "other": "Khác"
   },
   "flash": {
     "inputDuration": "Trường độ nhập: {duration}",

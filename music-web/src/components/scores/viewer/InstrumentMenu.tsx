@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { INSTRUMENTS, instrumentLabel } from '../../editor/audio/instruments';
+import { familyLabel, INSTRUMENT_FAMILIES, INSTRUMENTS, instrumentLabel } from '../../editor/audio/instruments';
 import type { InstrumentId } from '../../editor/audio/instruments';
 import type { PartInstrument } from '../../player/hooks/usePlayer';
 import { IconInstrument } from './ViewerIcons';
@@ -62,10 +62,14 @@ export default function InstrumentMenu({
                 value={part.instrument}
                 onChange={(e) => onChange(part.index, e.target.value as InstrumentId)}
               >
-                {INSTRUMENTS.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {instrumentLabel(i.id)}
-                  </option>
+                {INSTRUMENT_FAMILIES.map((family) => (
+                  <optgroup key={family} label={familyLabel(family)}>
+                    {INSTRUMENTS.filter((i) => i.family === family).map((i) => (
+                      <option key={i.id} value={i.id}>
+                        {instrumentLabel(i.id)}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
               {part.custom && (
