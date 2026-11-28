@@ -58,3 +58,40 @@ export function writeSoundOn(storage: SoundStorage | null | undefined, on: boole
     // bộ nhớ bị chặn: lựa chọn chỉ giữ trong phiên hiện tại
   }
 }
+
+/**
+ * Trang có âm thanh riêng hoặc cần tập trung (soạn / duyệt bản nhạc, trình phát, luyện tập, biểu diễn): không phát nhạc
+ * khi bấm và ẩn nút loa. Áp cho cả đường dẫn của khu quản trị (/admin/scores/:id/edit ...).
+ */
+const QUIET_PATHS: readonly RegExp[] = [
+  /^(?:\/admin)?\/scores\/[^/]+\/(?:edit|play|review)(?:\/|$)/,
+  /^\/scores\/[^/]+\/suggestions\//,
+  /^\/studio(?:\/|$)/,
+  /^\/practice-(?:history|stats)(?:\/|$)/,
+  /^\/teams\/[^/]+\/shows\/[^/]+\/perform(?:\/|$)/,
+  /^\/dev\//,
+];
+
+/** Trang này có phát nhạc khi bấm (và hiện nút loa) không. */
+export const clickMusicAllowedAt = (pathname: string): boolean => !QUIET_PATHS.some((re) => re.test(pathname));
+
+/** Vị trí dọc của nút loa nổi: tỉ lệ 0–1 theo chiều cao màn hình (mặc định 1: góc dưới bên phải). */
+export const SOUND_FAB_KEY = 'ui.soundFabY';
+export const DEFAULT_SOUND_FAB_Y = 1;
+
+export function readFabY(storage: SoundStorage | null | undefined): number {
+  try {
+    const value = Number.parseFloat(storage?.getItem(SOUND_FAB_KEY) ?? '');
+    return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : DEFAULT_SOUND_FAB_Y;
+  } catch {
+    return DEFAULT_SOUND_FAB_Y;
+  }
+}
+
+export function writeFabY(storage: SoundStorage | null | undefined, y: number): void {
+  try {
+    storage?.setItem(SOUND_FAB_KEY, String(Math.round(Math.min(1, Math.max(0, y)) * 1000) / 1000));
+  } catch {
+    // bộ nhớ bị chặn: vị trí chỉ giữ trong phiên hiện tại
+  }
+}

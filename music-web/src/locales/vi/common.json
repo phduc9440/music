@@ -52,7 +52,8 @@
     "planTitle": "Gói {plan}: xem hạn mức và gia hạn",
     "clickSound": "Âm thanh khi bấm",
     "soundStateOn": "Bật",
-    "soundStateOff": "Tắt"
+    "soundStateOff": "Tắt",
+    "soundFabHint": "kéo lên xuống để đổi chỗ"
   },
   "theme": {
     "label": "Giao diện: {name}",

@@ -1,0 +1,47 @@
+/* Nút loa nổi ở mép phải màn hình (bật / tắt nhạc khi bấm); kéo lên xuống dọc mép để đổi chỗ. */
+.sound-fab {
+  position: fixed;
+  right: 14px;
+  z-index: 210;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--ui-border);
+  border-radius: 50%;
+  background: var(--ui-surface);
+  color: var(--ui-text-3);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--ui-shadow-ink) 18%, transparent);
+  cursor: grab;
+  touch-action: none;
+  transition:
+    color 0.15s,
+    background 0.15s,
+    box-shadow 0.15s;
+}
+.sound-fab:hover {
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--ui-shadow-ink) 24%, transparent);
+}
+.sound-fab:active {
+  cursor: grabbing;
+}
+.sound-fab.is-on {
+  background: var(--ui-primary-soft);
+  border-color: color-mix(in srgb, var(--ui-primary) 35%, transparent);
+  color: var(--ui-primary);
+}
+.sound-fab:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sound-fab {
+    transition: none;
+  }
+}
+@media print {
+  .sound-fab {
+    display: none;
+  }
+}
