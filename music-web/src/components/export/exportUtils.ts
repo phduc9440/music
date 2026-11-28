@@ -24,6 +24,12 @@ export function translateTaskError(message?: string | null): string {
   return hasKey(`export.taskErrors.${code}`) ? t(`export.taskErrors.${code}`) : message;
 }
 
+/** Mã lỗi BE: máy chủ chưa cài MuseScore nên không xuất được file. */
+export const EXPORT_NOT_AVAILABLE = 2704;
+
+/** Máy chủ chưa cài MuseScore (lỗi 2704): khi đó file được tạo ngay trên trình duyệt. */
+export const isExportUnavailable = (err: unknown): boolean => getErrorCode(err) === EXPORT_NOT_AVAILABLE;
+
 /** Thông báo lỗi khi gọi API xuất file (lỗi mạng hoặc mã nghiệp vụ 27xx). */
 export function exportErrorMessage(err: unknown): string {
   const code = getErrorCode(err);

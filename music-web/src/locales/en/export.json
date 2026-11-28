@@ -21,7 +21,7 @@
     "2701": "Invalid export options",
     "2702": "The score is too long to export as audio (20 minutes max), raise the tempo",
     "2703": "You are exporting too many files, wait for the running tasks to finish",
-    "2704": "The server is not ready to export files, please contact an administrator"
+    "2704": "MuseScore is not installed on the server, so this file cannot be exported there"
   },
   "validation": {
     "tempo": "Tempo must be between 20% and 200%",
@@ -53,9 +53,7 @@
     "quality": "Quality",
     "transpose": "Transpose",
     "semitones": "semitones",
-    "submit": "Export file",
-    "noPreview": "Preview is not available, you can still download it.",
-    "loadingPreview": "Loading the preview..."
+    "submit": "Export file"
   },
   "hands": {
     "BOTH": "Both hands",
@@ -80,9 +78,7 @@
     "showTitle": "Show title and composer",
     "showChords": "Show chords",
     "submit": "Export PDF",
-    "previewAlt": "Preview of page 1 of the PDF file",
-    "noPreview": "Preview is not available, you can still download it.",
-    "loadingPreview": "Building the page 1 preview..."
+    "previewAlt": "Preview of page 1 of the PDF file"
   },
   "svg": {
     "title": "Export SVG",
@@ -107,5 +103,28 @@
     "title": "Turn the imported MIDI file into a score you can open in the editor and the player",
     "running": "Converting... {progress}%",
     "button": "Convert MIDI to a score"
+  },
+  "preview": {
+    "show": "Preview",
+    "hide": "Hide preview",
+    "loading": "Rendering the preview...",
+    "rendering": "Synthesizing a preview...",
+    "failed": "Could not show a preview; you can still export and download.",
+    "pages": "{count} pages",
+    "pageOf": "Page {page}/{count}",
+    "showPage": "Preview page {page}",
+    "listen": "Listen to {seconds} seconds",
+    "listenFile": "Listen",
+    "stop": "Stop preview"
+  },
+  "local": {
+    "notice": "MuseScore is not installed on the server, so the file is made right in your browser.",
+    "making": "Making the file in your browser...",
+    "pdfProgress": "Rendering page {done}/{total}...",
+    "synthesizing": "Synthesizing the audio in your browser...",
+    "failed": "Could not make the file in the browser, please try again",
+    "mp3": "MuseScore is not installed on the server, so MP3 is not available yet. Your browser can make a WAV file with the same options right away (lossless, larger file).",
+    "useWav": "Export WAV",
+    "tooLong": "The score is longer than 15 minutes, which is too long to synthesize in the browser; try a faster tempo"
   }
 }

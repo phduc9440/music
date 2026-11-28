@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import { downloadFile, fetchFileBlob, taskApi } from '../../services';
+import { downloadFile, fetchFileBlob, saveBlob, taskApi } from '../../services';
 import { exportApi } from '../../services/file/exportApi';
 import type { AiTaskInfo } from '../../types';
 import type { ExportFileInfo, ExportFormat, ExportHands, ExportOptions } from '../../types/export';
@@ -13,6 +13,7 @@ import {
   exportErrorMessage,
   exportFileName,
   handsFromMixer,
+  isExportUnavailable,
   isTaskFinished,
   translateTaskError,
   validateExportOptions,
@@ -20,6 +21,10 @@ import {
 import { reportPlanLimit } from '../../utils/planLimit';
 import ExportRunningView from './ExportRunningView';
 import { useExportTask } from './useExportTask';
+import PreviewBlock from './PreviewBlock';
+import { useClickPreview } from './local/useClickPreview';
+import { loadScoreXml } from './local/localExport';
+import { AudioTooLongError, renderScoreWav } from './local/offlineAudio';
 import { t } from '../../i18n/core';
 import './export.css';
 
@@ -33,6 +38,8 @@ interface Props {
 }
 
 const HANDS: ExportHands[] = ['BOTH', 'RIGHT', 'LEFT'];
+/** Độ dài đoạn nghe thử trong biểu mẫu (giây). */
+const PREVIEW_SECONDS = 30;
 
 const formatSize = (bytes?: number | null): string =>
   bytes
@@ -44,10 +51,13 @@ const formatSize = (bytes?: number | null): string =>
 /**
  * Hộp thoại "Xuất âm thanh" (MP3/WAV, mục 1.28). Component này luôn được gắn khi trang còn mở để vòng theo dõi tác vụ
  * không dừng khi người dùng đóng hộp thoại; khi tác vụ xong mà hộp thoại đang đóng thì hiện toast kèm nút Tải xuống.
+ * Máy chủ chưa cài MuseScore thì tổng hợp WAV ngay trên trình duyệt (MP3 cần máy chủ).
  */
 export default function ExportAudioDialog({ scoreId, title, staffCount, format, onClose }: Props) {
   const [result, setResult] = useState<ExportFileInfo | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  /** Lần xuất đang làm trên trình duyệt (máy chủ chưa cài MuseScore). */
+  const [local, setLocal] = useState<{ format: ExportFormat; options: ExportOptions } | null>(null);
   const open = useRef(false);
 
   useEffect(() => {
@@ -95,6 +105,10 @@ export default function ExportAudioDialog({ scoreId, title, staffCount, format, 
       else if (response.task) track(response.task);
       return null;
     } catch (err) {
+      if (isExportUnavailable(err)) {
+        setLocal({ format: target, options });
+        return null;
+      }
       reportPlanLimit(err);
       return exportErrorMessage(err);
     }
@@ -117,6 +131,13 @@ export default function ExportAudioDialog({ scoreId, title, staffCount, format, 
   const again = () => {
     reset();
     setResult(null);
+    setLocal(null);
+  };
+
+  // Đóng hộp thoại thì bỏ kết quả tạo trên trình duyệt (không có tác vụ nền nào để theo dõi)
+  const close = () => {
+    setLocal(null);
+    onClose();
   };
 
   if (format === null) return null;
@@ -125,11 +146,22 @@ export default function ExportAudioDialog({ scoreId, title, staffCount, format, 
   const failed = task !== null && (task.status === 'FAILED' || task.status === 'CANCELLED') && result === null;
 
   return (
-    <Modal title={t('export.audio.title')} onClose={onClose}>
-      {result ? (
-        <ResultView key={result.id} file={result} title={title} onAgain={again} onClose={onClose} />
+    <Modal title={t('export.audio.title')} onClose={close}>
+      {local ? (
+        <LocalAudioView
+          key={JSON.stringify(local)}
+          scoreId={scoreId}
+          title={title}
+          format={local.format}
+          options={local.options}
+          onUseWav={() => setLocal({ format: 'WAV', options: { ...local.options, bitrate: undefined } })}
+          onAgain={again}
+          onClose={close}
+        />
+      ) : result ? (
+        <ResultView key={result.id} file={result} title={title} onAgain={again} onClose={close} />
       ) : running ? (
-        <ExportRunningView task={task} cancelling={cancelling} onCancel={() => void cancel()} onClose={onClose} />
+        <ExportRunningView task={task} cancelling={cancelling} onCancel={() => void cancel()} onClose={close} />
       ) : failed ? (
         <div className="ex-body">
           <p className="ex-error" role="alert">
@@ -150,7 +182,7 @@ export default function ExportAudioDialog({ scoreId, title, staffCount, format, 
           staffCount={staffCount}
           initialFormat={format}
           onSubmit={submit}
-          onClose={onClose}
+          onClose={close}
         />
       )}
     </Modal>
@@ -182,6 +214,18 @@ function ExportForm({
   const [hands, setHands] = useState<ExportHands>(() => handsFromMixer(initial.mixer, staffCount));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Nghe thử đoạn đầu với tempo / giọng / tay đang chọn: tổng hợp trên trình duyệt, chỉ khi bấm
+  const hand = canPickHand ? hands : 'BOTH';
+  const preview = useClickPreview(
+    async () =>
+      renderScoreWav(await loadScoreXml(scoreId), scoreId, {
+        tempoPercent: tempo,
+        transpose,
+        hands: hand,
+        limitSeconds: PREVIEW_SECONDS,
+      }),
+    `${tempo}|${transpose}|${hand}`,
+  );
 
   const submit = async () => {
     const options: ExportOptions = {
@@ -282,9 +326,15 @@ function ExportForm({
           {error}
         </p>
       )}
+      <PreviewBlock state={preview.state} url={preview.url} kind="audio" />
       <div className="sc-modal__actions">
         <button className="sc-btn" onClick={onClose} disabled={busy}>
           {t('common.cancel')}
+        </button>
+        <button className="sc-btn" onClick={preview.toggle} aria-pressed={preview.state !== 'idle'}>
+          {preview.state === 'idle'
+            ? t('export.preview.listen', { seconds: PREVIEW_SECONDS })
+            : t('export.preview.stop')}
         </button>
         <button className="sc-btn sc-btn--primary" onClick={() => void submit()} disabled={busy}>
           {busy ? t('export.sending') : t('export.audio.submit')}
@@ -307,29 +357,10 @@ function ResultView({
   onAgain: () => void;
   onClose: () => void;
 }) {
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [previewFailed, setPreviewFailed] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const name = exportFileName(title, file.fileType as ExportFormat, file.options ?? {});
-
-  // Tải file về dạng blob để nghe thử (API cần cookie đăng nhập nên không gắn thẳng URL vào thẻ audio được)
-  useEffect(() => {
-    let cancelled = false;
-    let objectUrl: string | undefined;
-    fetchFileBlob(file.downloadUrl)
-      .then((blob) => {
-        if (cancelled) return;
-        objectUrl = URL.createObjectURL(blob);
-        setAudioUrl(objectUrl);
-      })
-      .catch(() => {
-        if (!cancelled) setPreviewFailed(true);
-      });
-    return () => {
-      cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [file.downloadUrl]);
+  // Bấm "Nghe thử" mới tải file về dạng blob (API cần cookie đăng nhập nên không gắn thẳng URL vào thẻ audio được)
+  const preview = useClickPreview(() => fetchFileBlob(file.downloadUrl));
 
   const download = async () => {
     setDownloading(true);
@@ -348,13 +379,7 @@ function ResultView({
       <p className="ex-hint">
         {name} {formatSize(file.sizeBytes) && `· ${formatSize(file.sizeBytes)}`}
       </p>
-      {audioUrl ? (
-        <audio className="ex-audio" controls src={audioUrl} />
-      ) : previewFailed ? (
-        <p className="ex-hint">{t('export.audio.noPreview')}</p>
-      ) : (
-        <p className="ex-hint">{t('export.audio.loadingPreview')}</p>
-      )}
+      <PreviewBlock state={preview.state} url={preview.url} kind="audio" />
       <div className="sc-modal__actions">
         <button className="sc-btn" onClick={onAgain}>
           {t('export.again')}
@@ -362,8 +387,126 @@ function ResultView({
         <button className="sc-btn" onClick={onClose}>
           {t('common.close')}
         </button>
+        <button className="sc-btn" onClick={preview.toggle} aria-pressed={preview.state !== 'idle'}>
+          {preview.state === 'idle' ? t('export.preview.listenFile') : t('export.preview.stop')}
+        </button>
         <button className="sc-btn sc-btn--primary" onClick={() => void download()} disabled={downloading}>
           {downloading ? t('export.downloading') : t('export.download')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------------------------------------ trên trình duyệt
+
+/**
+ * Máy chủ chưa cài MuseScore: tổng hợp WAV ngay trên trình duyệt bằng bộ máy phát của trình phát. MP3 cần bộ mã hóa
+ * của máy chủ nên đề nghị xuất WAV thay thế.
+ */
+function LocalAudioView({
+  scoreId,
+  title,
+  format,
+  options,
+  onUseWav,
+  onAgain,
+  onClose,
+}: {
+  scoreId: string;
+  title: string;
+  format: ExportFormat;
+  options: ExportOptions;
+  onUseWav: () => void;
+  onAgain: () => void;
+  onClose: () => void;
+}) {
+  const [blob, setBlob] = useState<Blob | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const name = exportFileName(title, 'WAV', options);
+  const preview = useClickPreview(async () => blob ?? new Blob());
+
+  useEffect(() => {
+    if (format !== 'WAV') return;
+    let cancelled = false;
+    loadScoreXml(scoreId)
+      .then((xml) => renderScoreWav(xml, scoreId, options))
+      .then((made) => !cancelled && setBlob(made))
+      .catch((err) => {
+        if (!cancelled)
+          setError(err instanceof AudioTooLongError ? t('export.local.tooLong') : t('export.local.failed'));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [scoreId, format, options]);
+
+  if (format === 'MP3')
+    return (
+      <div className="ex-body">
+        <p className="ex-hint">{t('export.local.mp3')}</p>
+        <div className="sc-modal__actions">
+          <button className="sc-btn" onClick={onAgain}>
+            {t('export.again')}
+          </button>
+          <button className="sc-btn sc-btn--primary" onClick={onUseWav}>
+            {t('export.local.useWav')}
+          </button>
+        </div>
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="ex-body">
+        <p className="ex-error" role="alert">
+          {error}
+        </p>
+        <div className="sc-modal__actions">
+          <button className="sc-btn" onClick={onClose}>
+            {t('common.close')}
+          </button>
+          <button className="sc-btn sc-btn--primary" onClick={onAgain}>
+            {t('export.again')}
+          </button>
+        </div>
+      </div>
+    );
+
+  if (!blob)
+    return (
+      <div className="ex-body">
+        <p className="ex-hint">{t('export.local.notice')}</p>
+        <p className="ex-step" role="status">
+          {t('export.local.synthesizing')}
+        </p>
+        <div className="sc-modal__actions">
+          <button className="sc-btn" onClick={onClose}>
+            {t('common.cancel')}
+          </button>
+        </div>
+      </div>
+    );
+
+  return (
+    <div className="ex-body">
+      <p className="ex-ok">{t('export.fileReady', { type: 'WAV' })}</p>
+      <p className="ex-hint">
+        {name} · {formatSize(blob.size)} · {t('export.local.notice')}
+      </p>
+      <PreviewBlock state={preview.state} url={preview.url} kind="audio" />
+      <div className="sc-modal__actions">
+        <button className="sc-btn" onClick={onAgain}>
+          {t('export.again')}
+        </button>
+        <button className="sc-btn" onClick={onClose}>
+          {t('common.close')}
+        </button>
+        <button className="sc-btn" onClick={preview.toggle} aria-pressed={preview.state !== 'idle'}>
+          {preview.state === 'idle' ? t('export.preview.listenFile') : t('export.preview.stop')}
+        </button>
+        <button className="sc-btn sc-btn--primary" onClick={() => saveBlob(blob, name)}>
+          {t('export.download')}
         </button>
       </div>
     </div>

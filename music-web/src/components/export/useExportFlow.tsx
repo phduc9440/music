@@ -5,7 +5,7 @@ import { taskApi } from '../../services';
 import { exportApi } from '../../services/file/exportApi';
 import type { AiTaskInfo } from '../../types';
 import type { ExportFileInfo, ExportTarget } from '../../types/export';
-import { exportErrorMessage, isTaskFinished, translateTaskError } from './exportUtils';
+import { exportErrorMessage, isExportUnavailable, isTaskFinished, translateTaskError } from './exportUtils';
 import { reportPlanLimit } from '../../utils/planLimit';
 import { useExportTask } from './useExportTask';
 import { t } from '../../i18n/core';
@@ -64,14 +64,21 @@ export function useExportFlow({ scoreId, isOpen, readyMessage, reopen, resume }:
 
   const { task, track, reset } = useExportTask((t) => void handleFinished(t), resume);
 
-  /** Gửi yêu cầu xuất; trả về thông báo lỗi (hoặc null nếu gửi được). */
-  const submit = async (target: ExportTarget, options: object): Promise<string | null> => {
+  /**
+   * Gửi yêu cầu xuất; trả về thông báo lỗi (hoặc null nếu gửi được). Máy chủ chưa cài MuseScore (2704) mà có
+   * `onUnavailable` thì gọi nó (xuất ngay trên trình duyệt) thay vì báo lỗi.
+   */
+  const submit = async (target: ExportTarget, options: object, onUnavailable?: () => void): Promise<string | null> => {
     try {
       const response = (await exportApi.create(scoreId, target, options)).data.result;
       if (response.cached && response.file) setResults(response.files?.length ? response.files : [response.file]);
       else if (response.task) track(response.task);
       return null;
     } catch (err) {
+      if (onUnavailable && isExportUnavailable(err)) {
+        onUnavailable();
+        return null;
+      }
       reportPlanLimit(err);
       return exportErrorMessage(err);
     }
